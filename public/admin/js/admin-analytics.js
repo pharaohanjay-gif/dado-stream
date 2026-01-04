@@ -1,39 +1,4 @@
-// Admin API Helper
-async function fetchAPI(endpoint) {
-    const token = localStorage.getItem('adminToken');
-
-    const response = await fetch(`/api${endpoint}`, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
-
-    if (response.status === 401) {
-        localStorage.removeItem('adminToken');
-        window.location.href = '/admin/index.html';
-        throw new Error('Unauthorized');
-    }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.error || 'API request failed');
-    }
-
-    return data;
-}
-
-// More API methods can be added here
-async function getAnalytics(type, params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetchAPI(`/analytics/${type}${query ? '?' + query : ''}`);
-}
-
-async function getAdminData(endpoint, params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return fetchAPI(`/admin/${endpoint}${query ? '?' + query : ''}`);
-}
+// Analytics Page - uses fetchAPI from admin-utils.js
 
 // Charts for analytics page
 let hourlyChart = null;
