@@ -91,54 +91,185 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
     return res.status(404).json({ error: 'Unknown dramabox action' });
 }
 
-// Anime handlers
+// Anime handlers - Matching src/server.ts logic exactly
 async function handleAnime(action: string, req: VercelRequest, res: VercelResponse) {
-    const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+    const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } };
+
+    // Helper to get home data (used by latest, trending, popular)
+    const getHomeData = async () => {
+        const response = await axios.get(`${ANIME_API}/`, config);
+        return response.data?.results;
+    };
 
     if (action === 'latest') {
-        const response = await axios.get(`${ANIME_API}/latest`, config);
-        return res.json(response.data?.results?.data || response.data?.data || []);
+        try {
+            const homeData = await getHomeData();
+            const items = (homeData?.latestEpisode || []).map((item: any) => ({
+                id: item.id,
+                urlId: item.id,
+                judul: item.title,
+                title: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.tvInfo?.sub || item.tvInfo?.eps || '?',
+                rating: item.adultContent ? 'R' : 'PG',
+                type: item.tvInfo?.showType || 'TV'
+            }));
+            return res.json(items);
+        } catch (error: any) {
+            console.error('[Anime Latest Error]:', error.message);
+            return res.status(500).json({ error: 'Failed' });
+        }
     }
 
-    if (action === 'trending' || action === 'popular') {
-        const response = await axios.get(`${ANIME_API}/${action}`, config);
-        return res.json(response.data?.results?.data || response.data?.data || []);
+    if (action === 'trending') {
+        try {
+            const homeData = await getHomeData();
+            const trending = homeData?.trending || homeData?.topTen?.today || [];
+            const items = trending.map((item: any) => ({
+                id: item.id,
+                urlId: item.id,
+                judul: item.title,
+                title: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.tvInfo?.sub || '?',
+                score: item.number || 'Hot',
+                type: 'Trending'
+            }));
+            return res.json(items);
+        } catch (error: any) {
+            return res.status(500).json({ error: 'Failed' });
+        }
+    }
+
+    if (action === 'popular') {
+        try {
+            const homeData = await getHomeData();
+            const popular = homeData?.mostPopular || homeData?.topTen?.month || [];
+            const items = popular.map((item: any) => ({
+                id: item.id,
+                urlId: item.id,
+                judul: item.title,
+                title: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.tvInfo?.sub || '?',
+                score: item.number || 'Top',
+                type: 'Popular'
+            }));
+            return res.json(items);
+        } catch (error: any) {
+            return res.status(500).json({ error: 'Failed' });
+        }
     }
 
     if (action === 'movie') {
-        const response = await axios.get(`${ANIME_API}/movies`, config);
-        return res.json(response.data?.results?.data || response.data?.data || []);
+        try {
+            const response = await axios.get(`${ANIME_API}/movie`, {
+                ...config,
+                params: { page: 1 }
+            });
+            const items = (response.data?.results?.data || []).map((item: any) => ({
+                id: item.id,
+                urlId: item.id,
+                judul: item.title,
+                title: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: 'Movie',
+                type: 'Movie'
+            }));
+            return res.json(items);
+        } catch (error: any) {
+            return res.status(500).json({ error: 'Failed' });
+        }
     }
 
     if (action === 'search') {
-        const q = req.query.q || req.query.query;
-        if (!q) return res.status(400).json({ error: 'Query required' });
-        const response = await axios.get(`${ANIME_API}/search`, {
-            ...config,
-            params: { q }
-        });
-        const results = response.data?.results?.data || response.data?.results || response.data?.data || [];
-        return res.json(results);
+        try {
+            const q = req.query.q || req.query.query;
+            if (!q) return res.json([]);
+            
+            const response = await axios.get(`${ANIME_API}/search`, {
+                ...config,
+                params: { keyword: q }  // Use 'keyword' parameter like server.ts
+            });
+            const rawData = response.data?.results?.data || response.data?.results || [];
+            const items = rawData.map((item: any) => ({
+                id: item.id,
+                urlId: item.id,
+                judul: item.title,
+                title: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.tvInfo?.sub || item.duration || '?',
+                type: item.tvInfo?.showType || 'Anime'
+            }));
+            return res.json(items);
+        } catch (error: any) {
+            console.error('[Anime Search Error]:', error.message);
+            return res.status(500).json({ error: 'Failed to search anime' });
+        }
     }
 
     if (action === 'detail') {
-        const { id } = req.query;
-        if (!id) return res.status(400).json({ error: 'id required' });
-        const response = await axios.get(`${ANIME_API}/info`, {
-            ...config,
-            params: { id }
-        });
-        return res.json(response.data?.results || response.data);
+        try {
+            const idParam = req.query.urlId || req.query.id;
+            if (!idParam) return res.status(400).json({ error: 'id required' });
+            
+            const response = await axios.get(`${ANIME_API}/info`, {
+                ...config,
+                params: { id: idParam }
+            });
+            const animeData = response.data?.results?.data || {};
+            const animeInfo = animeData?.animeInfo || {};
+            
+            // Also try to get episodes
+            let episodes: any[] = [];
+            try {
+                const epResponse = await axios.get(`${ANIME_API}/episodes/${idParam}`, config);
+                episodes = epResponse.data?.results?.data || [];
+            } catch {}
+            
+            return res.json({
+                id: animeInfo.id || idParam,
+                urlId: idParam,
+                title: animeInfo.title || animeData.title,
+                judul: animeInfo.title || animeData.title,
+                image: animeInfo.poster || animeData.poster,
+                description: animeInfo.description || animeData.overview,
+                genres: animeInfo.genres || [],
+                status: animeInfo.status,
+                type: animeInfo.stats?.type || 'TV',
+                rating: animeInfo.stats?.rating,
+                episodes: episodes
+            });
+        } catch (error: any) {
+            console.error('[Anime Detail Error]:', error.message);
+            return res.status(500).json({ error: 'Failed' });
+        }
     }
 
     if (action === 'getvideo') {
-        const { episodeId } = req.query;
-        if (!episodeId) return res.status(400).json({ error: 'episodeId required' });
-        const response = await axios.get(`${ANIME_API}/source`, {
-            ...config,
-            params: { episodeId, server: 'vidstreaming', category: 'sub' }
-        });
-        return res.json(response.data?.results || response.data);
+        try {
+            const episodeId = req.query.episodeId || req.query.episode_id;
+            if (!episodeId) return res.status(400).json({ error: 'episodeId required' });
+            
+            const response = await axios.get(`${ANIME_API}/stream`, {
+                ...config,
+                params: { id: episodeId }
+            });
+            const streamData = response.data?.results?.data?.streamingLink || response.data?.results || {};
+            
+            return res.json({
+                sources: streamData.link?.file ? [{ url: streamData.link.file, quality: 'auto' }] : [],
+                subtitles: streamData.tracks || []
+            });
+        } catch (error: any) {
+            console.error('[Anime Video Error]:', error.message);
+            return res.status(500).json({ error: 'Failed' });
+        }
     }
 
     return res.status(404).json({ error: 'Unknown anime action' });
