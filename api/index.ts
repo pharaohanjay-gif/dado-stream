@@ -384,6 +384,57 @@ async function handleAdmin(action: string, req: VercelRequest, res: VercelRespon
         return res.json({ success: true, data: users });
     }
 
+    if (action === 'users/create' && req.method === 'POST') {
+        const { username, email, password, role } = req.body || {};
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ error: 'Username, email and password are required' });
+        }
+
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(500).json({ error: 'Database not connected' });
+        }
+
+        try {
+            // Check if user already exists
+            const existingUser = await User.findOne({
+                $or: [{ username }, { email }]
+            });
+
+            if (existingUser) {
+                return res.status(400).json({ error: 'Username or email already exists' });
+            }
+
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create new user
+            const newUser = new User({
+                username,
+                email,
+                password: hashedPassword,
+                role: role || 'admin',
+                isActive: true,
+                createdAt: new Date()
+            });
+
+            await newUser.save();
+
+            return res.json({
+                success: true,
+                user: {
+                    id: newUser._id,
+                    username: newUser.username,
+                    email: newUser.email,
+                    role: newUser.role
+                }
+            });
+        } catch (error: any) {
+            console.error('Create user error:', error);
+            return res.status(500).json({ error: 'Failed to create user' });
+        }
+    }
+
     return res.status(404).json({ error: 'Unknown admin action' });
 }
 

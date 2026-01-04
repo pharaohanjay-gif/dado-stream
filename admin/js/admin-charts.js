@@ -119,42 +119,15 @@ async function loadHourlyChart() {
 
 async function loadDeviceChart() {
     try {
-        const res = await fetchAPI('/admin/stats?period=7d');
-        const devices = res.data?.devices || [];
+        const res = await fetchAPI('/analytics/devices');
+        const devices = res.data || [];
 
         const ctx = document.getElementById('deviceChart');
         if (!ctx) return;
 
         if (deviceChart) deviceChart.destroy();
 
-        // If no data, show placeholder
-        if (devices.length === 0) {
-            deviceChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['No Data'],
-                    datasets: [{
-                        data: [1],
-                        backgroundColor: ['#333333'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#999' }
-                        }
-                    },
-                    cutout: '70%'
-                }
-            });
-            return;
-        }
-
-        const labels = devices.map(d => d._id || 'Unknown');
+        const labels = devices.map(d => d.device || 'unknown');
         const data = devices.map(d => d.count);
 
         deviceChart = new Chart(ctx, {
@@ -163,7 +136,7 @@ async function loadDeviceChart() {
                 labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
                 datasets: [{
                     data: data,
-                    backgroundColor: ['#FF6700', '#FFFFFF', '#333333', '#666666', '#999999'],
+                    backgroundColor: ['#FF6700', '#FFFFFF', '#333333', '#666666'],
                     borderWidth: 2,
                     borderColor: '#1a1a1a'
                 }]

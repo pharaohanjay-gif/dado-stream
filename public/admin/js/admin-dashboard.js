@@ -137,3 +137,85 @@ function updateTimestamp() {
     const now = new Date();
     console.log(`[Dashboard] Last updated: ${now.toLocaleTimeString()}`);
 }
+
+// ==================== USER MANAGEMENT ====================
+async function loadUsers() {
+    try {
+        const res = await fetchAPI('/admin/users');
+        const users = res.data || [];
+        
+        const container = document.getElementById('usersList');
+        
+        if (users.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 30px; color: #999;">
+                    <p>No admin users in database yet.</p>
+                    <p style="font-size: 12px; margin-top: 10px;">Default login: admin / admin123</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div class="user-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #2a2a2a; border-radius: 8px; margin-bottom: 10px;">
+                <div>
+                    <div style="font-weight: bold; color: #fff;">${user.username}</div>
+                    <div style="font-size: 12px; color: #999;">${user.email}</div>
+                    <div style="font-size: 11px; color: #666;">Role: ${user.role} • Last login: ${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <span style="padding: 5px 10px; background: ${user.isActive ? '#2d5a2d' : '#5a2d2d'}; border-radius: 4px; font-size: 12px;">
+                        ${user.isActive ? '✅ Active' : '❌ Inactive'}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        document.getElementById('usersList').innerHTML = '<div class="empty-state">Failed to load users</div>';
+    }
+}
+
+// Add user form handler
+document.getElementById('addUserForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('newUsername').value;
+    const email = document.getElementById('newEmail').value;
+    const password = document.getElementById('newPassword').value;
+    const role = document.getElementById('newRole').value;
+    
+    const messageDiv = document.getElementById('addUserMessage');
+    
+    try {
+        const res = await fetch('/api/admin/users/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ username, email, password, role })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            messageDiv.innerHTML = '<span style="color: #4CAF50;">✅ User created successfully!</span>';
+            document.getElementById('addUserForm').reset();
+            loadUsers();
+        } else {
+            messageDiv.innerHTML = `<span style="color: #f44336;">❌ ${data.error || 'Failed to create user'}</span>`;
+        }
+    } catch (error) {
+        messageDiv.innerHTML = `<span style="color: #f44336;">❌ ${error.message}</span>`;
+    }
+});
+
+// Load users when users page is shown
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (item.dataset.page === 'users') {
+            loadUsers();
+        }
+    });
+});
