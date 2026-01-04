@@ -839,6 +839,8 @@ async function playAnimeEpisode(chapterUrlId, chTitle, animeTitle) {
     // Fetch video data from API using the new parameter
     const response = await fetchAPI(`/anime/getvideo?chapterUrlId=${chapterUrlId}`);
 
+    console.log('[Anime Player] Response:', response);
+
     let videoUrl = null;
     let streams = []; // Declare streams outside the if block
 
@@ -868,9 +870,16 @@ async function playAnimeEpisode(chapterUrlId, chTitle, animeTitle) {
       videoUrl = prioritizedStream ? prioritizedStream.link : null;
     }
 
+    // Check for error response from API
+    if (response.error === 'streaming_unavailable' || response.error === 'server_error') {
+      showToast(`❌ ${response.message || 'Video anime tidak tersedia untuk episode ini.'}`, 'error');
+      goBack();
+      return;
+    }
+
     if (!videoUrl || streams.length === 0) {
       console.log('[Anime] No streams available. Response:', response);
-      showToast('Video anime belum tersedia. Silahkan coba episode lain atau cek kembali nanti.', 'error');
+      showToast('❌ Video anime belum tersedia. Maaf kami masih mengupdate library anime streaming. Silahkan coba episode atau judul anime lain.', 'error');
       goBack();
       return;
     }
@@ -879,7 +888,7 @@ async function playAnimeEpisode(chapterUrlId, chTitle, animeTitle) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
     console.error('Error playing anime:', error);
-    showToast('Gagal memutar video anime.', 'error');
+    showToast('❌ Gagal memutar video anime. Silahkan coba lagi nanti.', 'error');
     goBack();
   }
 }

@@ -4,6 +4,7 @@ import axios from 'axios';
 // API endpoints
 const API_BASE = 'https://api.sansekai.my.id/api';
 const ANIME_API = 'https://itzzzme-anime-api-lovat.vercel.app/api';
+const ANIME_API_ALT = 'https://anime-api.vercel.app'; // Alternative anime API
 const KOMIK_API = 'https://api-manga-five.vercel.app';
 const KOMIK_PROVIDER = 'shinigami';
 
@@ -265,50 +266,57 @@ async function handleAnime(action: string, req: VercelRequest, res: VercelRespon
             
             console.log('[Anime] Fetching video for:', episodeId);
             
-            const response = await axios.get(`${ANIME_API}/stream`, {
-                ...config,
-                params: { id: episodeId }
-            });
-            
-            console.log('[Anime] Stream API response:', JSON.stringify(response.data).substring(0, 500));
-            
-            // API returns various formats, extract stream data
-            const results = response.data?.results || response.data || {};
-            const streamingLink = results?.data?.streamingLink || results?.streamingLink || results?.stream || results;
-            
-            console.log('[Anime] Extracted streamingLink:', JSON.stringify(streamingLink).substring(0, 300));
-            
-            // Build stream array for frontend
+            // Try primary API
             let streamArray: any[] = [];
-            if (streamingLink?.link?.file) {
-                streamArray.push({ link: streamingLink.link.file, reso: 'auto' });
-            }
-            // Also check for backup sources
-            if (streamingLink?.backup?.file) {
-                streamArray.push({ link: streamingLink.backup.file, reso: 'backup' });
-            }
-            // Check direct stream link
-            if (typeof streamingLink === 'object' && streamingLink?.file) {
-                streamArray.push({ link: streamingLink.file, reso: 'auto' });
-            }
-            // Check array format
-            if (Array.isArray(streamingLink)) {
-                streamArray = streamingLink.map((s: any) => ({
-                    link: s?.link || s?.file || s,
-                    reso: s?.reso || 'auto'
-                })).filter((s: any) => s.link);
+            try {
+                const response = await axios.get(`${ANIME_API}/stream`, {
+                    ...config,
+                    params: { id: episodeId }
+                });
+                
+                const results = response.data?.results || response.data || {};
+                const streamingLink = results?.data?.streamingLink || results?.streamingLink || results?.stream || results;
+                
+                if (Array.isArray(streamingLink) && streamingLink.length > 0) {
+                    streamArray = streamingLink.map((s: any) => ({
+                        link: s?.link || s?.file || s,
+                        reso: s?.reso || 'auto'
+                    })).filter((s: any) => s.link);
+                } else if (typeof streamingLink === 'object' && streamingLink?.file) {
+                    streamArray.push({ link: streamingLink.file, reso: 'auto' });
+                } else if (streamingLink?.link?.file) {
+                    streamArray.push({ link: streamingLink.link.file, reso: 'auto' });
+                }
+            } catch (err) {
+                console.error('[Anime] Primary stream API error:', err instanceof Error ? err.message : err);
             }
             
-            console.log('[Anime] Final streamArray:', streamArray);
+            // If no streams found, return informative error
+            if (streamArray.length === 0) {
+                console.log('[Anime] No streams found for:', episodeId);
+                return res.json({
+                    data: [],
+                    sources: [],
+                    subtitles: [],
+                    error: 'streaming_unavailable',
+                    message: 'Maaf, video anime untuk episode ini sedang tidak tersedia di server kami.'
+                });
+            }
             
             return res.json({
                 data: streamArray.length > 0 ? [{ stream: streamArray.map(s => `link=${s.link};reso=${s.reso}`) }] : [],
                 sources: streamArray.length > 0 ? [{ url: streamArray[0].link, quality: 'auto' }] : [],
-                subtitles: streamingLink?.tracks || []
+                subtitles: []
             });
         } catch (error: any) {
-            console.error('[Anime Video Error]:', error.message, error.response?.data);
-            return res.status(500).json({ error: 'Failed to fetch video', details: error.message });
+            console.error('[Anime Video Error]:', error.message);
+            return res.json({
+                data: [],
+                sources: [],
+                subtitles: [],
+                error: 'server_error',
+                message: 'Terjadi kesalahan saat mengambil data video.'
+            });
         }
     }
 
