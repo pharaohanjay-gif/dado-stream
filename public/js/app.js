@@ -2,6 +2,24 @@
 // DADO STREAM - Main Application JavaScript
 // ==========================================================================
 
+// Cache version - increment this to invalidate old cache
+const CACHE_VERSION = 'v2';
+
+// Clear old cache on version change
+(function() {
+  const storedVersion = localStorage.getItem('cache_version');
+  if (storedVersion !== CACHE_VERSION) {
+    console.log('[CACHE] Version changed, clearing old cache');
+    // Clear all API cache from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('api_')) localStorage.removeItem(key);
+    });
+    // Clear sessionStorage
+    sessionStorage.clear();
+    localStorage.setItem('cache_version', CACHE_VERSION);
+  }
+})();
+
 // State Management
 const state = {
   currentSection: 'home',
@@ -1620,7 +1638,9 @@ async function fetchAPI(endpoint, useCache = true) {
     const data = await response.json();
 
     // Cache the response in multiple layers (except video which changes)
-    if (!isVideoEndpoint) {
+    // Don't cache empty arrays
+    const isValidData = Array.isArray(data) ? data.length > 0 : (data && Object.keys(data).length > 0);
+    if (!isVideoEndpoint && isValidData) {
       const cacheEntry = { data, time: Date.now() };
       API_CACHE[cacheKey] = cacheEntry;
       
