@@ -869,7 +869,8 @@ async function playAnimeEpisode(chapterUrlId, chTitle, animeTitle) {
     }
 
     if (!videoUrl || streams.length === 0) {
-      showToast('Video tidak tersedia untuk episode ini.', 'error');
+      console.log('[Anime] No streams available. Response:', response);
+      showToast('Video anime belum tersedia. Silahkan coba episode lain atau cek kembali nanti.', 'error');
       goBack();
       return;
     }
