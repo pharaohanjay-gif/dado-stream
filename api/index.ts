@@ -236,7 +236,7 @@ async function handleAnime(action: string, req: VercelRequest, res: VercelRespon
             let episodes: any[] = [];
             try {
                 const epResponse = await axios.get(`${ANIME_API}/episodes/${idParam}`, config);
-                episodes = epResponse.data?.results?.data || [];
+                episodes = epResponse.data?.results?.episodes || [];
             } catch {}
             
             return res.json({
@@ -260,18 +260,32 @@ async function handleAnime(action: string, req: VercelRequest, res: VercelRespon
 
     if (action === 'getvideo') {
         try {
-            const episodeId = req.query.episodeId || req.query.episode_id;
+            const episodeId = req.query.episodeId || req.query.episode_id || req.query.chapterUrlId;
             if (!episodeId) return res.status(400).json({ error: 'episodeId required' });
             
             const response = await axios.get(`${ANIME_API}/stream`, {
                 ...config,
                 params: { id: episodeId }
             });
-            const streamData = response.data?.results?.data?.streamingLink || response.data?.results || {};
+            
+            // API returns various formats, extract stream data
+            const results = response.data?.results || {};
+            const streamingLink = results?.data?.streamingLink || results?.streamingLink || results;
+            
+            // Build stream array for frontend
+            let streamArray: any[] = [];
+            if (streamingLink?.link?.file) {
+                streamArray.push({ link: streamingLink.link.file, reso: 'auto' });
+            }
+            // Also check for backup sources
+            if (streamingLink?.backup?.file) {
+                streamArray.push({ link: streamingLink.backup.file, reso: 'backup' });
+            }
             
             return res.json({
-                sources: streamData.link?.file ? [{ url: streamData.link.file, quality: 'auto' }] : [],
-                subtitles: streamData.tracks || []
+                data: streamArray.length > 0 ? [{ stream: streamArray.map(s => `link=${s.link};reso=${s.reso}`) }] : [],
+                sources: streamingLink?.link?.file ? [{ url: streamingLink.link.file, quality: 'auto' }] : [],
+                subtitles: streamingLink?.tracks || []
             });
         } catch (error: any) {
             console.error('[Anime Video Error]:', error.message);
