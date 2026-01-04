@@ -78,7 +78,9 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
             ...config,
             params: { bookId }
         });
-        return res.json(response.data?.data || response.data);
+        // API can return { data: {...} } or object directly
+        const result = response.data?.data || response.data;
+        return res.json(result);
     }
 
     if (action === 'allepisode') {
@@ -88,7 +90,9 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
             ...config,
             params: { bookId }
         });
-        return res.json(response.data?.data || []);
+        // API returns array directly, not { data: [...] }
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return res.json(results);
     }
 
     return res.status(404).json({ error: 'Unknown dramabox action' });
@@ -283,57 +287,120 @@ async function handleKomik(action: string, req: VercelRequest, res: VercelRespon
     const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
 
     if (action === 'recommended' || action === 'popular') {
-        const response = await axios.get(`${KOMIK_API}/popular`, {
-            ...config,
-            params: { provider: KOMIK_PROVIDER }
-        });
-        return res.json(response.data?.data || []);
+        try {
+            const response = await axios.get(`${KOMIK_API}/popular`, {
+                ...config,
+                params: { provider: KOMIK_PROVIDER }
+            });
+            return res.json(response.data?.data || []);
+        } catch (error: any) {
+            console.error('[Komik Popular Error]:', error.message);
+            return res.status(500).json({ error: 'Failed to fetch popular komik' });
+        }
     }
 
     if (action === 'search') {
-        const q = req.query.q || req.query.query || req.query.keyword;
-        if (!q) return res.status(400).json({ error: 'Query required' });
-        const response = await axios.get(`${KOMIK_API}/search`, {
-            ...config,
-            params: { keyword: q, provider: KOMIK_PROVIDER }
-        });
-        return res.json(response.data?.data || []);
+        try {
+            const q = req.query.q || req.query.query || req.query.keyword;
+            if (!q) return res.status(400).json({ error: 'Query required' });
+            const response = await axios.get(`${KOMIK_API}/search`, {
+                ...config,
+                params: { keyword: q, provider: KOMIK_PROVIDER }
+            });
+            return res.json(response.data?.data || []);
+        } catch (error: any) {
+            console.error('[Komik Search Error]:', error.message);
+            return res.status(500).json({ error: 'Failed to search komik' });
+        }
     }
 
     if (action === 'detail') {
-        const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
-        if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
-        const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
-            ...config,
-            params: { provider: KOMIK_PROVIDER }
-        });
-        return res.json({ success: true, data: response.data?.data });
+        try {
+            const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
+            if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
+            
+            const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
+                ...config,
+                params: { provider: KOMIK_PROVIDER }
+            });
+            
+            const raw = response.data?.data;
+            if (!raw) {
+                return res.status(404).json({ error: 'Komik not found' });
+            }
+            
+            // Map to detail format like server.ts
+            const detail = {
+                title: raw.title,
+                judul: raw.title,
+                description: raw.description,
+                synopsis: raw.description,
+                status: raw.status,
+                author: raw.author,
+                rating: raw.rating,
+                cover: raw.thumbnail,
+                thumbnail: raw.thumbnail,
+                genres: (raw.genre || []).map((g: any) => typeof g === 'string' ? g : g.title)
+            };
+            
+            return res.json({ success: true, data: detail });
+        } catch (error: any) {
+            console.error('[Komik Detail Error]:', error.message);
+            return res.status(500).json({ error: 'Failed to fetch komik detail' });
+        }
     }
 
     if (action === 'chapterlist') {
-        const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
-        if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
-        const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
-            ...config,
-            params: { provider: KOMIK_PROVIDER }
-        });
-        const chapters = (response.data?.data?.chapter || []).map((ch: any) => ({
-            chapter_id: ch.href?.split('/').pop() || ch.id,
-            title: ch.title,
-            chapter_number: ch.number || ch.title,
-            date: ch.date
-        }));
-        return res.json({ success: true, chapters });
+        try {
+            const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
+            if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
+            
+            const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
+                ...config,
+                params: { provider: KOMIK_PROVIDER }
+            });
+            
+            const chapters = (response.data?.data?.chapter || []).map((ch: any) => ({
+                chapter_id: ch.href?.split('/').pop() || ch.id,
+                title: ch.title,
+                chapter_number: ch.number || ch.title,
+                date: ch.date
+            }));
+            
+            return res.json({ success: true, chapters });
+        } catch (error: any) {
+            console.error('[Komik Chapterlist Error]:', error.message);
+            return res.json({ success: false, chapters: [] });
+        }
     }
 
     if (action === 'getimage') {
-        const chapterId = req.query.chapter_id || req.query.chapterId || req.query.id;
-        if (!chapterId) return res.status(400).json({ error: 'chapter_id required' });
-        const response = await axios.get(`${KOMIK_API}/chapter/${chapterId}`, {
-            ...config,
-            params: { provider: KOMIK_PROVIDER }
-        });
-        const panels = response.data?.data || [];
+        try {
+            const chapterId = req.query.chapter_id || req.query.chapterId || req.query.id;
+            if (!chapterId) return res.status(400).json({ error: 'chapter_id required' });
+            
+            // Try /read/ endpoint first (like server.ts), then /chapter/
+            let response;
+            try {
+                response = await axios.get(`${KOMIK_API}/read/${chapterId}`, {
+                    ...config,
+                    params: { provider: KOMIK_PROVIDER }
+                });
+            } catch {
+                response = await axios.get(`${KOMIK_API}/chapter/${chapterId}`, {
+                    ...config,
+                    params: { provider: KOMIK_PROVIDER }
+                });
+            }
+            
+            // Handle different response formats
+            const panels = response.data?.data?.[0]?.panel || response.data?.data || [];
+            return res.json({ success: true, images: panels });
+        } catch (error: any) {
+            console.error('[Komik Getimage Error]:', error.message);
+            return res.status(500).json({ error: 'Failed to fetch chapter images' });
+        }
+    }
         return res.json({ success: true, images: panels });
     }
 
