@@ -1,8 +1,8 @@
 // Analytics Page - uses fetchAPI from admin-utils.js
 
-// Charts for analytics page
-let hourlyChart = null;
-let weeklyChart = null;
+// Charts for analytics page (separate from dashboard charts)
+let analyticsHourlyChart = null;
+let analyticsWeeklyChart = null;
 
 // Load Analytics Page Data
 async function loadAnalyticsPage() {
@@ -75,12 +75,12 @@ async function loadHourlyChart() {
     if (!canvas) return;
     
     try {
-        const response = await getAnalytics('hourly');
+        const response = await fetchAPI('/analytics/hourly');
         const data = response.data || { labels: [], values: [] };
         
-        if (hourlyChart) hourlyChart.destroy();
+        if (analyticsHourlyChart) analyticsHourlyChart.destroy();
         
-        hourlyChart = new Chart(canvas, {
+        analyticsHourlyChart = new Chart(canvas, {
             type: 'bar',
             data: {
                 labels: data.labels,
@@ -122,12 +122,12 @@ async function loadWeeklyChart() {
     if (!canvas) return;
     
     try {
-        const response = await getAnalytics('country-detail');
+        const response = await fetchAPI('/analytics/country-detail');
         const data = response.data || { weekdayData: [] };
         
-        if (weeklyChart) weeklyChart.destroy();
+        if (analyticsWeeklyChart) analyticsWeeklyChart.destroy();
         
-        weeklyChart = new Chart(canvas, {
+        analyticsWeeklyChart = new Chart(canvas, {
             type: 'line',
             data: {
                 labels: data.weekdayData.map(d => d.day),

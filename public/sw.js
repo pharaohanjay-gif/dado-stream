@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dado-stream-v1';
+const CACHE_NAME = 'dado-stream-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -43,17 +43,23 @@ self.addEventListener('fetch', event => {
 
   // Skip API calls - always fetch from network
   if (event.request.url.includes('/api/')) return;
+  
+  // Skip admin panel - always fetch from network
+  if (event.request.url.includes('/admin/')) return;
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache successful responses
-        if (response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
+        // Only cache valid responses
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
         }
+        
+        // Cache successful responses
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
         return response;
       })
       .catch(() => {

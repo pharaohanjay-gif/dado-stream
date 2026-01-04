@@ -1,7 +1,6 @@
-// Chart.js Configuration
+// Chart.js Configuration for Dashboard
 let trendChart = null;
 let deviceChart = null;
-let hourlyChart = null; // New hourly chart
 
 async function loadTrendChart() {
     try {
