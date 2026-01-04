@@ -1451,19 +1451,25 @@ function createAnimeCard(item) {
 }
 
 function createKomikCard(item) {
-  const mangaId = item.manga_id || item.id || item.slug;
-  const originalCover = item.cover_image_url || item.cover || item.image;
+  // Extract manga ID from href like "/series/48270276-bd79-4a46-b15e-fdd2cf5655b1"
+  let mangaId = item.manga_id || item.id || item.slug;
+  if (item.href) {
+    const hrefParts = item.href.split('/');
+    mangaId = hrefParts[hrefParts.length - 1] || mangaId;
+  }
+  // Use thumbnail field from shinigami API
+  const originalCover = item.thumbnail || item.cover_image_url || item.cover || item.image;
   const coverUrl = getProxyImageUrl(originalCover);
 
   return `
     <div class="card" onclick="trackClick('${escapeHtml(item.title || item.judul)}', 'komik'); showKomikDetail('${mangaId}')">
       <div class="card-img-wrapper">
         <img class="card-img" src="${coverUrl}" alt="" loading="lazy" onerror="handleImageError(this)">
-        <span class="card-badge">Chapter ${item.total_chapter || item.last_chapter?.chapter_number || '?'}</span>
+        <span class="card-badge">${item.chapter || 'Chapter ?'}</span>
       </div>
       <div class="card-info">
         <div class="card-title">${item.title || item.judul}</div>
-        <div class="card-meta">Populer • Komik</div>
+        <div class="card-meta">${item.type || 'Komik'} • ${item.status || 'Ongoing'}</div>
       </div>
     </div>
     `;

@@ -45,7 +45,9 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
 
     if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou') {
         const response = await axios.get(`${API_BASE}/dramabox/${action}`, config);
-        return res.json(response.data?.data || []);
+        // API returns array directly or { data: [...] }
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return res.json(results);
     }
 
     if (action === 'dubindo') {
@@ -54,7 +56,8 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
             ...config,
             params: { classify }
         });
-        return res.json(response.data?.data || []);
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return res.json(results);
     }
 
     if (action === 'search') {
