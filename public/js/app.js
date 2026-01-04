@@ -33,8 +33,46 @@ const state = {
     drama: {},
     anime: {},
     komik: {}
-  }
+  },
+  historyStack: []
 };
+
+// Browser back button handler
+window.addEventListener('popstate', (event) => {
+  console.log('[HISTORY] Pop state:', event.state);
+  if (event.state && event.state.section) {
+    // Restore previous section without pushing to history again
+    state.currentSection = event.state.section;
+    state.currentContent = event.state.content || null;
+    
+    if (event.state.section === 'home') {
+      navigateTo('home', false); // false = don't push to history
+    } else if (event.state.section === 'detail' && event.state.content) {
+      // Restore detail page based on content type
+      if (event.state.contentType === 'drama') {
+        showDramaDetail(event.state.content.id, false);
+      } else if (event.state.contentType === 'anime') {
+        showAnimeDetail(event.state.content.id, false);
+      } else if (event.state.contentType === 'komik') {
+        showKomikDetail(event.state.content.id, false);
+      }
+    } else if (event.state.section === 'player' && event.state.episodeData) {
+      // Restore player state
+      if (event.state.contentType === 'anime') {
+        playAnimeEpisode(event.state.episodeData.id, false);
+      } else if (event.state.contentType === 'drama') {
+        playDramaEpisode(event.state.episodeData.id, false);
+      }
+    } else if (event.state.section === 'komik-reader' && event.state.chapterData) {
+      openKomikChapter(event.state.chapterData.komikId, event.state.chapterData.chapterId, false);
+    } else {
+      navigateTo(event.state.section, false);
+    }
+  } else {
+    // No state, go to home
+    navigateTo('home', false);
+  }
+});
 
 // API Base URL
 const API_BASE = '/api';
@@ -84,6 +122,11 @@ function handleImageError(img) {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize browser history with home state
+  if (!history.state) {
+    history.replaceState({ section: 'home' }, '', '#home');
+  }
+  
   initTheme();
   initEventListeners();
   loadInitialData();
@@ -137,10 +180,19 @@ function initEventListeners() {
 // Navigation
 // ==========================================================================
 
-function navigateTo(section) {
+function navigateTo(section, pushHistory = true) {
   state.navigationHistory.push(state.currentSection);
   state.previousSection = state.currentSection;
   state.currentSection = section;
+
+  // Push to browser history
+  if (pushHistory) {
+    const historyState = {
+      section: section,
+      content: null
+    };
+    history.pushState(historyState, '', `#${section}`);
+  }
 
   // Update active nav link
   document.querySelectorAll('.nav-link').forEach(link => {
@@ -434,10 +486,20 @@ async function loadDramaCategory(category) {
   }
 }
 
-async function showDramaDetail(bookId) {
+async function showDramaDetail(bookId, pushHistory = true) {
   try {
     state.navigationHistory.push(state.currentSection);
     state.currentSection = 'detail';
+
+    // Push to browser history
+    if (pushHistory) {
+      const historyState = {
+        section: 'detail',
+        content: { type: 'drama', id: bookId },
+        contentType: 'drama'
+      };
+      history.pushState(historyState, '', `#detail/drama/${bookId}`);
+    }
 
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('detail-section').classList.add('active');
@@ -737,10 +799,20 @@ async function loadAnimeCategory(category) {
   }
 }
 
-async function showAnimeDetail(animeId) {
+async function showAnimeDetail(animeId, pushHistory = true) {
   try {
     state.navigationHistory.push(state.currentSection);
     state.currentSection = 'detail';
+
+    // Push to browser history
+    if (pushHistory) {
+      const historyState = {
+        section: 'detail',
+        content: { type: 'anime', id: animeId },
+        contentType: 'anime'
+      };
+      history.pushState(historyState, '', `#detail/anime/${animeId}`);
+    }
 
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('detail-section').classList.add('active');
@@ -1052,10 +1124,20 @@ async function loadKomikCategory(category) {
   }
 }
 
-async function showKomikDetail(komikId) {
+async function showKomikDetail(komikId, pushHistory = true) {
   try {
     state.navigationHistory.push(state.currentSection);
     state.currentSection = 'detail';
+
+    // Push to browser history
+    if (pushHistory) {
+      const historyState = {
+        section: 'detail',
+        content: { type: 'komik', id: komikId },
+        contentType: 'komik'
+      };
+      history.pushState(historyState, '', `#detail/komik/${komikId}`);
+    }
 
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('detail-section').classList.add('active');
