@@ -1,4 +1,5 @@
 // Analytics Page - uses fetchAPI from admin-utils.js
+console.log('Analytics JS loaded');
 
 // Charts for analytics page (separate from dashboard charts)
 let analyticsHourlyChart = null;
@@ -6,18 +7,15 @@ let analyticsWeeklyChart = null;
 
 // Load Analytics Page Data
 async function loadAnalyticsPage() {
+    console.log('loadAnalyticsPage called');
     try {
-        // Load peak hours by country
-        loadPeakHoursData();
-        
-        // Load hourly chart
-        loadHourlyChart();
-        
-        // Load weekly chart
-        loadWeeklyChart();
-        
-        // Load geo table
-        loadGeoTable();
+        // Load all components
+        await Promise.all([
+            loadPeakHoursData(),
+            loadHourlyChart(),
+            loadWeeklyChart(),
+            loadGeoTable()
+        ]);
     } catch (error) {
         console.error('Failed to load analytics page:', error);
     }
