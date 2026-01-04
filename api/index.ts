@@ -654,10 +654,29 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
         if (mongoose.connection.readyState === 1) {
             try {
                 // Parse user agent
-                const userAgent = req.headers['user-agent'] || '';
+                const userAgent = (req.headers['user-agent'] || '').toString();
                 const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
                            req.headers['x-real-ip'] as string || 
                            'unknown';
+
+                // Detect if this is a bot/crawler
+                const botPatterns = [
+                    /bot/i, /crawler/i, /spider/i, /scraper/i,
+                    /curl/i, /wget/i, /python/i, /java\//i,
+                    /headless/i, /phantom/i, /selenium/i,
+                    /googlebot/i, /bingbot/i, /yandex/i, /baiduspider/i,
+                    /facebookexternalhit/i, /twitterbot/i, /linkedinbot/i,
+                    /whatsapp/i, /telegrambot/i, /slackbot/i,
+                    /pingdom/i, /uptimerobot/i, /statuscake/i,
+                    /node-fetch/i, /axios/i, /got\//i
+                ];
+                
+                const isBot = botPatterns.some(pattern => pattern.test(userAgent)) || userAgent.length < 20;
+                
+                // Skip tracking for bots
+                if (isBot) {
+                    return res.json({ success: true, filtered: 'bot' });
+                }
 
                 // Get detailed geolocation from IP (using free API)
                 let geoData: any = {
@@ -671,14 +690,15 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
                     lon: 0,
                     timezone: '',
                     isp: '',
-                    org: ''
+                    org: '',
+                    isHosting: false
                 };
                 
                 if (ip && ip !== 'unknown' && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.')) {
                     try {
-                        // Get all available fields from ip-api.com
+                        // Get all available fields from ip-api.com including hosting detection
                         const geoRes = await axios.get(
-                            `http://ip-api.com/json/${ip}?fields=status,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,query`,
+                            `http://ip-api.com/json/${ip}?fields=status,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,hosting,query`,
                             { timeout: 3000 }
                         );
                         if (geoRes.data && geoRes.data.status === 'success') {
@@ -693,8 +713,21 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
                                 lon: geoRes.data.lon || 0,
                                 timezone: geoRes.data.timezone || '',
                                 isp: geoRes.data.isp || '',
-                                org: geoRes.data.org || ''
+                                org: geoRes.data.org || '',
+                                isHosting: geoRes.data.hosting || false
                             };
+                            
+                            // Filter out hosting/datacenter IPs (likely bots)
+                            if (geoRes.data.hosting === true) {
+                                return res.json({ success: true, filtered: 'datacenter' });
+                            }
+                            
+                            // Filter known bot ISPs
+                            const botISPs = ['digitalocean', 'amazon', 'google cloud', 'microsoft azure', 'linode', 'vultr', 'ovh', 'hetzner'];
+                            const ispLower = (geoRes.data.isp || '').toLowerCase();
+                            if (botISPs.some(bot => ispLower.includes(bot))) {
+                                return res.json({ success: true, filtered: 'hosting-isp' });
+                            }
                         }
                     } catch (geoErr) {
                         // Ignore geo errors, use default values
