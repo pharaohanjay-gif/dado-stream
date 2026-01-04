@@ -1,0 +1,50 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/server.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/admin/(.*)",
+      "dest": "/admin/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/public/js/$1"
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "/public/images/$1"
+    },
+    {
+      "src": "/dado.png",
+      "dest": "/public/dado.png"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/public/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/public/sw.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/server.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/server.ts"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

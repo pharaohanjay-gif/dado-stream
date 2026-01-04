@@ -1,0 +1,56 @@
+{
+  "name": "DADO STREAM - Drama, Anime & Komik",
+  "short_name": "DADO STREAM",
+  "description": "Platform streaming drama China, anime, dan baca komik terlengkap",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#FF6B00",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/dado.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/dado.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/dado.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/dado.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["entertainment", "video"],
+  "shortcuts": [
+    {
+      "name": "Drama",
+      "url": "/?section=drama",
+      "icons": [{"src": "/dado.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Anime",
+      "url": "/?section=anime",
+      "icons": [{"src": "/dado.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Komik",
+      "url": "/?section=komik",
+      "icons": [{"src": "/dado.png", "sizes": "96x96"}]
+    }
+  ]
+}

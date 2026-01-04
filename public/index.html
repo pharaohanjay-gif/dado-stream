@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="description"
+    content="DADO STREAM - Platform streaming drama China, anime, dan baca komik terlengkap. Nikmati ribuan konten hiburan gratis!">
+  <meta name="keywords" content="drama china, anime, komik, streaming, dado stream, dramabox, manga">
+  <meta name="author" content="DADO STREAM">
+  <title>DADO STREAM - Drama China, Anime & Komik</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#FF6B00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DADO STREAM">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="DADO STREAM">
+  <meta name="msapplication-TileColor" content="#FF6B00">
+  <meta name="msapplication-TileImage" content="/dado.png">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="/dado.png">
+  <link rel="apple-touch-icon" href="/dado.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/dado.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/dado.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/dado.png">
+
+  <!-- Preload critical CSS -->
+  <link rel="preload" href="css/styles.css" as="style">
+  <link rel="preload" href="css/theme-orange.css" as="style">
+
+  <!-- Fonts - Load asynchronously for speed -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  </noscript>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/theme-orange.css">
+</head>
+
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loader">
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <span class="loader-text">DADO STREAM</span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="header">
+    <div class="nav-top container">
+      <!-- Menu Button (Hamburger) -->
+      <button class="nav-toggle-btn" onclick="toggleMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+        </svg>
+      </button>
+
+      <a href="#" class="nav-logo" onclick="goHome()" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <img src="/dado.png" alt="DADO STREAM" style="height: 36px; width: 36px; object-fit: contain; border-radius: 6px;">
+        <span class="logo-text" style="font-size: 20px; font-weight: 800; color: #FF6B00;">DADO STREAM</span>
+      </a>
+
+      <!-- Center Search Bar -->
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input type="text" id="search-input" class="search-input" placeholder="Cari drama, anime, komik...">
+          <button class="search-btn" onclick="performSearch()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- PWA Install Button -->
+        <button id="pwa-install-btn" class="btn-app" onclick="installPWA()" style="display: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+          </svg>
+          APP
+        </button>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" style="display: none;">
+          <span class="theme-icon moon">🌙</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Tabs - Desktop Style -->
+    <div class="nav-tabs-wrapper">
+      <div class="container">
+        <ul class="nav-tabs">
+          <li><a href="#" class="tab-link active" data-section="home" onclick="navigateTo('home')">Rekomendasi</a></li>
+          <li><a href="#" class="tab-link" data-section="drama" onclick="navigateTo('drama')">Drama</a></li>
+          <li><a href="#" class="tab-link" onclick="loadDramaCategory('dubindo')">Indo Dub</a></li>
+          <li><a href="#" class="tab-link" data-section="anime" onclick="navigateTo('anime')">Anime</a></li>
+          <li><a href="#" class="tab-link" data-section="komik" onclick="navigateTo('komik')">Komik</a></li>
+          <li><a href="#" class="tab-link" onclick="loadDramaCategory('trending')">Trending</a></li>
+          <li><a href="#" class="tab-link" onclick="loadDramaCategory('foryou')">For You</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main" id="main-content">
+    <!-- Home Section -->
+    <section id="home-section" class="section active">
+      <!-- Hero Section -->
+      <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content container">
+          <h1 class="hero-title">
+            <span class="gradient-text">DADO STREAM</span>
+            <br>Platform Hiburan Terlengkap
+          </h1>
+          <p class="hero-subtitle">Nikmati drama China, anime terbaru, dan komik populer dalam satu platform. Streaming
+            gratis tanpa batas!</p>
+          <div class="hero-buttons">
+            <button class="btn btn-primary btn-glow" onclick="navigateTo('drama')">
+              <span>🎬</span> Mulai Nonton
+            </button>
+            <button class="btn btn-secondary" onclick="navigateTo('komik')">
+              <span>📖</span> Baca Komik
+            </button>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-item">
+              <span class="stat-number">1000+</span>
+              <span class="stat-label">Drama</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">500+</span>
+              <span class="stat-label">Anime</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">2000+</span>
+              <span class="stat-label">Komik</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Section -->
+      <div class="container section-container">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon">🔥</span>
+            Drama Terbaru
+          </h2>
+          <a href="#" class="see-all" onclick="navigateTo('drama')">Lihat Semua →</a>
+        </div>
+        <div class="content-grid" id="home-drama-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+
+      <div class="container section-container">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon">⭐</span>
+            Anime Populer
+          </h2>
+          <a href="#" class="see-all" onclick="navigateTo('anime')">Lihat Semua →</a>
+        </div>
+        <div class="content-grid" id="home-anime-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+
+      <div class="container section-container">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="title-icon">📖</span>
+            Komik Rekomendasi
+          </h2>
+          <a href="#" class="see-all" onclick="navigateTo('komik')">Lihat Semua →</a>
+        </div>
+        <div class="content-grid" id="home-komik-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Drama Section -->
+    <section id="drama-section" class="section">
+      <div class="container section-container">
+        <div class="page-header">
+          <h1 class="page-title gradient-text">📺 Drama China</h1>
+          <p class="page-subtitle">Koleksi drama China terlengkap dengan subtitle Indonesia</p>
+        </div>
+
+        <!-- Drama Categories -->
+        <div class="category-tabs">
+          <button class="category-tab active" data-category="latest"
+            onclick="loadDramaCategory('latest')">Terbaru</button>
+          <button class="category-tab" data-category="trending"
+            onclick="loadDramaCategory('trending')">Trending</button>
+          <button class="category-tab" data-category="vip" onclick="loadDramaCategory('vip')">VIP</button>
+          <button class="category-tab" data-category="foryou" onclick="loadDramaCategory('foryou')">Untuk Kamu</button>
+          <button class="category-tab" data-category="dubindo" onclick="loadDramaCategory('dubindo')">Dub Indo</button>
+        </div>
+
+        <div class="content-grid" id="drama-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anime Section -->
+    <section id="anime-section" class="section">
+      <div class="container section-container">
+        <div class="page-header">
+          <h1 class="page-title gradient-text">🎌 Anime</h1>
+          <p class="page-subtitle">Nonton anime terbaru subtitle Indonesia</p>
+        </div>
+
+        <div class="category-tabs">
+          <button class="category-tab active" data-category="latest"
+            onclick="loadAnimeCategory('latest')">Terbaru</button>
+          <button class="category-tab" data-category="trending"
+            onclick="loadAnimeCategory('trending')">Trending</button>
+          <button class="category-tab" data-category="popular" onclick="loadAnimeCategory('popular')">Populer</button>
+          <button class="category-tab" data-category="movie" onclick="loadAnimeCategory('movie')">Movie</button>
+        </div>
+
+        <div class="content-grid" id="anime-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Komik Section -->
+    <section id="komik-section" class="section">
+      <div class="container section-container">
+        <div class="page-header">
+          <h1 class="page-title gradient-text">📚 Komik</h1>
+          <p class="page-subtitle">Baca komik favorit kamu secara gratis</p>
+        </div>
+
+        <div class="category-tabs">
+          <button class="category-tab active" data-category="recommended"
+            onclick="loadKomikCategory('recommended')">Rekomendasi</button>
+          <button class="category-tab" data-category="popular" onclick="loadKomikCategory('popular')">Populer</button>
+        </div>
+
+        <div class="content-grid" id="komik-grid">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search Results Section -->
+    <section id="search-section" class="section">
+      <div class="container section-container">
+        <div class="page-header">
+          <h1 class="page-title gradient-text">🔍 Hasil Pencarian</h1>
+          <p class="page-subtitle" id="search-query-text"></p>
+        </div>
+
+        <div class="search-results-tabs">
+          <button class="category-tab active" data-search="drama" onclick="showSearchTab('drama')">Drama</button>
+          <button class="category-tab" data-search="anime" onclick="showSearchTab('anime')">Anime</button>
+          <button class="category-tab" data-search="komik" onclick="showSearchTab('komik')">Komik</button>
+        </div>
+
+        <div id="search-drama-results" class="search-tab-content active">
+          <h3 class="search-category-title">Drama</h3>
+          <div class="content-grid" id="search-drama-grid"></div>
+        </div>
+        <div id="search-anime-results" class="search-tab-content">
+          <h3 class="search-category-title">Anime</h3>
+          <div class="content-grid" id="search-anime-grid"></div>
+        </div>
+        <div id="search-komik-results" class="search-tab-content">
+          <h3 class="search-category-title">Komik</h3>
+          <div class="content-grid" id="search-komik-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detail Section -->
+    <section id="detail-section" class="section">
+      <div class="container section-container">
+        <button class="back-btn" onclick="goBack()">
+          ← Kembali
+        </button>
+        <div id="detail-content">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Player Section -->
+    <section id="player-section" class="section">
+      <div class="container section-container">
+        <button class="back-btn" onclick="goBack()">
+          ← Kembali
+        </button>
+        <div id="player-content">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reader Section (Komik) -->
+    <section id="reader-section" class="section">
+      <div class="container section-container">
+        <button class="back-btn" onclick="goBack()">
+          ← Kembali
+        </button>
+        <div id="reader-content">
+          <div class="skeleton-loader"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+            <img src="/dado.png" alt="DADO STREAM" style="height: 50px; width: 50px; object-fit: contain; border-radius: 8px;">
+            <span style="font-size: 24px; font-weight: 800; color: #FF6B00;">DADO STREAM</span>
+          </div>
+          <p class="footer-desc">Platform streaming drama China, anime, dan baca komik terlengkap.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-section">
+            <h4>Konten</h4>
+            <a href="#" onclick="navigateTo('drama')">Drama China</a>
+            <a href="#" onclick="navigateTo('anime')">Anime</a>
+            <a href="#" onclick="navigateTo('komik')">Komik</a>
+          </div>
+          <div class="footer-section">
+            <h4>Lainnya</h4>
+            <a href="#">Tentang Kami</a>
+            <a href="#">Kontak</a>
+            <a href="#">FAQ</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 DADO STREAM. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- HLS.js for streaming support -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="js/app.js"></script>
+  
+  <!-- PWA Service Worker Registration -->
+  <script>
+    // PWA Install prompt
+    let deferredPrompt;
+    const pwaBtn = document.getElementById('pwa-install-btn');
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (pwaBtn) pwaBtn.style.display = 'flex';
+    });
+    
+    function installPWA() {
+      if (!deferredPrompt) {
+        // Already installed or not supported - show manual instructions
+        alert('Untuk install app:\n\n📱 Android: Tap menu (⋮) → "Add to Home screen"\n🍎 iOS: Tap Share → "Add to Home Screen"\n💻 PC: Klik icon install di address bar');
+        return;
+      }
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((result) => {
+        if (result.outcome === 'accepted') {
+          console.log('[PWA] App installed');
+        }
+        deferredPrompt = null;
+        if (pwaBtn) pwaBtn.style.display = 'none';
+      });
+    }
+    
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] App successfully installed');
+      if (pwaBtn) pwaBtn.style.display = 'none';
+      deferredPrompt = null;
+    });
+    
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('[SW] Registered:', reg.scope))
+          .catch(err => console.error('[SW] Registration failed:', err));
+      });
+    }
+    
+    // Show install button if not already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      console.log('[PWA] Running as installed app');
+    } else if (pwaBtn) {
+      // Show button for manual install
+      pwaBtn.style.display = 'flex';
+    }
+  </script>
+</body>
+
+</html>

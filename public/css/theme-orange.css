@@ -1,0 +1,280 @@
+/* 
+  iQIYI Clone Aesthetic - STRICT Black, White, Orange Theme 
+  WibuStream Premium UI 
+*/
+
+:root {
+    --primary-color: #ff6700;
+    /* iQIYI Orange */
+    --primary-hover: #ff8533;
+    --bg-dark: #000000;
+    --bg-card: #000000;
+    --bg-header: rgba(0, 0, 0, 0.9);
+    --text-main: #ffffff;
+    --text-secondary: #cccccc;
+    --gray-dark: #111111;
+    --accent-green: #ff6700;
+    /* Changed to orange for consistency */
+}
+
+/* Base Reset */
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding-top: 110px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header Redesign */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #000000;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #222;
+}
+
+.nav-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+}
+
+.nav-logo .logo-text {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.search-container {
+    flex: 0 0 500px;
+}
+
+.search-wrapper {
+    position: relative;
+    background: #1a1a1a;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    padding: 4px 20px;
+    border: 1px solid #333;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: white;
+    width: 100%;
+    padding: 10px 0;
+    outline: none;
+    font-size: 15px;
+}
+
+/* APP Button */
+.btn-app {
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 13px;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+    display: flex;
+    list-style: none;
+    padding: 10px 0;
+    margin: 0;
+    gap: 35px;
+}
+
+.tab-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 17px;
+    opacity: 0.7;
+    transition: 0.3s;
+}
+
+.tab-link.active,
+.tab-link:hover {
+    opacity: 1;
+    color: var(--primary-color) !important;
+}
+
+/* Hero Section */
+.hero {
+    height: 550px;
+    border-radius: 15px;
+    background-color: #000;
+}
+
+.hero-title {
+    font-size: 56px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.hero-subtitle {
+    color: #eeeeee;
+    font-size: 18px;
+}
+
+/* Content Grid iQIYI Style */
+.card-img-wrapper {
+    border-radius: 10px;
+    background: #111;
+    border: 1px solid #222;
+}
+
+.card-title {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.card-meta {
+    color: #999;
+}
+
+.card-badge {
+    background: var(--primary-color) !important;
+}
+
+.card-top-tag {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+/* All Star Section */
+.star-img-wrapper {
+    width: 100px;
+    height: 100px;
+    border: 3px solid #222;
+}
+
+.star-item:hover .star-img-wrapper {
+    border-color: var(--primary-color);
+}
+
+.star-name {
+    color: #ffffff;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+/* Strict Color Overrides */
+* {
+    border-color: #222 !important;
+}
+
+.category-tab,
+.detail-tag,
+.pill {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #333 !important;
+}
+
+.category-tab.active,
+.pill.active,
+.btn-primary {
+    background: var(--primary-color) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.back-btn {
+    color: #ffffff !important;
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+}
+
+.footer {
+    background: #000000;
+    border-top: 1px solid #222;
+}
+
+/* Global Color Hammer - Forces everything to theme */
+body,
+.main,
+.section,
+.detail-wrapper,
+.reader-container,
+.player-container {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.card-title,
+.detail-title,
+.episodes-title,
+.section-title {
+    color: #ffffff !important;
+}
+
+.primary-text,
+.nav-logo span,
+.logo-text,
+.detail-meta-item,
+.star-name {
+    color: var(--primary-color) !important;
+}
+
+.btn-primary,
+.pill.active,
+.category-tab.active,
+.tab-link.active,
+.episode-btn:hover,
+.card-badge {
+    background-color: var(--primary-color) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.episode-btn {
+    background: #111 !important;
+    color: #fff !important;
+    border: 1px solid #333 !important;
+}
+
+/* Remove all gradients that might have old colors */
+.hero-bg::after,
+.gradient-overlay {
+    background: linear-gradient(to top, #000000 0%, transparent 100%) !important;
+}
+
+.gradient-text {
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--primary-color) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb {
+    background: #444;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
