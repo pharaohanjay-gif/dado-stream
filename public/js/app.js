@@ -38,7 +38,14 @@ function searchStar(name) {
 function getProxyVideoUrl(url) {
   if (!url) return '';
   if (url.includes('localhost') || url.startsWith('/') || url.startsWith('data:')) return url;
-  // We proxy all external videos to solve DNS issues reported by user
+  
+  // DramaBox videos work directly without needing proxy (they're CORS-enabled)
+  // Also they're too large (50-100MB) for Vercel's 4.5MB response limit
+  if (url.includes('dramabox') || url.includes('hwztakavideo') || url.includes('hwztvideo')) {
+    return url;
+  }
+  
+  // Proxy other external videos to solve DNS issues
   return `${API_BASE}/proxy/video?url=${encodeURIComponent(url)}`;
 }
 

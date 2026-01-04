@@ -45,8 +45,8 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
 
     if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou') {
         const response = await axios.get(`${API_BASE}/dramabox/${action}`, config);
-        // API returns array directly or { data: [...] }
-        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        // API returns array directly or { data: [...] } or { value: [...] }
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
         return res.json(results);
     }
 
@@ -56,7 +56,7 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
             ...config,
             params: { classify }
         });
-        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
         return res.json(results);
     }
 
@@ -67,7 +67,7 @@ async function handleDramabox(action: string, req: VercelRequest, res: VercelRes
             ...config,
             params: { query: q }
         });
-        const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
         return res.json(results);
     }
 
@@ -428,20 +428,36 @@ async function handleProxy(action: string, req: VercelRequest, res: VercelRespon
         }
 
         try {
+            // Determine referer based on URL
+            let referer = '';
+            try {
+                referer = new URL(url).origin;
+            } catch {
+                referer = 'https://shinigami.id';
+            }
+            
+            // Special handling for shinigami/shngm images
+            if (url.includes('shngm.id') || url.includes('shinigami')) {
+                referer = 'https://shinigami.id';
+            }
+            
             const response = await axios.get(url, {
                 responseType: 'arraybuffer',
-                timeout: 10000,
+                timeout: 15000,
                 headers: {
-                    'User-Agent': 'Mozilla/5.0',
-                    'Referer': new URL(url).origin
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': referer,
+                    'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
                 }
             });
 
             const contentType = response.headers['content-type'] || 'image/jpeg';
             res.setHeader('Content-Type', contentType);
             res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('Access-Control-Allow-Origin', '*');
             return res.send(Buffer.from(response.data));
-        } catch {
+        } catch (error: any) {
+            console.error('[Image Proxy Error]:', error.message, 'URL:', url);
             return res.status(404).json({ error: 'Image not found' });
         }
     }
@@ -453,27 +469,51 @@ async function handleProxy(action: string, req: VercelRequest, res: VercelRespon
         }
 
         // Determine referer based on URL pattern
-        let referer = new URL(url).origin;
-        if (url.includes('/_v7/') || url.includes('megacloud') || url.includes('rapid-cloud')) {
+        let referer = 'https://www.dramabox.com';
+        let origin = 'https://www.dramabox.com';
+        
+        if (url.includes('dramabox')) {
+            referer = 'https://www.dramabox.com';
+            origin = 'https://www.dramabox.com';
+        } else if (url.includes('/_v7/') || url.includes('megacloud') || url.includes('rapid-cloud')) {
             referer = 'https://megacloud.tv';
+            origin = 'https://megacloud.tv';
+        } else {
+            try {
+                referer = new URL(url).origin;
+                origin = referer;
+            } catch {}
         }
 
         try {
             const response = await axios.get(url, {
-                responseType: 'stream',
+                responseType: 'arraybuffer',
                 timeout: 30000,
+                maxContentLength: 100 * 1024 * 1024, // 100MB max
                 headers: {
-                    'User-Agent': 'Mozilla/5.0',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Referer': referer,
-                    'Origin': referer
+                    'Origin': origin,
+                    'Accept': '*/*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Range': req.headers.range || 'bytes=0-'
                 }
             });
 
-            res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+            const contentType = response.headers['content-type'] || 'video/mp4';
+            res.setHeader('Content-Type', contentType);
             res.setHeader('Access-Control-Allow-Origin', '*');
-            response.data.pipe(res);
-        } catch {
-            return res.status(404).json({ error: 'Video not found' });
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            if (response.headers['content-length']) {
+                res.setHeader('Content-Length', response.headers['content-length']);
+            }
+            if (response.headers['accept-ranges']) {
+                res.setHeader('Accept-Ranges', response.headers['accept-ranges']);
+            }
+            return res.send(Buffer.from(response.data));
+        } catch (error: any) {
+            console.error('[Video Proxy Error]:', error.message);
+            return res.status(404).json({ error: 'Video not found', details: error.message });
         }
     }
 
