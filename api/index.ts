@@ -64,7 +64,15 @@ const analyticsSchema = new mongoose.Schema({
     ip: String,
     country: String,
     countryCode: String,
+    region: String,
+    regionName: String,
     city: String,
+    zip: String,
+    lat: Number,
+    lon: Number,
+    timezone: String,
+    isp: String,
+    org: String,
     device: String,
     browser: String,
     os: String,
@@ -82,7 +90,15 @@ const sessionSchema = new mongoose.Schema({
     os: String,
     country: String,
     countryCode: String,
+    region: String,
+    regionName: String,
     city: String,
+    zip: String,
+    lat: Number,
+    lon: Number,
+    timezone: String,
+    isp: String,
+    org: String,
     currentPage: String,
     currentContent: String,
     isActive: { type: Boolean, default: true },
@@ -303,18 +319,28 @@ async function handleAdmin(action: string, req: VercelRequest, res: VercelRespon
                 .limit(limit)
                 .lean();
                 
-                // Format watchers for frontend
+                // Format watchers for frontend with full location details
                 watchers = rawWatchers.map((w: any) => ({
                     sessionId: w.sessionId,
+                    ip: w.ip || 'Hidden',
                     country: w.country || 'Unknown',
                     countryCode: w.countryCode || '',
+                    region: w.region || '',
+                    regionName: w.regionName || '',
                     city: w.city || 'Unknown',
+                    zip: w.zip || '',
+                    lat: w.lat || 0,
+                    lon: w.lon || 0,
+                    timezone: w.timezone || '',
+                    isp: w.isp || 'Unknown',
+                    org: w.org || '',
                     currentPage: w.currentPage || '/',
                     currentContent: w.currentContent || null,
                     device: w.device || 'Unknown',
                     browser: w.browser || 'Unknown',
                     os: w.os || 'Unknown',
-                    lastActivity: w.lastActivity
+                    lastActivity: w.lastActivity,
+                    startTime: w.startTime
                 }));
             } catch (error) {
                 console.error('Watchers error:', error);
@@ -633,18 +659,42 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
                            req.headers['x-real-ip'] as string || 
                            'unknown';
 
-                // Get geolocation from IP (using free API)
-                let country = 'Unknown';
-                let city = 'Unknown';
-                let countryCode = '';
+                // Get detailed geolocation from IP (using free API)
+                let geoData: any = {
+                    country: 'Unknown',
+                    countryCode: '',
+                    region: '',
+                    regionName: '',
+                    city: 'Unknown',
+                    zip: '',
+                    lat: 0,
+                    lon: 0,
+                    timezone: '',
+                    isp: '',
+                    org: ''
+                };
                 
                 if (ip && ip !== 'unknown' && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.')) {
                     try {
-                        const geoRes = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,city`, { timeout: 2000 });
+                        // Get all available fields from ip-api.com
+                        const geoRes = await axios.get(
+                            `http://ip-api.com/json/${ip}?fields=status,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,query`,
+                            { timeout: 3000 }
+                        );
                         if (geoRes.data && geoRes.data.status === 'success') {
-                            country = geoRes.data.country || 'Unknown';
-                            city = geoRes.data.city || 'Unknown';
-                            countryCode = geoRes.data.countryCode || '';
+                            geoData = {
+                                country: geoRes.data.country || 'Unknown',
+                                countryCode: geoRes.data.countryCode || '',
+                                region: geoRes.data.region || '',
+                                regionName: geoRes.data.regionName || '',
+                                city: geoRes.data.city || 'Unknown',
+                                zip: geoRes.data.zip || '',
+                                lat: geoRes.data.lat || 0,
+                                lon: geoRes.data.lon || 0,
+                                timezone: geoRes.data.timezone || '',
+                                isp: geoRes.data.isp || '',
+                                org: geoRes.data.org || ''
+                            };
                         }
                     } catch (geoErr) {
                         // Ignore geo errors, use default values
@@ -655,14 +705,12 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
                     ...eventData,
                     userAgent,
                     ip,
-                    country,
-                    city,
-                    countryCode,
+                    ...geoData,
                     timestamp: new Date()
                 });
                 await analytics.save();
 
-                // Update or create session
+                // Update or create session with full geo data
                 if (eventData.sessionId) {
                     await Session.findOneAndUpdate(
                         { sessionId: eventData.sessionId },
@@ -674,9 +722,10 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
                                 isActive: true,
                                 userAgent,
                                 ip,
-                                country,
-                                city,
-                                countryCode
+                                device: eventData.device,
+                                browser: eventData.browser,
+                                os: eventData.os,
+                                ...geoData
                             },
                             $setOnInsert: {
                                 startTime: new Date()

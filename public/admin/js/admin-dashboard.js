@@ -100,16 +100,45 @@ async function loadWatchers() {
             return;
         }
 
-        container.innerHTML = watchers.map(w => `
-            <div class="watcher-item">
-                <div class="watcher-flag">${getCountryFlag(w.countryCode)}</div>
-                <div class="watcher-info">
-                    <div class="watcher-location">${w.city}, ${w.country}</div>
-                    <div class="watcher-content">${w.currentContent || w.currentPage || '/'}</div>
-                    <div class="watcher-device">${w.device} • ${w.browser} • ${w.os}</div>
+        container.innerHTML = watchers.map(w => {
+            // Format time since active
+            const lastActive = new Date(w.lastActivity);
+            const now = new Date();
+            const diffMs = now - lastActive;
+            const diffMins = Math.floor(diffMs / 60000);
+            const activeTime = diffMins < 1 ? 'Just now' : `${diffMins}m ago`;
+            
+            // Build location string with region
+            const location = [w.city, w.regionName, w.country].filter(Boolean).join(', ');
+            
+            return `
+            <div class="watcher-item" style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div class="watcher-flag" style="font-size: 28px;">${getCountryFlag(w.countryCode)}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">
+                            ${location || 'Unknown Location'}
+                        </div>
+                        <div style="font-size: 12px; color: #ff6b00; margin-bottom: 4px;">
+                            📍 ${w.currentContent || w.currentPage || '/'}
+                        </div>
+                        <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+                            💻 ${w.device} • ${w.browser} • ${w.os}
+                        </div>
+                        <div style="font-size: 11px; color: #666;">
+                            🌐 ISP: ${w.isp || 'Unknown'} ${w.org ? `(${w.org})` : ''}
+                        </div>
+                        <div style="font-size: 10px; color: #555; margin-top: 4px;">
+                            🔗 IP: <code style="background: #222; padding: 2px 6px; border-radius: 3px;">${w.ip}</code>
+                            ${w.timezone ? `• 🕐 ${w.timezone}` : ''}
+                        </div>
+                    </div>
+                    <div style="text-align: right; font-size: 11px; color: #666;">
+                        ${activeTime}
+                    </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     } catch (error) {
         console.error('Failed to load watchers:', error);
         document.getElementById('watchersList').innerHTML = '<div class="empty-state">No active watchers</div>';
