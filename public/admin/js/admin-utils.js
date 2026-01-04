@@ -41,3 +41,37 @@ function getCountryFlag(code) {
     const codePoints = code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
 }
+
+// API Helper - fetch with auth token
+async function fetchAPI(endpoint) {
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+        console.error('No auth token found');
+        window.location.href = '/admin/index.html';
+        return { success: false, error: 'No token' };
+    }
+    
+    try {
+        const response = await fetch(`/api${endpoint}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.status === 401) {
+            console.error('Unauthorized - redirecting to login');
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/index.html';
+            return { success: false, error: 'Unauthorized' };
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        return { success: false, error: error.message };
+    }
+}
