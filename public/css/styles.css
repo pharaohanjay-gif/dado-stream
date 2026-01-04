@@ -253,7 +253,7 @@ ol {
     top: 0;
     left: 0;
     width: 100%;
-    background: rgba(10, 10, 15, 0.85);
+    background: rgba(10, 10, 15, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-color-light);
@@ -269,6 +269,36 @@ ol {
     box-shadow: var(--shadow-md);
 }
 
+/* Top Navigation Bar */
+.nav-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 1rem;
+    gap: 0.75rem;
+}
+
+.nav-toggle-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* Search Container */
+.search-container {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    max-width: 300px;
+}
+
 .nav {
     display: flex;
     align-items: center;
@@ -280,10 +310,26 @@ ol {
 .nav-logo {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 8px;
     font-size: var(--font-size-xl);
     font-weight: 800;
     z-index: 10;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.logo-img {
+    height: 32px;
+    width: 32px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FF6B00;
+    white-space: nowrap;
 }
 
 .logo-icon {
@@ -381,6 +427,54 @@ ol {
     color: var(--text-secondary);
     border-radius: var(--radius-full);
     transition: all var(--transition-fast);
+}
+
+/* Navigation Tabs (Rekomendasi, Drama, etc.) */
+.nav-tabs-wrapper {
+    background: rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tabs li {
+    flex-shrink: 0;
+}
+
+.tab-link {
+    display: block;
+    padding: 0.875rem 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.938rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover {
+    color: var(--text-primary);
+}
+
+.tab-link.active {
+    color: #FF6B00;
+    background: rgba(255, 107, 0, 0.1);
+    border-bottom: 2px solid #FF6B00;
 }
 
 .search-btn:hover {
@@ -1473,7 +1567,59 @@ ol {
 @media (max-width: 768px) {
     /* Base container */
     .container {
-        padding: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    /* Header compact */
+    .nav-top {
+        height: 50px;
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .logo-img {
+        height: 28px;
+        width: 28px;
+    }
+
+    .logo-text {
+        font-size: 16px;
+    }
+
+    /* Search compact */
+    .search-container {
+        max-width: 180px;
+    }
+
+    .search-input {
+        font-size: 0.813rem;
+        padding: 0.375rem 0.5rem;
+    }
+
+    .search-wrapper:focus-within .search-input,
+    .search-input:not(:placeholder-shown) {
+        width: 140px;
+        padding-right: 36px;
+    }
+
+    .search-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Navigation tabs compact */
+    .nav-tabs-wrapper {
+        padding: 0;
+    }
+
+    .tab-link {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.813rem;
+    }
+
+    /* Hide nav actions on mobile */
+    .nav-actions {
+        display: none;
     }
 
     /* Navigation */
@@ -1727,7 +1873,179 @@ ol {
     }
 }
 
-@media (max-width: 480px) {\n    /* Extra small screens (phones) */\n    .container {\n        padding: 0 0.5rem;\n    }\n\n    /* Logo adjustments */\n    .logo-text {\n        font-size: 16px !important;\n    }\n\n    .nav-logo img {\n        height: 28px !important;\n        width: 28px !important;\n    }\n\n    /* Search bar even smaller */\n    .search-wrapper {\n        width: calc(100% - 120px);\n    }\n\n    /* Hero ultra compact */\n    .hero-section {\n        padding: 2rem 0.5rem;\n        min-height: 45vh;\n    }\n\n    .hero-title {\n        font-size: 1.25rem;\n        margin-bottom: 0.5rem;\n    }\n\n    .hero-description {\n        font-size: 0.75rem;\n        -webkit-line-clamp: 2;\n        margin-bottom: 0.75rem;\n    }\n\n    .hero-actions {\n        max-width: 280px;\n        gap: 0.5rem;\n    }\n\n    .hero-actions .btn {\n        padding: 0.625rem 1rem;\n        font-size: 0.875rem;\n    }\n\n    /* Content grid 2 columns only */\n    .content-grid {\n        grid-template-columns: repeat(2, 1fr);\n        gap: 0.5rem;\n        padding: 0.5rem;\n    }\n\n    .content-image {\n        height: 160px;\n    }\n\n    .content-title {\n        font-size: 0.688rem;\n        padding: 0.375rem;\n    }\n\n    .content-info {\n        font-size: 0.625rem;\n        padding: 0 0.375rem 0.375rem;\n    }\n\n    /* Detail page ultra compact */\n    .detail-poster {\n        max-width: 150px;\n    }\n\n    .detail-title {\n        font-size: 1.125rem;\n    }\n\n    .detail-synopsis {\n        font-size: 0.813rem;\n    }\n\n    .detail-meta-item {\n        font-size: 0.75rem;\n    }\n\n    .detail-tag {\n        font-size: 0.688rem;\n        padding: 0.25rem 0.5rem;\n    }\n\n    /* Episodes ultra compact */\n    .episodes-grid {\n        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));\n        gap: 0.375rem;\n    }\n\n    .episode-btn {\n        padding: 0.5rem 0.375rem;\n        font-size: 0.75rem;\n    }\n\n    /* Category tabs */\n    .category-tabs {\n        gap: 0.375rem;\n        padding: 0.5rem;\n    }\n\n    .category-tab {\n        padding: 0.5rem 0.75rem;\n        font-size: 0.75rem;\n    }\n\n    /* Section headers */\n    .section-header h2 {\n        font-size: 1.125rem;\n    }\n\n    /* Reader controls */\n    .reader-controls {\n        padding: 0.5rem;\n        margin: 0.5rem;\n    }\n\n    .reader-title {\n        font-size: 0.875rem;\n    }\n\n    .reader-nav {\n        flex-direction: column;\n        gap: 0.5rem;\n    }\n\n    .reader-nav .btn {\n        width: 100%;\n        padding: 0.5rem 0.75rem;\n        font-size: 0.75rem;\n    }\n\n    /* Player */\n    .player-title {\n        font-size: 1rem;\n    }\n\n    .player-episode-badge {\n        font-size: 0.75rem;\n    }\n\n    .player-meta-info {\n        font-size: 0.688rem;\n    }\n}
+@media (max-width: 480px) {
+    /* Extra small screens (phones) */
+    .container {
+        padding: 0 0.5rem;
+    }
+
+    /* Header even more compact */
+    .nav-top {
+        height: 44px;
+        padding: 0 0.5rem;
+        gap: 0.375rem;
+    }
+
+    .logo-img {
+        height: 24px !important;
+        width: 24px !important;
+    }
+
+    .logo-text {
+        font-size: 14px !important;
+    }
+
+    /* Search ultra compact */
+    .search-container {
+        max-width: 140px;
+    }
+
+    .search-wrapper:focus-within .search-input,
+    .search-input:not(:placeholder-shown) {
+        width: 100px;
+    }
+
+    .search-input::placeholder {
+        font-size: 0.75rem;
+    }
+
+    /* Tabs smaller */
+    .tab-link {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.75rem;
+    }
+
+    /* Hero ultra compact */
+    .hero-section {
+        padding: 2rem 0.5rem;
+        min-height: 45vh;
+    }
+
+    .hero-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-description {
+        font-size: 0.75rem;
+        -webkit-line-clamp: 2;
+        margin-bottom: 0.75rem;
+    }
+
+    .hero-actions {
+        max-width: 280px;
+        gap: 0.5rem;
+    }
+
+    .hero-actions .btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    /* Content grid 2 columns only */
+    .content-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .content-image {
+        height: 160px;
+    }
+
+    .content-title {
+        font-size: 0.688rem;
+        padding: 0.375rem;
+    }
+
+    .content-info {
+        font-size: 0.625rem;
+        padding: 0 0.375rem 0.375rem;
+    }
+
+    /* Detail page ultra compact */
+    .detail-poster {
+        max-width: 150px;
+    }
+
+    .detail-title {
+        font-size: 1.125rem;
+    }
+
+    .detail-synopsis {
+        font-size: 0.813rem;
+    }
+
+    .detail-meta-item {
+        font-size: 0.75rem;
+    }
+
+    .detail-tag {
+        font-size: 0.688rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Episodes ultra compact */
+    .episodes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 0.375rem;
+    }
+
+    .episode-btn {
+        padding: 0.5rem 0.375rem;
+        font-size: 0.75rem;
+    }
+
+    /* Category tabs */
+    .category-tabs {
+        gap: 0.375rem;
+        padding: 0.5rem;
+    }
+
+    .category-tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* Section headers */
+    .section-header h2 {
+        font-size: 1.125rem;
+    }
+
+    /* Reader controls */
+    .reader-controls {
+        padding: 0.5rem;
+        margin: 0.5rem;
+    }
+
+    .reader-title {
+        font-size: 0.875rem;
+    }
+
+    .reader-nav {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .reader-nav .btn {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* Player */
+    .player-title {
+        font-size: 1rem;
+    }
+
+    .player-episode-badge {
+        font-size: 0.75rem;
+    }
+
+    .player-meta-info {
+        font-size: 0.688rem;
+    }
+}
 
 /* ==========================================================================
    Scroll Animations
