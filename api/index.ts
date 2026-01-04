@@ -401,8 +401,6 @@ async function handleKomik(action: string, req: VercelRequest, res: VercelRespon
             return res.status(500).json({ error: 'Failed to fetch chapter images' });
         }
     }
-        return res.json({ success: true, images: panels });
-    }
 
     return res.status(404).json({ error: 'Unknown komik action' });
 }
