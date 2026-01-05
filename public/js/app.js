@@ -3,7 +3,7 @@
 // ==========================================================================
 
 // Cache version - increment this to invalidate old cache
-const CACHE_VERSION = 'v3.1';
+const CACHE_VERSION = 'v3.2';
 
 // Clear old cache on version change
 (function() {
@@ -202,16 +202,24 @@ function selectFocus(focus) {
   
   const welcomeScreen = document.getElementById('welcome-screen');
   const mainContent = document.getElementById('main-content');
+  const header = document.querySelector('.header');
   
+  // Hide welcome screen completely
   if (welcomeScreen) {
     welcomeScreen.classList.add('hidden');
-    welcomeScreen.style.display = 'none';
-    welcomeScreen.style.opacity = '0';
-    welcomeScreen.style.visibility = 'hidden';
+    welcomeScreen.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important;';
   }
   
+  // Show main content - remove any inline styles that might be hiding it
   if (mainContent) {
+    mainContent.style.cssText = 'visibility: visible !important;';
+    mainContent.removeAttribute('style'); // Clear all inline styles
     mainContent.style.visibility = 'visible';
+  }
+  
+  // Make sure header is visible
+  if (header) {
+    header.style.visibility = 'visible';
   }
   
   if (focus !== 'all') {
@@ -225,6 +233,9 @@ function selectFocus(focus) {
     navigateTo('anime');
   } else if (focus === 'komik') {
     navigateTo('komik');
+  } else {
+    // 'all' or default - go to home
+    navigateTo('home');
   }
 }
 
@@ -362,6 +373,13 @@ function navigateTo(section, pushHistory = true) {
   state.navigationHistory.push(state.currentSection);
   state.previousSection = state.currentSection;
   state.currentSection = section;
+  
+  // IMPORTANT: Ensure main content is visible (fix for welcome screen transition)
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.removeAttribute('style');
+    mainContent.style.visibility = 'visible';
+  }
 
   // Push to browser history
   if (pushHistory) {
