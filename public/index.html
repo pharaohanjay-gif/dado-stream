@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
-<!-- DADO STREAM v3.2 - Welcome Screen Fix & Video Player Fix - Jan 5 2026 -->
+<!-- DADO STREAM v3.3 - Removed Welcome Screen - Jan 5 2026 -->
 
 <head>
   <meta charset="UTF-8">
@@ -53,58 +53,9 @@
   
   <!-- Adsterra Popunder -->
   <script src="https://pl28403014.effectivegatecpm.com/f2/48/ee/f248ee0218c1012a262b50791ac32e5a.js"></script>
-  
-  <!-- Early check for first visit - hide main content if no focus selected -->
-  <script>
-    (function() {
-      var focus = localStorage.getItem('dado_focus');
-      // If no focus selected, inject CSS to hide main content immediately
-      if (!focus || focus === '') {
-        document.write('<style>#main-content{visibility:hidden !important;}.welcome-screen{display:flex !important;opacity:1 !important;visibility:visible !important;}</style>');
-      } else {
-        // Hide welcome screen if focus exists
-        document.write('<style>.welcome-screen{display:none !important;opacity:0 !important;visibility:hidden !important;}</style>');
-      }
-    })();
-  </script>
 </head>
 
 <body>
-  <!-- Welcome Screen (First Visit) -->
-  <div id="welcome-screen" class="welcome-screen">
-    <div class="welcome-content">
-      <img src="/dado.png" alt="DADO" class="welcome-logo">
-      <h1 class="welcome-title">DADO STREAM</h1>
-      <p class="welcome-subtitle">Platform Hiburan Terlengkap</p>
-      <p class="welcome-question">Mau fokus ke mana hari ini?</p>
-      
-      <div class="category-grid">
-        <div class="category-card" onclick="selectFocus('drama')">
-          <span class="cat-icon">🎬</span>
-          <span class="cat-name">Drama</span>
-          <span class="cat-desc">Drama China & Korea</span>
-        </div>
-        <div class="category-card" onclick="selectFocus('anime')">
-          <span class="cat-icon">⚔️</span>
-          <span class="cat-name">Anime</span>
-          <span class="cat-desc">Anime Jepang</span>
-        </div>
-        <div class="category-card" onclick="selectFocus('komik')">
-          <span class="cat-icon">📚</span>
-          <span class="cat-name">Komik</span>
-          <span class="cat-desc">Manhwa & Manga</span>
-        </div>
-        <div class="category-card" onclick="selectFocus('all')">
-          <span class="cat-icon">🌟</span>
-          <span class="cat-name">Semua</span>
-          <span class="cat-desc">Lihat Semuanya</span>
-        </div>
-      </div>
-      
-      <p class="welcome-skip" onclick="selectFocus('all')">Lewati & Lihat Semua →</p>
-    </div>
-  </div>
-
   <!-- Loading Overlay -->
   <div id="loading-overlay" class="loading-overlay">
     <div class="loader">
@@ -177,9 +128,6 @@
       <li><a href="#" class="mobile-menu-link" data-section="komik">📚 Komik</a></li>
       <li><a href="#" class="mobile-menu-link" data-category="trending">🔥 Trending</a></li>
       <li><a href="#" class="mobile-menu-link" data-category="foryou">❤️ For You</a></li>
-      <li style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
-        <a href="#" class="mobile-menu-link" onclick="showWelcomeScreen(); toggleMobileMenu(); return false;">🎯 Ganti Fokus</a>
-      </li>
     </ul>
   </nav>
 

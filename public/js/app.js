@@ -3,7 +3,7 @@
 // ==========================================================================
 
 // Cache version - increment this to invalidate old cache
-const CACHE_VERSION = 'v3.2';
+const CACHE_VERSION = 'v3.3';
 
 // Clear old cache on version change
 (function() {
@@ -148,9 +148,6 @@ function handleImageError(img) {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if user has selected a focus before
-  checkWelcomeScreen();
-  
   // Initialize browser history with home state
   if (!history.state) {
     history.replaceState({ section: 'home' }, '', '#home');
@@ -163,164 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// Welcome Screen & Focus Mode
+// Loading & Theme
 // ==========================================================================
-
-let currentFocus = localStorage.getItem('dado_focus') || null;
-
-function checkWelcomeScreen() {
-  const welcomeScreen = document.getElementById('welcome-screen');
-  const mainContent = document.getElementById('main-content');
-  if (!welcomeScreen) return;
-  
-  console.log('[Welcome] Checking focus:', currentFocus);
-  
-  // If user has already selected a focus, skip welcome screen and show content
-  if (currentFocus && currentFocus !== '') {
-    welcomeScreen.classList.add('hidden');
-    welcomeScreen.style.display = 'none';
-    if (mainContent) mainContent.style.visibility = 'visible';
-    if (currentFocus !== 'all') {
-      applyFocusMode(currentFocus);
-    }
-  } else {
-    // FIRST VISIT: Force welcome screen to show and BLOCK content
-    console.log('[Welcome] First visit - showing welcome screen');
-    welcomeScreen.classList.remove('hidden');
-    welcomeScreen.style.display = 'flex';
-    welcomeScreen.style.opacity = '1';
-    welcomeScreen.style.visibility = 'visible';
-    if (mainContent) mainContent.style.visibility = 'hidden';
-  }
-}
-
-function selectFocus(focus) {
-  currentFocus = focus;
-  localStorage.setItem('dado_focus', focus);
-  
-  console.log('[Welcome] User selected focus:', focus);
-  
-  const welcomeScreen = document.getElementById('welcome-screen');
-  const mainContent = document.getElementById('main-content');
-  const header = document.querySelector('.header');
-  
-  // Hide welcome screen completely
-  if (welcomeScreen) {
-    welcomeScreen.classList.add('hidden');
-    welcomeScreen.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important;';
-  }
-  
-  // Show main content - remove any inline styles that might be hiding it
-  if (mainContent) {
-    mainContent.style.cssText = 'visibility: visible !important;';
-    mainContent.removeAttribute('style'); // Clear all inline styles
-    mainContent.style.visibility = 'visible';
-  }
-  
-  // Make sure header is visible
-  if (header) {
-    header.style.visibility = 'visible';
-  }
-  
-  if (focus !== 'all') {
-    applyFocusMode(focus);
-  }
-  
-  // Auto-navigate to the focused section
-  if (focus === 'drama') {
-    navigateTo('drama');
-  } else if (focus === 'anime') {
-    navigateTo('anime');
-  } else if (focus === 'komik') {
-    navigateTo('komik');
-  } else {
-    // 'all' or default - go to home
-    navigateTo('home');
-  }
-}
-
-function applyFocusMode(focus) {
-  // Remove existing focus indicator
-  const existingIndicator = document.querySelector('.focus-indicator');
-  if (existingIndicator) existingIndicator.remove();
-  
-  if (focus === 'all') return;
-  
-  // Add focus indicator
-  const indicator = document.createElement('div');
-  indicator.className = 'focus-indicator visible';
-  indicator.innerHTML = `
-    <span>Fokus: ${focus.charAt(0).toUpperCase() + focus.slice(1)}</span>
-    <button class="close-focus" onclick="clearFocus()">✕</button>
-  `;
-  document.body.appendChild(indicator);
-  
-  // Hide non-focused sections on home
-  updateHomeForFocus(focus);
-}
-
-function updateHomeForFocus(focus) {
-  const sections = {
-    drama: document.getElementById('home-drama-grid'),
-    anime: document.getElementById('home-anime-grid'),
-    komik: document.getElementById('home-komik-grid')
-  };
-  
-  // Get parent sections
-  const dramaSection = sections.drama?.closest('.content-section');
-  const animeSection = sections.anime?.closest('.content-section');
-  const komikSection = sections.komik?.closest('.content-section');
-  
-  if (focus === 'drama') {
-    if (dramaSection) dramaSection.style.display = '';
-    if (animeSection) animeSection.style.display = 'none';
-    if (komikSection) komikSection.style.display = 'none';
-  } else if (focus === 'anime') {
-    if (dramaSection) dramaSection.style.display = 'none';
-    if (animeSection) animeSection.style.display = '';
-    if (komikSection) komikSection.style.display = 'none';
-  } else if (focus === 'komik') {
-    if (dramaSection) dramaSection.style.display = 'none';
-    if (animeSection) animeSection.style.display = 'none';
-    if (komikSection) komikSection.style.display = '';
-  } else {
-    // Show all
-    if (dramaSection) dramaSection.style.display = '';
-    if (animeSection) animeSection.style.display = '';
-    if (komikSection) komikSection.style.display = '';
-  }
-}
-
-function clearFocus() {
-  currentFocus = 'all';
-  localStorage.setItem('dado_focus', 'all');
-  
-  const indicator = document.querySelector('.focus-indicator');
-  if (indicator) indicator.remove();
-  
-  updateHomeForFocus('all');
-}
-
-function showWelcomeScreen() {
-  localStorage.removeItem('dado_focus');
-  currentFocus = null;
-  
-  const welcomeScreen = document.getElementById('welcome-screen');
-  const mainContent = document.getElementById('main-content');
-  
-  if (welcomeScreen) {
-    welcomeScreen.classList.remove('hidden');
-    welcomeScreen.style.display = 'flex';
-    welcomeScreen.style.opacity = '1';
-    welcomeScreen.style.visibility = 'visible';
-  }
-  
-  if (mainContent) {
-    mainContent.style.visibility = 'hidden';
-  }
-  
-  clearFocus();
-}
 
 function hideLoadingOverlay() {
   // Hilangkan loading overlay lebih cepat (300ms saja)
@@ -373,13 +214,6 @@ function navigateTo(section, pushHistory = true) {
   state.navigationHistory.push(state.currentSection);
   state.previousSection = state.currentSection;
   state.currentSection = section;
-  
-  // IMPORTANT: Ensure main content is visible (fix for welcome screen transition)
-  const mainContent = document.getElementById('main-content');
-  if (mainContent) {
-    mainContent.removeAttribute('style');
-    mainContent.style.visibility = 'visible';
-  }
 
   // Push to browser history
   if (pushHistory) {
