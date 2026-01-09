@@ -4,13 +4,8 @@
  */
 
 // ============ API Configuration ============
-const API_CONFIG = {
-    drama: 'https://api.sansekai.my.id/api',
-    anime: 'https://www.sankavollerei.com/anime/samehadaku',
-    komik: 'https://api-manga-five.vercel.app',
-    komikProvider: 'shinigami',
-    imageProxy: 'https://wsrv.nl/?url='
-};
+const API_BASE = '/api'; // Use internal API
+const IMAGE_PROXY = 'https://wsrv.nl/?url=';
 
 // ============ State Management ============
 const state = {
@@ -142,61 +137,78 @@ function toggleMobileMenu() {
 // ============ Banner ============
 async function loadBanners() {
     try {
-        const response = await fetch(`${API_CONFIG.drama}/dramabox/list?page=1`);
+        const response = await fetch(`${API_BASE}/drama?action=latest`);
         const data = await response.json();
         
-        if (data.status && data.result && data.result.drama) {
-            const banners = data.result.drama.slice(0, 5);
+        if (Array.isArray(data) && data.length > 0) {
+            const banners = data.slice(0, 5);
             renderBanners(banners);
+        } else {
+            renderFallbackBanner();
         }
     } catch (error) {
         console.error('Error loading banners:', error);
-        // Fallback banner
-        $('#hero-slider').innerHTML = `
-            <div class="hero-slide">
-                <img src="https://via.placeholder.com/1200x400/7d5fff/ffffff?text=DADO+STREAM" alt="DADO STREAM">
-                <div class="hero-content">
-                    <span class="hero-badge">Welcome</span>
-                    <h2 class="hero-title">Selamat Datang di DADO STREAM</h2>
-                    <p class="hero-desc">Platform streaming drama China, anime, dan komik terlengkap</p>
+        renderFallbackBanner();
+    }
+}
+
+function renderFallbackBanner() {
+    $('#hero-slider').innerHTML = `
+        <div class="hero-slide">
+            <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop" alt="DADO STREAM">
+            <div class="hero-content">
+                <span class="hero-badge">Welcome</span>
+                <h2 class="hero-title">Selamat Datang di DADO STREAM</h2>
+                <p class="hero-desc">Platform streaming drama China, anime, dan komik terlengkap</p>
+                <div class="hero-actions">
+                    <button class="hero-btn hero-btn-primary" onclick="navigateTo('drama')">
+                        <i class="fas fa-play"></i> Mulai Nonton
+                    </button>
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+    $('#hero-indicators').innerHTML = '<div class="hero-indicator active"></div>';
 }
 
 function renderBanners(banners) {
     const slider = $('#hero-slider');
     const indicators = $('#hero-indicators');
     
-    slider.innerHTML = banners.map((drama, index) => `
-        <div class="hero-slide" onclick="openDetail('drama', '${drama.id}')">
-            <img src="${API_CONFIG.imageProxy}${encodeURIComponent(drama.cover || drama.image)}" alt="${drama.title}">
-            <div class="hero-content">
-                <span class="hero-badge">Drama China</span>
-                <h2 class="hero-title">${drama.title}</h2>
-                <p class="hero-desc">${drama.synopsis || drama.description || 'Tonton sekarang di DADO STREAM'}</p>
-                <div class="hero-meta">
-                    <div class="hero-meta-item">
-                        <i class="fas fa-film"></i>
-                        <span>${drama.totalEpisode || '??'} Episode</span>
+    slider.innerHTML = banners.map((drama, index) => {
+        const image = drama.image || drama.cover || drama.thumbnail_url || '';
+        const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
+        const bookId = drama.bookId || drama.id || drama.urlId;
+        
+        return `
+            <div class="hero-slide" onclick="openDetail('drama', '${bookId}')">
+                <img src="${imgUrl}" alt="${drama.title || drama.judul}">
+                <div class="hero-content">
+                    <span class="hero-badge">Drama China</span>
+                    <h2 class="hero-title">${drama.title || drama.judul}</h2>
+                    <p class="hero-desc">${drama.synopsis || drama.description || 'Tonton sekarang di DADO STREAM'}</p>
+                    <div class="hero-meta">
+                        <div class="hero-meta-item">
+                            <i class="fas fa-film"></i>
+                            <span>${drama.totalEpisode || drama.episode || '??'} Episode</span>
+                        </div>
+                        <div class="hero-meta-item">
+                            <i class="fas fa-star"></i>
+                            <span>${drama.rating || '8.5'}</span>
+                        </div>
                     </div>
-                    <div class="hero-meta-item">
-                        <i class="fas fa-star"></i>
-                        <span>${drama.rating || '8.5'}</span>
+                    <div class="hero-actions">
+                        <button class="hero-btn hero-btn-primary" onclick="event.stopPropagation(); watchDrama('${bookId}')">
+                            <i class="fas fa-play"></i> Tonton Sekarang
+                        </button>
+                        <button class="hero-btn hero-btn-secondary" onclick="event.stopPropagation(); openDetail('drama', '${bookId}')">
+                            <i class="fas fa-info-circle"></i> Detail
+                        </button>
                     </div>
-                </div>
-                <div class="hero-actions">
-                    <button class="hero-btn hero-btn-primary" onclick="event.stopPropagation(); watchDrama('${drama.id}')">
-                        <i class="fas fa-play"></i> Tonton Sekarang
-                    </button>
-                    <button class="hero-btn hero-btn-secondary" onclick="event.stopPropagation(); openDetail('drama', '${drama.id}')">
-                        <i class="fas fa-info-circle"></i> Detail
-                    </button>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     indicators.innerHTML = banners.map((_, index) => `
         <div class="hero-indicator ${index === 0 ? 'active' : ''}" onclick="goToBanner(${index})"></div>
@@ -228,11 +240,13 @@ function startBannerAutoPlay() {
 // ============ Home Sections ============
 async function loadHomeDrama() {
     try {
-        const response = await fetch(`${API_CONFIG.drama}/dramabox/list?page=1`);
+        const response = await fetch(`${API_BASE}/drama?action=latest`);
         const data = await response.json();
         
-        if (data.status && data.result && data.result.drama) {
-            renderCards('#home-drama', data.result.drama.slice(0, 10), 'drama');
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#home-drama', data.slice(0, 10), 'drama');
+        } else {
+            $('#home-drama').innerHTML = '<p class="empty-message">Tidak ada drama tersedia</p>';
         }
     } catch (error) {
         console.error('Error loading home drama:', error);
@@ -242,11 +256,13 @@ async function loadHomeDrama() {
 
 async function loadHomeAnime() {
     try {
-        const response = await fetch(`${API_CONFIG.anime}/recent?page=1`);
+        const response = await fetch(`${API_BASE}/anime?action=latest`);
         const data = await response.json();
         
-        if (data.status && data.data) {
-            renderCards('#home-anime', data.data.slice(0, 10), 'anime');
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#home-anime', data.slice(0, 10), 'anime');
+        } else {
+            $('#home-anime').innerHTML = '<p class="empty-message">Tidak ada anime tersedia</p>';
         }
     } catch (error) {
         console.error('Error loading home anime:', error);
@@ -256,11 +272,13 @@ async function loadHomeAnime() {
 
 async function loadHomeKomik() {
     try {
-        const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/popular`);
+        const response = await fetch(`${API_BASE}/komik?action=popular`);
         const data = await response.json();
         
-        if (data.status && data.data) {
-            renderCards('#home-komik', data.data.slice(0, 10), 'komik');
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#home-komik', data.slice(0, 10), 'komik');
+        } else {
+            $('#home-komik').innerHTML = '<p class="empty-message">Tidak ada komik tersedia</p>';
         }
     } catch (error) {
         console.error('Error loading home komik:', error);
@@ -274,11 +292,13 @@ async function loadDramaPage() {
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
     
     try {
-        const response = await fetch(`${API_CONFIG.drama}/dramabox/list?page=${state.dramaPage}`);
+        const response = await fetch(`${API_BASE}/drama?action=latest`);
         const data = await response.json();
         
-        if (data.status && data.result && data.result.drama) {
-            renderCards('#drama-grid', data.result.drama, 'drama', true);
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#drama-grid', data, 'drama', true);
+        } else {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-film"></i><p>Tidak ada drama tersedia</p></div>';
         }
     } catch (error) {
         console.error('Error loading drama page:', error);
@@ -292,12 +312,13 @@ async function loadMoreDrama() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
     
     try {
-        const response = await fetch(`${API_CONFIG.drama}/dramabox/list?page=${state.dramaPage}`);
+        // Drama API doesn't have pagination, so we load trending instead
+        const response = await fetch(`${API_BASE}/drama?action=trending`);
         const data = await response.json();
         
-        if (data.status && data.result && data.result.drama) {
+        if (Array.isArray(data) && data.length > 0) {
             const grid = $('#drama-grid');
-            data.result.drama.forEach(drama => {
+            data.forEach(drama => {
                 grid.innerHTML += createCard(drama, 'drama');
             });
         }
@@ -314,11 +335,13 @@ async function loadAnimePage() {
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
     
     try {
-        const response = await fetch(`${API_CONFIG.anime}/recent?page=${state.animePage}`);
+        const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
         const data = await response.json();
         
-        if (data.status && data.data) {
-            renderCards('#anime-grid', data.data, 'anime', true);
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#anime-grid', data, 'anime', true);
+        } else {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-dragon"></i><p>Tidak ada anime tersedia</p></div>';
         }
     } catch (error) {
         console.error('Error loading anime page:', error);
@@ -332,12 +355,12 @@ async function loadMoreAnime() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
     
     try {
-        const response = await fetch(`${API_CONFIG.anime}/recent?page=${state.animePage}`);
+        const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
         const data = await response.json();
         
-        if (data.status && data.data) {
+        if (Array.isArray(data) && data.length > 0) {
             const grid = $('#anime-grid');
-            data.data.forEach(anime => {
+            data.forEach(anime => {
                 grid.innerHTML += createCard(anime, 'anime');
             });
         }
@@ -354,11 +377,13 @@ async function loadKomikPage() {
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
     
     try {
-        const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/popular`);
+        const response = await fetch(`${API_BASE}/komik?action=popular`);
         const data = await response.json();
         
-        if (data.status && data.data) {
-            renderCards('#komik-grid', data.data, 'komik', true);
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#komik-grid', data, 'komik', true);
+        } else {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>Tidak ada komik tersedia</p></div>';
         }
     } catch (error) {
         console.error('Error loading komik page:', error);
@@ -372,12 +397,12 @@ async function loadMoreKomik() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
     
     try {
-        const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/popular?page=${state.komikPage}`);
+        const response = await fetch(`${API_BASE}/komik?action=popular&page=${state.komikPage}`);
         const data = await response.json();
         
-        if (data.status && data.data) {
+        if (Array.isArray(data) && data.length > 0) {
             const grid = $('#komik-grid');
-            data.data.forEach(komik => {
+            data.forEach(komik => {
                 grid.innerHTML += createCard(komik, 'komik');
             });
         }
@@ -392,6 +417,10 @@ async function loadMoreKomik() {
 // ============ Card Rendering ============
 function renderCards(selector, items, type, isGrid = false) {
     const container = $(selector);
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        container.innerHTML = '<p class="empty-message">Tidak ada konten tersedia</p>';
+        return;
+    }
     container.innerHTML = items.map(item => createCard(item, type)).join('');
 }
 
@@ -400,32 +429,34 @@ function createCard(item, type) {
     
     switch(type) {
         case 'drama':
-            image = API_CONFIG.imageProxy + encodeURIComponent(item.cover || item.image || '');
-            title = item.title;
+            image = item.image || item.cover || item.thumbnail_url || '';
+            title = item.title || item.judul || 'Unknown';
             badge = 'Drama';
-            info = `${item.totalEpisode || '??'} Episode`;
-            id = item.id;
+            info = `${item.totalEpisode || item.episode || '??'} Episode`;
+            id = item.bookId || item.id || item.urlId;
             break;
         case 'anime':
-            image = API_CONFIG.imageProxy + encodeURIComponent(item.poster || item.image || '');
-            title = item.title;
+            image = item.image || item.poster || item.thumbnail_url || '';
+            title = item.title || item.judul || 'Unknown';
             badge = item.type || 'Anime';
             info = item.episode || item.status || 'Ongoing';
-            id = item.slug || item.id;
+            id = item.urlId || item.id;
             break;
         case 'komik':
-            image = API_CONFIG.imageProxy + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
-            title = item.title;
+            image = item.thumbnail || item.cover || item.image || '';
+            title = item.title || item.judul || 'Unknown';
             badge = item.type || 'Manga';
-            info = item.chapter || item.status || 'Ongoing';
-            id = item.slug || item.id;
+            info = item.chapter || item.latestChapter || 'Ongoing';
+            id = item.slug || item.id || item.manga_id;
             break;
     }
+    
+    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://via.placeholder.com/150x225/1a1a1a/666?text=No+Image';
     
     return `
         <div class="card" onclick="openDetail('${type}', '${id}')">
             <div class="card-image">
-                <img src="${image}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x225/1a1a1a/666?text=No+Image'">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x225/1a1a1a/666?text=No+Image'">
                 <div class="card-overlay">
                     <div class="card-play">
                         <i class="fas fa-${type === 'komik' ? 'book-reader' : 'play'}"></i>
@@ -443,6 +474,10 @@ function createCard(item, type) {
 
 // ============ Detail Page ============
 async function openDetail(type, id) {
+    if (!id || id === 'undefined') {
+        showToast('ID tidak valid', 'error');
+        return;
+    }
     state.currentContent = { type, id };
     navigateTo('detail');
     loadDetail(type, id);
@@ -450,7 +485,7 @@ async function openDetail(type, id) {
 
 async function loadDetail(type, id) {
     const container = $('#detail-container');
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>';
+    container.innerHTML = '<div class="loading" style="text-align:center;padding:50px;"><i class="fas fa-spinner fa-spin" style="font-size:48px;color:var(--primary);"></i><p style="margin-top:20px;">Memuat...</p></div>';
     
     try {
         let data;
@@ -468,6 +503,8 @@ async function loadDetail(type, id) {
         
         if (data) {
             renderDetail(type, data);
+        } else {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Data tidak ditemukan</p></div>';
         }
     } catch (error) {
         console.error('Error loading detail:', error);
@@ -476,36 +513,33 @@ async function loadDetail(type, id) {
 }
 
 async function fetchDramaDetail(id) {
-    const response = await fetch(`${API_CONFIG.drama}/dramabox/detail?id=${id}`);
+    const response = await fetch(`${API_BASE}/drama?action=detail&bookId=${id}`);
     const data = await response.json();
-    if (data.status && data.result) {
-        state.episodes = data.result.episodes || [];
-        return data.result;
+    
+    // Get episodes
+    try {
+        const epResponse = await fetch(`${API_BASE}/drama?action=allepisode&bookId=${id}`);
+        const epData = await epResponse.json();
+        state.episodes = Array.isArray(epData) ? epData : [];
+    } catch (e) {
+        state.episodes = [];
     }
-    return null;
+    
+    return data;
 }
 
 async function fetchAnimeDetail(id) {
-    const response = await fetch(`${API_CONFIG.anime}/detail/${id}`);
+    const response = await fetch(`${API_BASE}/anime?action=detail&urlId=${id}`);
     const data = await response.json();
-    if (data.status && data.data) {
-        // Load episodes
-        const epResponse = await fetch(`${API_CONFIG.anime}/episode/${id}`);
-        const epData = await epResponse.json();
-        state.episodes = epData.status && epData.data ? epData.data : [];
-        return data.data;
-    }
-    return null;
+    state.episodes = data.episodes || [];
+    return data;
 }
 
 async function fetchKomikDetail(id) {
-    const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/detail/${id}`);
+    const response = await fetch(`${API_BASE}/komik?action=detail&manga_id=${id}`);
     const data = await response.json();
-    if (data.status && data.data) {
-        state.chapters = data.data.chapters || [];
-        return data.data;
-    }
-    return null;
+    state.chapters = data.chapters || [];
+    return data;
 }
 
 function renderDetail(type, data) {
@@ -516,43 +550,51 @@ function renderDetail(type, data) {
     
     switch(type) {
         case 'drama':
-            image = API_CONFIG.imageProxy + encodeURIComponent(data.cover || data.image || '');
-            title = data.title;
+            image = data.image || data.cover || data.thumbnail_url || '';
+            title = data.title || data.judul || 'Unknown';
             description = data.synopsis || data.description || 'Tidak ada deskripsi';
-            totalEp = data.totalEpisode || '??';
+            totalEp = data.totalEpisode || state.episodes.length || '??';
             rating = data.rating || '8.5';
-            genres = data.genres || ['Drama', 'China'];
+            genres = data.genres || data.genre || ['Drama', 'China'];
             status = data.status || 'Ongoing';
             break;
         case 'anime':
-            image = API_CONFIG.imageProxy + encodeURIComponent(data.poster || data.image || '');
-            title = data.title;
+            image = data.poster || data.image || data.thumbnail_url || '';
+            title = data.title || data.judul || 'Unknown';
             description = data.synopsis || data.description || 'Tidak ada deskripsi';
-            totalEp = data.totalEpisode || data.episodes?.length || '??';
+            totalEp = data.totalEpisodes || state.episodes.length || '??';
             rating = data.rating || data.score || '8.0';
-            genres = data.genres || data.genre || ['Anime'];
+            genres = data.genreList || data.genres || data.genre || ['Anime'];
             status = data.status || 'Ongoing';
             break;
         case 'komik':
-            image = API_CONFIG.imageProxy + encodeURIComponent(data.thumbnail || data.cover || data.image || '');
-            title = data.title;
+            image = data.thumbnail || data.cover || data.image || '';
+            title = data.title || data.judul || 'Unknown';
             description = data.synopsis || data.description || 'Tidak ada deskripsi';
-            totalEp = data.chapters?.length || state.chapters.length || '??';
+            totalEp = state.chapters.length || '??';
             rating = data.rating || '8.0';
             genres = data.genres || data.genre || [data.type || 'Manga'];
             status = data.status || 'Ongoing';
             break;
     }
     
-    const genresList = Array.isArray(genres) ? genres : [genres];
+    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://via.placeholder.com/180x270/1a1a1a/7d5fff?text=No+Image';
+    
+    // Handle genres - can be string or array
+    let genresList = [];
+    if (typeof genres === 'string') {
+        genresList = genres.split(',').map(g => g.trim());
+    } else if (Array.isArray(genres)) {
+        genresList = genres;
+    }
     
     container.innerHTML = `
         <div class="detail-header">
-            <img src="${image}" alt="${title}" class="detail-backdrop">
+            <img src="${imgUrl}" alt="${title}" class="detail-backdrop" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop'">
             <div class="detail-backdrop-overlay"></div>
             <div class="detail-content">
                 <div class="detail-poster">
-                    <img src="${image}" alt="${title}">
+                    <img src="${imgUrl}" alt="${title}" onerror="this.src='https://via.placeholder.com/180x270/1a1a1a/7d5fff?text=No+Image'">
                 </div>
                 <div class="detail-info">
                     <h1 class="detail-title">${title}</h1>
@@ -578,7 +620,7 @@ function renderDetail(type, data) {
                             <i class="fas fa-${type === 'komik' ? 'book-reader' : 'play'}"></i>
                             ${type === 'komik' ? 'Baca Sekarang' : 'Tonton Sekarang'}
                         </button>
-                        <button class="detail-btn detail-btn-secondary ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite('${type}', '${state.currentContent.id}', '${title}', '${image}')">
+                        <button class="detail-btn detail-btn-secondary ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite('${type}', '${state.currentContent.id}', '${title.replace(/'/g, "\\'")}', '${imgUrl}')">
                             <i class="fas fa-heart"></i>
                             ${isFavorited ? 'Hapus Favorit' : 'Tambah Favorit'}
                         </button>
@@ -662,13 +704,23 @@ async function watchContent(type, id) {
 async function watchDrama(id) {
     // Fetch drama detail first to get episodes
     try {
-        const response = await fetch(`${API_CONFIG.drama}/dramabox/detail?id=${id}`);
+        const response = await fetch(`${API_BASE}/drama?action=detail&bookId=${id}`);
         const data = await response.json();
-        if (data.status && data.result && data.result.episodes && data.result.episodes.length > 0) {
-            state.currentContent = { type: 'drama', id, title: data.result.title };
-            state.episodes = data.result.episodes;
-            const firstEp = state.episodes[0];
-            playEpisode('drama', firstEp.id || firstEp.episodeId, 1);
+        if (data.status && data.data) {
+            const drama = data.data;
+            state.currentContent = { type: 'drama', id, title: drama.title || drama.judul };
+            // Fetch all episodes
+            const epResponse = await fetch(`${API_BASE}/drama?action=allepisode&bookId=${id}`);
+            const epData = await epResponse.json();
+            if (epData.status && epData.data) {
+                state.episodes = epData.data;
+            }
+            if (state.episodes && state.episodes.length > 0) {
+                const firstEp = state.episodes[0];
+                playEpisode('drama', firstEp.id || firstEp.episodeId || firstEp.bookId, 1);
+            } else {
+                showToast('Tidak ada episode tersedia', 'error');
+            }
         } else {
             showToast('Tidak ada episode tersedia', 'error');
         }
@@ -696,20 +748,22 @@ async function playEpisode(type, episodeId, episodeNum) {
         let videoUrl, servers = [];
         
         if (type === 'drama') {
-            const response = await fetch(`${API_CONFIG.drama}/dramabox/watch?id=${episodeId}`);
+            const response = await fetch(`${API_BASE}/drama?action=video&episodeId=${episodeId}`);
             const data = await response.json();
-            if (data.status && data.result) {
-                videoUrl = data.result.video || data.result.url || data.result.stream;
-                servers = data.result.servers || [];
+            if (data.status && data.data) {
+                videoUrl = data.data.video || data.data.url || data.data.stream || data.data.playUrl;
+                servers = data.data.servers || [];
             }
         } else if (type === 'anime') {
-            const response = await fetch(`${API_CONFIG.anime}/watch/${episodeId}`);
+            const response = await fetch(`${API_BASE}/anime?action=getvideo&episodeId=${episodeId}`);
             const data = await response.json();
             if (data.status && data.data) {
                 // Get streaming URL from available sources
                 const sources = data.data.sources || data.data.stream || [];
-                if (sources.length > 0) {
-                    videoUrl = sources[0].url || sources[0].file || sources[0].src;
+                if (Array.isArray(sources) && sources.length > 0) {
+                    videoUrl = sources[0].url || sources[0].file || sources[0].src || sources[0];
+                } else if (data.data.url || data.data.video) {
+                    videoUrl = data.data.url || data.data.video;
                 }
                 servers = data.data.servers || [];
             }
@@ -869,7 +923,7 @@ async function readChapter(chapterId) {
     `;
     
     try {
-        const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/chapter/${chapterId}`);
+        const response = await fetch(`${API_BASE}/komik?action=chapter&chapterId=${encodeURIComponent(chapterId)}`);
         const data = await response.json();
         
         if (data.status && data.data) {
@@ -892,7 +946,7 @@ async function readChapter(chapterId) {
 function renderReader(data) {
     const container = $('#reader-container');
     const title = data.title || state.currentContent?.title || 'Chapter';
-    const images = data.images || data.pages || [];
+    const images = data.images || data.pages || data.data || [];
     
     // Find chapter navigation
     const chIndex = state.chapters.findIndex(ch => 
@@ -915,15 +969,18 @@ function renderReader(data) {
         </div>
         
         <div class="reader-pages">
-            ${images.map((img, i) => `
-                <img 
-                    class="reader-page" 
-                    src="${API_CONFIG.imageProxy}${encodeURIComponent(img.url || img.src || img)}" 
-                    alt="Page ${i + 1}"
-                    loading="lazy"
-                    onerror="this.src='https://via.placeholder.com/800x1200/1a1a1a/666?text=Page+${i + 1}'"
-                >
-            `).join('')}
+            ${images.map((img, i) => {
+                const imgUrl = typeof img === 'string' ? img : (img.url || img.src || img.image || '');
+                return `
+                    <img 
+                        class="reader-page" 
+                        src="${IMAGE_PROXY}${encodeURIComponent(imgUrl)}" 
+                        alt="Page ${i + 1}"
+                        loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/800x1200/1a1a1a/666?text=Page+${i + 1}'"
+                    >
+                `;
+            }).join('')}
         </div>
         
         <div class="reader-navigation">
@@ -1036,19 +1093,19 @@ async function searchAll(query) {
 }
 
 async function searchDrama(query) {
-    const response = await fetch(`${API_CONFIG.drama}/dramabox/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE}/drama?action=search&keyword=${encodeURIComponent(query)}`);
     const data = await response.json();
-    return data.status && data.result ? data.result.slice(0, 5) : [];
+    return data.status && data.data ? data.data.slice(0, 5) : [];
 }
 
 async function searchAnime(query) {
-    const response = await fetch(`${API_CONFIG.anime}/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE}/anime?action=search&keyword=${encodeURIComponent(query)}`);
     const data = await response.json();
     return data.status && data.data ? data.data.slice(0, 5) : [];
 }
 
 async function searchKomik(query) {
-    const response = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE}/komik?action=search&keyword=${encodeURIComponent(query)}`);
     const data = await response.json();
     return data.status && data.data ? data.data.slice(0, 5) : [];
 }
@@ -1066,25 +1123,25 @@ function renderSearchResults(items) {
         
         switch(item.searchType) {
             case 'drama':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.cover || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.cover || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
                 type = 'Drama';
                 info = `${item.totalEpisode || '??'} Episode`;
-                id = item.id;
+                id = item.bookId || item.id;
                 break;
             case 'anime':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.poster || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.poster || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
                 type = 'Anime';
                 info = item.status || 'Anime';
-                id = item.slug || item.id;
+                id = item.urlId || item.slug || item.id;
                 break;
             case 'komik':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
+                title = item.title || item.judul;
                 type = item.type || 'Komik';
                 info = item.chapter || 'Manga';
-                id = item.slug || item.id;
+                id = item.manga_id || item.slug || item.id;
                 break;
         }
         
@@ -1118,17 +1175,17 @@ async function loadTrending(type) {
         
         switch(type) {
             case 'drama':
-                const dramaRes = await fetch(`${API_CONFIG.drama}/dramabox/list?page=1`);
+                const dramaRes = await fetch(`${API_BASE}/drama?action=trending`);
                 const dramaData = await dramaRes.json();
-                items = dramaData.status && dramaData.result?.drama ? dramaData.result.drama.slice(0, 10) : [];
+                items = dramaData.status && dramaData.data ? dramaData.data.slice(0, 10) : [];
                 break;
             case 'anime':
-                const animeRes = await fetch(`${API_CONFIG.anime}/recent?page=1`);
+                const animeRes = await fetch(`${API_BASE}/anime?action=latest`);
                 const animeData = await animeRes.json();
                 items = animeData.status && animeData.data ? animeData.data.slice(0, 10) : [];
                 break;
             case 'komik':
-                const komikRes = await fetch(`${API_CONFIG.komik}/${API_CONFIG.komikProvider}/popular`);
+                const komikRes = await fetch(`${API_BASE}/komik?action=popular`);
                 const komikData = await komikRes.json();
                 items = komikData.status && komikData.data ? komikData.data.slice(0, 10) : [];
                 break;
@@ -1154,22 +1211,22 @@ function renderTrendingList(items, type) {
         
         switch(type) {
             case 'drama':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.cover || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.cover || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
                 info = `${item.totalEpisode || '??'} Episode • Drama China`;
-                id = item.id;
+                id = item.bookId || item.id;
                 break;
             case 'anime':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.poster || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.poster || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
                 info = `${item.episode || item.status || 'Ongoing'} • Anime`;
-                id = item.slug || item.id;
+                id = item.urlId || item.slug || item.id;
                 break;
             case 'komik':
-                image = API_CONFIG.imageProxy + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
-                title = item.title;
+                image = IMAGE_PROXY + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
+                title = item.title || item.judul;
                 info = `${item.chapter || 'Ongoing'} • ${item.type || 'Manga'}`;
-                id = item.slug || item.id;
+                id = item.manga_id || item.slug || item.id;
                 break;
         }
         
