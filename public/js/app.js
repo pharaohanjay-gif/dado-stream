@@ -3,7 +3,7 @@
 // ==========================================================================
 
 // Cache version - increment this to invalidate old cache
-const CACHE_VERSION = 'v3.4';
+const CACHE_VERSION = 'v3.5';
 
 // Clear old cache on version change
 (function() {
@@ -38,6 +38,18 @@ const state = {
   },
   historyStack: []
 };
+
+// Hash change handler for direct URL access
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#', '');
+  const validSections = ['home', 'drama', 'anime', 'komik', 'search', 'detail', 'player', 'reader'];
+  
+  if (validSections.includes(hash) && hash !== 'home') {
+    console.log('[ROUTING] Hash changed to:', hash);
+    state.currentSection = hash;
+    navigateTo(hash, false);
+  }
+});
 
 // Browser back button handler
 window.addEventListener('popstate', (event) => {
@@ -153,22 +165,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const validSections = ['home', 'drama', 'anime', 'komik'];
   const targetSection = validSections.includes(initialHash) ? initialHash : 'home';
   
+  // Set initial section state
+  state.currentSection = targetSection;
+  
   // Initialize browser history with the target section state
   if (!history.state) {
     history.replaceState({ section: targetSection }, '', `#${targetSection}`);
   }
-  
-  // Set initial section state
-  state.currentSection = targetSection;
   
   initTheme();
   initEventListeners();
   loadInitialData();
   hideLoadingOverlay();
   
-  // Navigate to the target section after data is loaded
+  // Navigate to target section (will load data for that section)
   if (targetSection !== 'home') {
-    setTimeout(() => navigateTo(targetSection, false), 100);
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      navigateTo(targetSection, false);
+    }, 100);
   }
 });
 
