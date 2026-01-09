@@ -808,6 +808,11 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
     const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
 
     try {
+        // Debug endpoint to verify deployment
+        if (action === 'test') {
+            return res.json({ status: true, message: 'Drama API v2 - video from allepisode', timestamp: Date.now() });
+        }
+        
         if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou' || !action) {
             const endpoint = action || 'latest';
             const response = await axios.get(`${API_BASE}/dramabox/${endpoint}`, config);
