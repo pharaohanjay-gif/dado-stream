@@ -1,280 +1,57 @@
-/* 
-  DADO CINEMA Style - Black & Blue Theme 
-  DADO STREAM Premium UI 
-*/
-
+/* DADO STREAM Theme - Blue Color Scheme (v4.0) */
 :root {
-    --primary-color: #006fee;
-    /* DADO CINEMA Blue */
-    --primary-hover: #4da6ff;
-    --bg-dark: #0D0C0F;
-    --bg-card: #18181B;
-    --bg-header: rgba(13, 12, 15, 0.95);
-    --text-main: #ffffff;
-    --text-secondary: #a1a1aa;
-    --gray-dark: #18181B;
-    --accent-green: #006fee;
-    /* Changed to blue for consistency */
+  /* Primary Colors - Blue Palette */
+  --primary-color: #006fee;
+  --primary-light: #4da6ff;
+  --primary-dark: #0047a3;
+
+  /* Backgrounds */
+  --bg-dark: #0D0C0F;
+  --bg-secondary: #18181B;
+  --bg-card: #27272A;
+  --bg-hover: #2D2D33;
+
+  /* Text Colors */
+  --text-main: #FFFFFF;
+  --text-secondary: #D4D4D8;
+  --text-muted: #71717A;
+
+  /* Borders */
+  --border-color: #27272A;
+
+  /* Accents */
+  --accent-green: #006fee;
 }
 
-/* Base Reset */
+/* Root Background */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Override body if needed */
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    font-family: 'Inter', sans-serif;
-    margin: 0;
-    padding-top: 110px;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
+/* Utility Classes */
+.bg-primary {
+  background-color: var(--primary-color) !important;
 }
 
-/* Header Redesign */
-.header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: #0D0C0F;
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid #27272a;
+.text-primary {
+  color: var(--primary-color) !important;
 }
 
-.nav-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 64px;
+.border-primary {
+  border-color: var(--primary-color) !important;
 }
 
-.nav-logo .logo-text {
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--primary-color);
-    text-transform: uppercase;
+.bg-secondary {
+  background-color: var(--bg-secondary) !important;
 }
 
-.search-container {
-    flex: 0 0 500px;
-}
-
-.search-wrapper {
-    position: relative;
-    background: #18181B;
-    border-radius: 25px;
-    display: flex;
-    align-items: center;
-    padding: 4px 20px;
-    border: 1px solid #27272a;
-}
-
-.search-input {
-    background: transparent;
-    border: none;
-    color: white;
-    width: 100%;
-    padding: 10px 0;
-    outline: none;
-    font-size: 15px;
-}
-
-/* APP Button */
-.btn-app {
-    background: var(--primary-color);
-    color: white;
-    padding: 8px 18px;
-    border-radius: 5px;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: 13px;
-}
-
-/* Navigation Tabs */
-.nav-tabs {
-    display: flex;
-    list-style: none;
-    padding: 10px 0;
-    margin: 0;
-    gap: 35px;
-}
-
-.tab-link {
-    color: #ffffff;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 17px;
-    opacity: 0.7;
-    transition: 0.3s;
-}
-
-.tab-link.active,
-.tab-link:hover {
-    opacity: 1;
-    color: var(--primary-color) !important;
-}
-
-/* Hero Section */
-.hero {
-    height: 550px;
-    border-radius: 15px;
-    background-color: #0D0C0F;
-}
-
-.hero-title {
-    font-size: 56px;
-    font-weight: 900;
-    color: #ffffff;
-}
-
-.hero-subtitle {
-    color: #eeeeee;
-    font-size: 18px;
-}
-
-/* Content Grid Style */
-.card-img-wrapper {
-    border-radius: 10px;
-    background: #18181B;
-    border: 1px solid #27272a;
-}
-
-.card-title {
-    color: #ffffff;
-    font-weight: 700;
-}
-
-.card-meta {
-    color: #999;
-}
-
-.card-badge {
-    background: var(--primary-color) !important;
-}
-
-.card-top-tag {
-    background: #ffffff !important;
-    color: #000000 !important;
-}
-
-/* All Star Section */
-.star-img-wrapper {
-    width: 100px;
-    height: 100px;
-    border: 3px solid #27272a;
-}
-
-.star-item:hover .star-img-wrapper {
-    border-color: var(--primary-color);
-}
-
-.star-name {
-    color: #ffffff;
-    font-weight: 600;
-    margin-top: 10px;
-}
-
-/* Strict Color Overrides */
-* {
-    border-color: #27272a !important;
-}
-
-.category-tab,
-.detail-tag,
-.pill {
-    background: #18181B !important;
-    color: #ffffff !important;
-    border: 1px solid #3f3f46 !important;
-}
-
-.category-tab.active,
-.pill.active,
-.btn-primary {
-    background: var(--primary-color) !important;
-    color: #ffffff !important;
-    border-color: var(--primary-color) !important;
-}
-
-.back-btn {
-    color: #ffffff !important;
-    background: #18181B !important;
-    border: 1px solid #3f3f46 !important;
-}
-
-.footer {
-    background: #0D0C0F;
-    border-top: 1px solid #27272a;
-}
-
-/* Global Color - Forces everything to theme */
-body,
-.main,
-.section,
-.detail-wrapper,
-.reader-container,
-.player-container {
-    background-color: #0D0C0F !important;
-    color: #ffffff !important;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.card-title,
-.detail-title,
-.episodes-title,
-.section-title {
-    color: #ffffff !important;
-}
-
-.primary-text,
-.nav-logo span,
-.logo-text,
-.detail-meta-item,
-.star-name {
-    color: var(--primary-color) !important;
-}
-
-.btn-primary,
-.pill.active,
-.category-tab.active,
-.tab-link.active,
-.episode-btn:hover,
-.card-badge {
-    background-color: var(--primary-color) !important;
-    color: #ffffff !important;
-    border-color: var(--primary-color) !important;
-}
-
-.episode-btn {
-    background: #18181B !important;
-    color: #fff !important;
-    border: 1px solid #3f3f46 !important;
-}
-
-/* Remove all gradients that might have old colors */
-.hero-bg::after,
-.gradient-overlay {
-    background: linear-gradient(to top, #0D0C0F 0%, transparent 100%) !important;
-}
-
-.gradient-text {
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
-    color: var(--primary-color) !important;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar-thumb {
-    background: #3f3f46;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-color);
+.text-secondary {
+  color: var(--text-secondary) !important;
 }
