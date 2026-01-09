@@ -698,12 +698,15 @@ function renderChapterList() {
     return `
         <div class="chapter-list">
             ${state.chapters.map(ch => {
-                const chTitle = ch.title || ch.chapter || ch.name;
-                const chId = ch.slug || ch.id || ch.chapterId;
+                // Support multiple field names: judul_chapter (komikindo), title, chapter, name
+                const chTitle = ch.judul_chapter || ch.title || ch.chapter || ch.name || 'Chapter';
+                // Support multiple ID fields: chapterId, link_chapter, slug, id
+                const chId = ch.chapterId || ch.link_chapter || ch.slug || ch.id;
+                const chDate = ch.waktu_rilis || ch.date || ch.uploadDate || '';
                 return `
                     <div class="chapter-item" onclick="readChapter('${chId}')">
                         <span class="chapter-title">${chTitle}</span>
-                        <span class="chapter-date">${ch.date || ch.uploadDate || ''}</span>
+                        <span class="chapter-date">${chDate}</span>
                     </div>
                 `;
             }).join('')}
@@ -775,7 +778,12 @@ async function playEpisode(type, episodeId, episodeNum) {
         let videoUrl, servers = [];
         
         if (type === 'drama') {
-            const response = await fetch(`${API_BASE}/drama?action=video&episodeId=${episodeId}`);
+            // Drama requires bookId to fetch video from allepisode data
+            const bookId = state.currentContent?.id;
+            if (!bookId) {
+                throw new Error('Book ID not found');
+            }
+            const response = await fetch(`${API_BASE}/drama?action=video&episodeId=${episodeId}&bookId=${bookId}`);
             const data = await response.json();
             if (data.status && data.data) {
                 videoUrl = data.data.video || data.data.url || data.data.stream || data.data.playUrl;

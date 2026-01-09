@@ -862,7 +862,24 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 ...config,
                 params: { bookId }
             });
-            const result = response.data?.data || response.data;
+            // API returns data directly at root level (not in .data)
+            const raw = response.data?.data || response.data;
+            // Normalize field names for frontend compatibility
+            const result = {
+                ...raw,
+                id: raw.bookId || bookId,
+                bookId: raw.bookId || bookId,
+                title: raw.bookName || raw.title || 'Unknown',
+                judul: raw.bookName || raw.title || 'Unknown',
+                image: raw.coverWap || raw.cover || raw.image || '',
+                cover: raw.coverWap || raw.cover || raw.image || '',
+                thumbnail_url: raw.coverWap || raw.cover || raw.image || '',
+                description: raw.introduction || raw.synopsis || raw.description || '',
+                synopsis: raw.introduction || raw.synopsis || raw.description || '',
+                totalEpisode: raw.chapterCount || raw.totalEpisode || 0,
+                rating: raw.rating || '8.5',
+                type: 'Drama'
+            };
             return res.json({ status: true, data: result });
         }
 
@@ -878,14 +895,76 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
         }
 
         if (action === 'video') {
-            const { episodeId } = req.query;
+            const { episodeId, bookId } = req.query;
             if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
-            const response = await axios.get(`${API_BASE}/dramabox/video`, {
-                ...config,
-                params: { episodeId }
-            });
-            const result = response.data?.data || response.data;
-            return res.json({ status: true, data: result });
+            
+            // Video URLs are embedded in allepisode response, not in separate endpoint
+            // We need bookId to fetch all episodes and find the matching one
+            if (!bookId) {
+                return res.status(400).json({ status: false, error: 'bookId required for video' });
+            }
+            
+            try {
+                const response = await axios.get(`${API_BASE}/dramabox/allepisode`, {
+                    ...config,
+                    params: { bookId }
+                });
+                const episodes = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                
+                // Find the episode with matching chapterId
+                const episode = episodes.find((ep: any) => ep.chapterId === episodeId || ep.chapterId === String(episodeId));
+                
+                if (!episode) {
+                    return res.status(404).json({ status: false, error: 'Episode not found' });
+                }
+                
+                // Extract video URL from cdnList
+                let videoUrl = '';
+                let servers: any[] = [];
+                
+                if (episode.cdnList && episode.cdnList.length > 0) {
+                    const defaultCdn = episode.cdnList.find((cdn: any) => cdn.isDefault === 1) || episode.cdnList[0];
+                    
+                    if (defaultCdn.videoPathList && Array.isArray(defaultCdn.videoPathList)) {
+                        // Get default quality or 720p
+                        const defaultQuality = defaultCdn.videoPathList.find((v: any) => v.isDefault === 1);
+                        const quality720 = defaultCdn.videoPathList.find((v: any) => v.quality === 720);
+                        const quality540 = defaultCdn.videoPathList.find((v: any) => v.quality === 540);
+                        const anyQuality = defaultCdn.videoPathList[0];
+                        
+                        const selectedQuality = defaultQuality || quality720 || quality540 || anyQuality;
+                        if (selectedQuality) {
+                            videoUrl = selectedQuality.videoPath;
+                        }
+                        
+                        // Build servers list for quality selection
+                        servers = defaultCdn.videoPathList.map((v: any) => ({
+                            name: `${v.quality}p`,
+                            quality: v.quality,
+                            url: v.videoPath
+                        }));
+                    }
+                }
+                
+                if (!videoUrl) {
+                    return res.status(404).json({ status: false, error: 'Video URL not found' });
+                }
+                
+                return res.json({ 
+                    status: true, 
+                    data: {
+                        video: videoUrl,
+                        url: videoUrl,
+                        playUrl: videoUrl,
+                        servers: servers,
+                        episode: episode.chapterName,
+                        thumbnail: episode.chapterImg
+                    }
+                });
+            } catch (error: any) {
+                console.error('[Drama Video Error]:', error.message);
+                return res.status(500).json({ status: false, error: 'Failed to fetch video', details: error.message });
+            }
         }
 
         return res.status(404).json({ status: false, error: 'Unknown drama action' });
