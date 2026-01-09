@@ -569,12 +569,13 @@ function renderDetail(type, data) {
     
     switch(type) {
         case 'drama':
-            image = data.image || data.cover || data.thumbnail_url || '';
-            title = data.title || data.judul || 'Unknown';
-            description = data.synopsis || data.description || 'Tidak ada deskripsi';
-            totalEp = data.totalEpisode || state.episodes.length || '??';
+            // Support both normalized (title/image) and raw (bookName/coverWap) formats
+            image = data.image || data.cover || data.thumbnail_url || data.coverWap || '';
+            title = data.title || data.judul || data.bookName || 'Unknown';
+            description = data.synopsis || data.description || data.introduction || 'Tidak ada deskripsi';
+            totalEp = data.totalEpisode || data.chapterCount || state.episodes.length || '??';
             rating = data.rating || '8.5';
-            genres = data.genres || data.genre || ['Drama', 'China'];
+            genres = data.genres || data.genre || data.tags || ['Drama', 'China'];
             status = data.status || 'Ongoing';
             break;
         case 'anime':
