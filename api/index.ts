@@ -811,17 +811,21 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
         if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou' || !action) {
             const endpoint = action || 'latest';
             const response = await axios.get(`${API_BASE}/dramabox/${endpoint}`, config);
-            const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
+            // Handle various response formats from dramabox API
+            const results = response.data?.value || response.data?.data || (Array.isArray(response.data) ? response.data : []);
             
-            // Normalize data format
+            // Normalize data format - map dramabox fields correctly
             const items = results.map((item: any) => ({
                 bookId: item.bookId || item.id,
                 id: item.bookId || item.id,
-                title: item.judul || item.title,
-                judul: item.judul || item.title,
-                image: item.thumbnail_url || item.cover || item.image,
-                thumbnail_url: item.thumbnail_url || item.cover || item.image,
-                totalEpisode: item.total_episode || item.totalEpisode,
+                title: item.bookName || item.judul || item.title || 'Unknown',
+                judul: item.bookName || item.judul || item.title || 'Unknown',
+                image: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                cover: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                thumbnail_url: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                totalEpisode: item.chapterCount || item.total_episode || item.totalEpisode || 0,
+                description: item.introduction || item.synopsis || item.description || '',
+                tags: item.tags || [],
                 rating: item.rating || '8.5',
                 type: 'Drama'
             }));
@@ -836,15 +840,16 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 ...config,
                 params: { query: keyword }
             });
-            const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
+            const results = response.data?.value || response.data?.data || (Array.isArray(response.data) ? response.data : []);
             const items = results.map((item: any) => ({
                 bookId: item.bookId || item.id,
                 id: item.bookId || item.id,
-                title: item.judul || item.title,
-                judul: item.judul || item.title,
-                image: item.thumbnail_url || item.cover || item.image,
-                thumbnail_url: item.thumbnail_url || item.cover || item.image,
-                totalEpisode: item.total_episode || item.totalEpisode,
+                title: item.bookName || item.judul || item.title || 'Unknown',
+                judul: item.bookName || item.judul || item.title || 'Unknown',
+                image: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                cover: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                thumbnail_url: item.coverWap || item.thumbnail_url || item.cover || item.image || '',
+                totalEpisode: item.chapterCount || item.total_episode || item.totalEpisode || 0,
                 type: 'Drama'
             }));
             return res.json({ status: true, data: items });
