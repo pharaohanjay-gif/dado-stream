@@ -148,15 +148,28 @@ function handleImageError(img) {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize browser history with home state
+  // Check for hash in URL and navigate to that section
+  const initialHash = window.location.hash.replace('#', '') || 'home';
+  const validSections = ['home', 'drama', 'anime', 'komik'];
+  const targetSection = validSections.includes(initialHash) ? initialHash : 'home';
+  
+  // Initialize browser history with the target section state
   if (!history.state) {
-    history.replaceState({ section: 'home' }, '', '#home');
+    history.replaceState({ section: targetSection }, '', `#${targetSection}`);
   }
+  
+  // Set initial section state
+  state.currentSection = targetSection;
   
   initTheme();
   initEventListeners();
   loadInitialData();
   hideLoadingOverlay();
+  
+  // Navigate to the target section after data is loaded
+  if (targetSection !== 'home') {
+    setTimeout(() => navigateTo(targetSection, false), 100);
+  }
 });
 
 // ==========================================================================
@@ -1998,7 +2011,7 @@ function closeModal() {
 function showTentangKami() {
   const content = `
     <div style="padding: 20px; max-width: 600px;">
-      <h2 style="color: #FF6B00; margin-bottom: 20px; font-size: 24px;">Tentang DADO STREAM</h2>
+      <h2 style="color: #006fee; margin-bottom: 20px; font-size: 24px;">Tentang DADO STREAM</h2>
       
       <p style="margin-bottom: 15px; line-height: 1.7; color: #ddd;">
         DADO STREAM lahir dari kecintaan kami terhadap dunia hiburan Asia. Kami paham betapa sulitnya 
@@ -2023,7 +2036,7 @@ function showTentangKami() {
       </p>
       
       <div style="text-align: center; padding-top: 15px; border-top: 1px solid #333;">
-        <span style="color: #FF6B00; font-weight: 600;">DADO STREAM</span>
+        <span style="color: #006fee; font-weight: 600;">DADO STREAM</span>
         <span style="color: #888;"> - Hiburan Tanpa Batas</span>
       </div>
     </div>
@@ -2035,7 +2048,7 @@ function showTentangKami() {
 function showFAQ() {
   const content = `
     <div style="padding: 20px; max-width: 600px;">
-      <h2 style="color: #FF6B00; margin-bottom: 25px; font-size: 24px;">Pertanyaan yang Sering Ditanyakan</h2>
+      <h2 style="color: #006fee; margin-bottom: 25px; font-size: 24px;">Pertanyaan yang Sering Ditanyakan</h2>
       
       <div style="margin-bottom: 20px;">
         <h4 style="color: #fff; margin-bottom: 8px;">❓ DADO STREAM itu apa sih?</h4>

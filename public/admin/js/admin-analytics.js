@@ -38,7 +38,7 @@ async function loadPeakHoursData() {
         container.innerHTML = `
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="background: rgba(255,107,0,0.1); color: #ff6b00;">
+                    <tr style="background: rgba(0,111,238,0.1); color: #006fee;">
                         <th style="padding: 12px; text-align: left;">Country</th>
                         <th style="padding: 12px; text-align: left;">Peak Hour</th>
                         <th style="padding: 12px; text-align: right;">Visitors</th>
@@ -51,7 +51,7 @@ async function loadPeakHoursData() {
                                 <span class="flag-icon">${getCountryFlag(item.countryCode || item.country?.substring(0,2))}</span>
                                 ${item.country || 'Unknown'}
                             </td>
-                            <td style="padding: 12px; color: #ff6b00; font-weight: 600;">
+                            <td style="padding: 12px; color: #006fee; font-weight: 600;">
                                 🕐 ${item.peakHour || '00:00'}
                             </td>
                             <td style="padding: 12px; text-align: right; font-weight: 600;">${(item.visitors || 0).toLocaleString()}</td>
@@ -84,8 +84,8 @@ async function loadHourlyChart() {
                 datasets: [{
                     label: 'Visitors',
                     data: data.values,
-                    backgroundColor: 'rgba(255, 107, 0, 0.6)',
-                    borderColor: '#ff6b00',
+                    backgroundColor: 'rgba(0, 111, 238, 0.6)',
+                    borderColor: '#006fee',
                     borderWidth: 1
                 }]
             },
@@ -131,8 +131,8 @@ async function loadWeeklyChart() {
                 datasets: [{
                     label: 'Visitors',
                     data: data.weekdayData.map(d => d.count),
-                    borderColor: '#ff6b00',
-                    backgroundColor: 'rgba(255, 107, 0, 0.2)',
+                    borderColor: '#006fee',
+                    backgroundColor: 'rgba(0, 111, 238, 0.2)',
                     fill: true,
                     tension: 0.4
                 }]
@@ -190,9 +190,9 @@ async function loadGeoTable() {
                             <div style="font-size: 12px; color: #999;">${(item.visitors || 0).toLocaleString()} visits</div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="color: #ff6b00; font-weight: 700;">${percentage.toFixed(1)}%</div>
+                            <div style="color: #006fee; font-weight: 700;">${percentage.toFixed(1)}%</div>
                             <div style="height: 4px; width: 60px; background: #333; border-radius: 2px; overflow: hidden;">
-                                <div style="height: 100%; width: ${percentage}%; background: #ff6b00;"></div>
+                                <div style="height: 100%; width: ${percentage}%; background: #006fee;"></div>
                             </div>
                         </div>
                     </div>

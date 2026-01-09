@@ -119,7 +119,7 @@ async function loadWatchers() {
                         <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">
                             ${location || 'Unknown Location'}
                         </div>
-                        <div style="font-size: 12px; color: #ff6b00; margin-bottom: 4px;">
+                        <div style="font-size: 12px; color: #006fee; margin-bottom: 4px;">
                             📍 ${w.currentContent || w.currentPage || '/'}
                         </div>
                         <div style="font-size: 11px; color: #888; margin-bottom: 4px;">

@@ -1,20 +1,20 @@
 /* 
-  iQIYI Clone Aesthetic - STRICT Black, White, Orange Theme 
-  WibuStream Premium UI 
+  DADO CINEMA Style - Black & Blue Theme 
+  DADO STREAM Premium UI 
 */
 
 :root {
-    --primary-color: #ff6700;
-    /* iQIYI Orange */
-    --primary-hover: #ff8533;
-    --bg-dark: #000000;
-    --bg-card: #000000;
-    --bg-header: rgba(0, 0, 0, 0.9);
+    --primary-color: #006fee;
+    /* DADO CINEMA Blue */
+    --primary-hover: #4da6ff;
+    --bg-dark: #0D0C0F;
+    --bg-card: #18181B;
+    --bg-header: rgba(13, 12, 15, 0.95);
     --text-main: #ffffff;
-    --text-secondary: #cccccc;
-    --gray-dark: #111111;
-    --accent-green: #ff6700;
-    /* Changed to orange for consistency */
+    --text-secondary: #a1a1aa;
+    --gray-dark: #18181B;
+    --accent-green: #006fee;
+    /* Changed to blue for consistency */
 }
 
 /* Base Reset */
@@ -39,9 +39,9 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    background: #000000;
+    background: #0D0C0F;
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid #27272a;
 }
 
 .nav-top {
@@ -64,12 +64,12 @@ body {
 
 .search-wrapper {
     position: relative;
-    background: #1a1a1a;
+    background: #18181B;
     border-radius: 25px;
     display: flex;
     align-items: center;
     padding: 4px 20px;
-    border: 1px solid #333;
+    border: 1px solid #27272a;
 }
 
 .search-input {
@@ -121,7 +121,7 @@ body {
 .hero {
     height: 550px;
     border-radius: 15px;
-    background-color: #000;
+    background-color: #0D0C0F;
 }
 
 .hero-title {
@@ -135,11 +135,11 @@ body {
     font-size: 18px;
 }
 
-/* Content Grid iQIYI Style */
+/* Content Grid Style */
 .card-img-wrapper {
     border-radius: 10px;
-    background: #111;
-    border: 1px solid #222;
+    background: #18181B;
+    border: 1px solid #27272a;
 }
 
 .card-title {
@@ -164,7 +164,7 @@ body {
 .star-img-wrapper {
     width: 100px;
     height: 100px;
-    border: 3px solid #222;
+    border: 3px solid #27272a;
 }
 
 .star-item:hover .star-img-wrapper {
@@ -179,15 +179,15 @@ body {
 
 /* Strict Color Overrides */
 * {
-    border-color: #222 !important;
+    border-color: #27272a !important;
 }
 
 .category-tab,
 .detail-tag,
 .pill {
-    background: #1a1a1a !important;
+    background: #18181B !important;
     color: #ffffff !important;
-    border: 1px solid #333 !important;
+    border: 1px solid #3f3f46 !important;
 }
 
 .category-tab.active,
@@ -200,23 +200,23 @@ body {
 
 .back-btn {
     color: #ffffff !important;
-    background: #1a1a1a !important;
-    border: 1px solid #333 !important;
+    background: #18181B !important;
+    border: 1px solid #3f3f46 !important;
 }
 
 .footer {
-    background: #000000;
-    border-top: 1px solid #222;
+    background: #0D0C0F;
+    border-top: 1px solid #27272a;
 }
 
-/* Global Color Hammer - Forces everything to theme */
+/* Global Color - Forces everything to theme */
 body,
 .main,
 .section,
 .detail-wrapper,
 .reader-container,
 .player-container {
-    background-color: #000000 !important;
+    background-color: #0D0C0F !important;
     color: #ffffff !important;
 }
 
@@ -253,15 +253,15 @@ h6,
 }
 
 .episode-btn {
-    background: #111 !important;
+    background: #18181B !important;
     color: #fff !important;
-    border: 1px solid #333 !important;
+    border: 1px solid #3f3f46 !important;
 }
 
 /* Remove all gradients that might have old colors */
 .hero-bg::after,
 .gradient-overlay {
-    background: linear-gradient(to top, #000000 0%, transparent 100%) !important;
+    background: linear-gradient(to top, #0D0C0F 0%, transparent 100%) !important;
 }
 
 .gradient-text {
@@ -272,7 +272,7 @@ h6,
 
 /* Scrollbar */
 ::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #3f3f46;
 }
 
 ::-webkit-scrollbar-thumb:hover {

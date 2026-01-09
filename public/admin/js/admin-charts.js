@@ -32,11 +32,11 @@ async function loadTrendChart() {
                 datasets: [{
                     label: 'Visitors',
                     data: values,
-                    borderColor: '#FF6700',
-                    backgroundColor: 'rgba(255, 103, 0, 0.1)',
+                    borderColor: '#006fee',
+                    backgroundColor: 'rgba(0, 111, 238, 0.1)',
                     tension: 0.4,
                     fill: true,
-                    pointBackgroundColor: '#FF6700'
+                    pointBackgroundColor: '#006fee'
                 }]
             },
             options: {
@@ -82,7 +82,7 @@ async function loadHourlyChart() {
                     data: data,
                     backgroundColor: data.map((v, i) => {
                         const max = Math.max(...data);
-                        return v === max && v > 0 ? '#FF6700' : 'rgba(255, 103, 0, 0.4)';
+                        return v === max && v > 0 ? '#006fee' : 'rgba(0, 111, 238, 0.4)';
                     }),
                     borderRadius: 4
                 }]
@@ -135,7 +135,7 @@ async function loadDeviceChart() {
                 labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
                 datasets: [{
                     data: data,
-                    backgroundColor: ['#FF6700', '#FFFFFF', '#333333', '#666666'],
+                    backgroundColor: ['#006fee', '#4da6ff', '#333333', '#666666'],
                     borderWidth: 2,
                     borderColor: '#1a1a1a'
                 }]

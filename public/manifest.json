@@ -4,8 +4,8 @@
   "description": "Platform streaming drama China, anime, dan baca komik terlengkap",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#FF6B00",
+  "background_color": "#0D0C0F",
+  "theme_color": "#006fee",
   "orientation": "any",
   "icons": [
     {

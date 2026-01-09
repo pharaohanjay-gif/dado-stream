@@ -5,18 +5,18 @@
 
 /* CSS Variables - Dark Theme (Default) */
 :root {
-    /* Primary Colors - Orange Palette (iQIYI) */
-    --primary-50: #fff9f2;
-    --primary-100: #ffecd9;
-    --primary-200: #ffd7b3;
-    --primary-300: #ffbd80;
-    --primary-400: #ff9e4d;
-    --primary-500: #ff6700;
-    /* Main iQIYI Orange */
-    --primary-600: #e65c00;
-    --primary-700: #cc5200;
-    --primary-800: #b34700;
-    --primary-900: #993d00;
+    /* Primary Colors - Blue Palette (DADO CINEMA Style) */
+    --primary-50: #e6f2ff;
+    --primary-100: #b3d9ff;
+    --primary-200: #80bfff;
+    --primary-300: #4da6ff;
+    --primary-400: #1a8cff;
+    --primary-500: #006fee;
+    /* Main Blue */
+    --primary-600: #0059cc;
+    --primary-700: #0047a3;
+    --primary-800: #00357a;
+    --primary-900: #002352;
 
     /* Background Colors - Pure Black Theme */
     --bg-primary: #000000;
@@ -26,9 +26,9 @@
     --bg-card-hover: #111111;
 
     /* Surface Colors */
-    --surface-1: rgba(255, 103, 0, 0.05);
-    --surface-2: rgba(255, 103, 0, 0.1);
-    --surface-3: rgba(255, 103, 0, 0.15);
+    --surface-1: rgba(0, 111, 238, 0.05);
+    --surface-2: rgba(0, 111, 238, 0.1);
+    --surface-3: rgba(0, 111, 238, 0.15);
 
     /* Text Colors */
     --text-primary: #ffffff;
@@ -41,17 +41,17 @@
     --border-color-light: #333333;
 
     /* Gradient */
-    --gradient-primary: linear-gradient(135deg, #ff6700 0%, #ff9500 100%);
-    --gradient-secondary: linear-gradient(135deg, #ff6700 0%, #e65c00 100%);
-    --gradient-glow: linear-gradient(135deg, rgba(255, 103, 0, 0.4) 0%, rgba(255, 149, 0, 0.4) 100%);
+    --gradient-primary: linear-gradient(135deg, #006fee 0%, #4da6ff 100%);
+    --gradient-secondary: linear-gradient(135deg, #006fee 0%, #0059cc 100%);
+    --gradient-glow: linear-gradient(135deg, rgba(0, 111, 238, 0.4) 0%, rgba(77, 166, 255, 0.4) 100%);
     --gradient-hero: linear-gradient(180deg, transparent 0%, #000000 100%);
 
     /* Shadows */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.8);
     --shadow-md: 0 4px 20px rgba(0, 0, 0, 1);
     --shadow-lg: 0 8px 40px rgba(0, 0, 0, 1);
-    --shadow-glow: 0 0 40px rgba(255, 103, 0, 0.2);
-    --shadow-glow-sm: 0 0 20px rgba(255, 103, 0, 0.1);
+    --shadow-glow: 0 0 40px rgba(0, 111, 238, 0.2);
+    --shadow-glow-sm: 0 0 20px rgba(0, 111, 238, 0.1);
 
     /* Spacing */
     --space-xs: 0.25rem;
@@ -371,7 +371,7 @@ ol {
 
 .mobile-search-submit {
     padding: 0.75rem 1.25rem;
-    background: #FF6B00;
+    background: #006fee;
     border: none;
     border-radius: 8px;
     color: #fff;

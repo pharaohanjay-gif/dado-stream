@@ -1,24 +1,24 @@
 /* ==========================================================================
-   WIBUSTREAM ADMIN PANEL STYLES
-   Theme: Black, White, Orange (iQ.com inspired)
+   DADO STREAM ADMIN PANEL STYLES
+   Theme: Black, White, Blue (DADO CINEMA inspired)
    ========================================================================== */
 
 :root
 
  {
     /* Colors */
-    --black: #000000;
-    --black-light: #1a1a1a;
-    --black-lighter: #2a2a2a;
+    --black: #0D0C0F;
+    --black-light: #18181B;
+    --black-lighter: #27272a;
     --white: #ffffff;
-    --gray-dark: #404040;
-    --gray: #666666;
-    --gray-light: #999999;
-    --gray-lighter: #cccccc;
-    --orange: #FF6B00;
-    --orange-light: #FF8533;
-    --orange-lighter: #FFA366;
-    --orange-dark: #E65100;
+    --gray-dark: #3f3f46;
+    --gray: #52525b;
+    --gray-light: #a1a1aa;
+    --gray-lighter: #d4d4d8;
+    --orange: #006fee;
+    --orange-light: #4da6ff;
+    --orange-lighter: #80bfff;
+    --orange-dark: #0059cc;
     
     /* Functional Colors */
     --bg-primary: var(--black);
