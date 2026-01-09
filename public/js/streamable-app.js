@@ -6,6 +6,27 @@
 // ============ API Configuration ============
 const API_BASE = '/api'; // Use internal API
 const IMAGE_PROXY = 'https://wsrv.nl/?url=';
+const INTERNAL_IMAGE_PROXY = '/api/proxy/image?url=';
+
+// Helper function to get the right proxy for an image URL
+function getProxiedImageUrl(imageUrl) {
+    if (!imageUrl) return PLACEHOLDER_SMALL;
+    
+    // Some domains need internal proxy (wsrv.nl can't access them)
+    const needsInternalProxy = [
+        'samehadaku', 
+        'shinigami', 
+        'shngm',
+        'komikindo'
+    ];
+    
+    const useInternal = needsInternalProxy.some(domain => imageUrl.toLowerCase().includes(domain));
+    
+    if (useInternal) {
+        return INTERNAL_IMAGE_PROXY + encodeURIComponent(imageUrl);
+    }
+    return IMAGE_PROXY + encodeURIComponent(imageUrl);
+}
 
 // Placeholder images (SVG data URLs - no network request needed)
 const PLACEHOLDER_SMALL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="225" viewBox="0 0 150 225"%3E%3Crect fill="%231a1a1a" width="150" height="225"/%3E%3Ctext fill="%23666" font-family="Arial" font-size="12" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
@@ -185,7 +206,7 @@ function renderBanners(banners) {
     
     slider.innerHTML = banners.map((drama, index) => {
         const image = drama.image || drama.cover || drama.thumbnail_url || '';
-        const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
+        const imgUrl = image ? getProxiedImageUrl(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
         const bookId = drama.bookId || drama.id || drama.urlId;
         
         return `
@@ -229,7 +250,7 @@ function renderAnimeBanners(banners) {
     
     slider.innerHTML = banners.map((anime, index) => {
         const image = anime.poster || anime.image || anime.thumbnail_url || '';
-        const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
+        const imgUrl = image ? getProxiedImageUrl(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
         const animeId = anime.animeId || anime.urlId || anime.id;
         const title = anime.title || anime.english || anime.japanese || 'Anime';
         
@@ -513,7 +534,7 @@ function createCard(item, type) {
             break;
     }
     
-    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : PLACEHOLDER_SMALL;
+    const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
     
     return `
         <div class="card" onclick="openDetail('${type}', '${id}')">
@@ -661,7 +682,7 @@ function renderDetail(type, data) {
             break;
     }
     
-    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : PLACEHOLDER_LARGE;
+    const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_LARGE;
     
     // Handle genres - can be string or array
     let genresList = [];
@@ -1259,21 +1280,21 @@ function renderSearchResults(items) {
         
         switch(item.searchType) {
             case 'drama':
-                image = IMAGE_PROXY + encodeURIComponent(item.cover || item.image || item.thumbnail_url || '');
+                image = getProxiedImageUrl(item.cover || item.image || item.thumbnail_url || '');
                 title = item.title || item.judul;
                 type = 'Drama';
                 info = `${item.totalEpisode || '??'} Episode`;
                 id = item.bookId || item.id;
                 break;
             case 'anime':
-                image = IMAGE_PROXY + encodeURIComponent(item.poster || item.image || item.thumbnail_url || '');
+                image = getProxiedImageUrl(item.poster || item.image || item.thumbnail_url || '');
                 title = item.title || item.judul;
                 type = 'Anime';
                 info = item.status || 'Anime';
                 id = item.urlId || item.slug || item.id;
                 break;
             case 'komik':
-                image = IMAGE_PROXY + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
+                image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
                 title = item.title || item.judul;
                 type = item.type || 'Komik';
                 info = item.chapter || 'Manga';
@@ -1348,19 +1369,19 @@ function renderTrendingList(items, type) {
         
         switch(type) {
             case 'drama':
-                image = IMAGE_PROXY + encodeURIComponent(item.cover || item.image || item.thumbnail_url || '');
+                image = getProxiedImageUrl(item.cover || item.image || item.thumbnail_url || '');
                 title = item.title || item.judul;
                 info = `${item.totalEpisode || '??'} Episode • Drama China`;
                 id = item.bookId || item.id;
                 break;
             case 'anime':
-                image = IMAGE_PROXY + encodeURIComponent(item.poster || item.image || item.thumbnail_url || '');
+                image = getProxiedImageUrl(item.poster || item.image || item.thumbnail_url || '');
                 title = item.title || item.judul;
                 info = `${item.episode || item.status || 'Ongoing'} • Anime`;
                 id = item.urlId || item.slug || item.id;
                 break;
             case 'komik':
-                image = IMAGE_PROXY + encodeURIComponent(item.thumbnail || item.cover || item.image || '');
+                image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
                 title = item.title || item.judul;
                 info = `${item.chapter || 'Ongoing'} • ${item.type || 'Manga'}`;
                 id = item.manga_id || item.slug || item.id;
@@ -1489,7 +1510,6 @@ async function filterContent(type, filter) {
     `;
     
     try {
-        let endpoint;
         let data;
         
         if (filter === 'all') {
@@ -1503,28 +1523,24 @@ async function filterContent(type, filter) {
                 const result = await response.json();
                 data = result.data || result;
             } else if (type === 'komik') {
-                const response = await fetch(`${API_BASE}/komik?action=trending`);
+                const response = await fetch(`${API_BASE}/komik?action=popular`);
                 const result = await response.json();
                 data = result.data || result;
             }
         } else {
-            // Filter by genre/status/type
+            // Filter by genre/status/type - use search as fallback since specific endpoints don't exist
             if (type === 'drama') {
-                const response = await fetch(`${API_BASE}/drama?action=search&query=${filter}`);
+                const response = await fetch(`${API_BASE}/drama?action=search&keyword=${encodeURIComponent(filter)}`);
                 const result = await response.json();
                 data = result.data || result;
             } else if (type === 'anime') {
-                if (filter === 'ongoing' || filter === 'completed') {
-                    const response = await fetch(`${API_BASE}/anime?action=${filter}`);
-                    const result = await response.json();
-                    data = result.data || result;
-                } else if (filter === 'movie') {
-                    const response = await fetch(`${API_BASE}/anime?action=search&query=movie`);
-                    const result = await response.json();
-                    data = result.data || result;
-                }
+                // Use search with keyword for anime filters
+                const response = await fetch(`${API_BASE}/anime?action=search&keyword=${encodeURIComponent(filter)}`);
+                const result = await response.json();
+                data = result.data || result;
             } else if (type === 'komik') {
-                const response = await fetch(`${API_BASE}/komik?action=filter&type=${filter}`);
+                // Use search for komik type filters
+                const response = await fetch(`${API_BASE}/komik?action=search&keyword=${encodeURIComponent(filter)}`);
                 const result = await response.json();
                 data = result.data || result;
             }
@@ -1559,6 +1575,79 @@ function renderGrid(type, grid, data) {
     } else if (type === 'komik') {
         grid.innerHTML = data.map(item => renderKomikCard(item)).join('');
     }
+}
+
+function renderDramaCard(item) {
+    const image = item.image || item.cover || item.thumbnail_url || '';
+    const title = item.title || item.judul || 'Unknown';
+    const id = item.bookId || item.id || item.urlId;
+    const episodes = item.totalEpisode || item.episode || '??';
+    const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
+    
+    return `
+        <div class="card" onclick="openDetail('drama', '${id}')">
+            <div class="card-image">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                <div class="card-overlay">
+                    <div class="card-play">
+                        <i class="fas fa-play"></i>
+                    </div>
+                </div>
+                <span class="card-badge">Drama</span>
+            </div>
+            <h3 class="card-title">${title}</h3>
+            <div class="card-info">${episodes} Episode</div>
+        </div>
+    `;
+}
+
+function renderAnimeCard(item) {
+    const image = item.image || item.poster || item.thumbnail_url || '';
+    const title = item.title || item.judul || 'Unknown';
+    const id = item.urlId || item.id || item.animeId;
+    const episode = item.episode || item.episodes || 'Ongoing';
+    const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
+    
+    return `
+        <div class="card" onclick="openDetail('anime', '${id}')">
+            <div class="card-image">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                <div class="card-overlay">
+                    <div class="card-play">
+                        <i class="fas fa-play"></i>
+                    </div>
+                </div>
+                <span class="card-badge">Anime</span>
+            </div>
+            <h3 class="card-title">${title}</h3>
+            <div class="card-info">${episode}</div>
+        </div>
+    `;
+}
+
+function renderKomikCard(item) {
+    const image = item.thumbnail || item.cover || item.image || '';
+    const title = item.title || item.judul || 'Unknown';
+    const id = item.slug || item.id || item.manga_id;
+    const chapter = item.chapter || item.latestChapter || 'Ongoing';
+    const type = item.type || 'Manga';
+    const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
+    
+    return `
+        <div class="card" onclick="openDetail('komik', '${id}')">
+            <div class="card-image">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                <div class="card-overlay">
+                    <div class="card-play">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                </div>
+                <span class="card-badge">${type}</span>
+            </div>
+            <h3 class="card-title">${title}</h3>
+            <div class="card-info">${chapter}</div>
+        </div>
+    `;
 }
 
 // ============ Favorites ============
