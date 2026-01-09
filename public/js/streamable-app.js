@@ -57,6 +57,7 @@ async function initApp() {
     initHistory();
     initFavorites();
     initScrollListener();
+    initFilters();
     
     // Hide splash screen
     setTimeout(() => {
@@ -142,13 +143,14 @@ function toggleMobileMenu() {
 // ============ Banner ============
 async function loadBanners() {
     try {
-        const response = await fetch(`${API_BASE}/drama?action=latest`);
+        // Load trending anime for banners
+        const response = await fetch(`${API_BASE}/anime?action=popular`);
         const result = await response.json();
         const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             const banners = data.slice(0, 5);
-            renderBanners(banners);
+            renderAnimeBanners(banners);
         } else {
             renderFallbackBanner();
         }
@@ -208,6 +210,51 @@ function renderBanners(banners) {
                             <i class="fas fa-play"></i> Tonton Sekarang
                         </button>
                         <button class="hero-btn hero-btn-secondary" onclick="event.stopPropagation(); openDetail('drama', '${bookId}')">
+                            <i class="fas fa-info-circle"></i> Detail
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    indicators.innerHTML = banners.map((_, index) => `
+        <div class="hero-indicator ${index === 0 ? 'active' : ''}" onclick="goToBanner(${index})"></div>
+    `).join('');
+}
+
+function renderAnimeBanners(banners) {
+    const slider = $('#hero-slider');
+    const indicators = $('#hero-indicators');
+    
+    slider.innerHTML = banners.map((anime, index) => {
+        const image = anime.poster || anime.image || anime.thumbnail_url || '';
+        const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
+        const animeId = anime.animeId || anime.urlId || anime.id;
+        const title = anime.title || anime.english || anime.japanese || 'Anime';
+        
+        return `
+            <div class="hero-slide" onclick="openDetail('anime', '${animeId}')">
+                <img src="${imgUrl}" alt="${title}">
+                <div class="hero-content">
+                    <span class="hero-badge">Anime Trending</span>
+                    <h2 class="hero-title">${title}</h2>
+                    <p class="hero-desc">${anime.synopsis || anime.description || 'Tonton sekarang di DADO STREAM'}</p>
+                    <div class="hero-meta">
+                        <div class="hero-meta-item">
+                            <i class="fas fa-play-circle"></i>
+                            <span>${anime.episodes || anime.episode || 'Ongoing'}</span>
+                        </div>
+                        <div class="hero-meta-item">
+                            <i class="fas fa-star"></i>
+                            <span>${anime.rating || anime.score || '8.5'}</span>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="hero-btn hero-btn-primary" onclick="event.stopPropagation(); openDetail('anime', '${animeId}')">
+                            <i class="fas fa-play"></i> Tonton Sekarang
+                        </button>
+                        <button class="hero-btn hero-btn-secondary" onclick="event.stopPropagation(); openDetail('anime', '${animeId}')">
                             <i class="fas fa-info-circle"></i> Detail
                         </button>
                     </div>
@@ -580,11 +627,27 @@ function renderDetail(type, data) {
             break;
         case 'anime':
             image = data.poster || data.image || data.thumbnail_url || '';
-            title = data.title || data.judul || 'Unknown';
-            description = data.synopsis || data.description || 'Tidak ada deskripsi';
-            totalEp = data.totalEpisodes || state.episodes.length || '??';
-            rating = data.rating || data.score || '8.0';
-            genres = data.genreList || data.genres || data.genre || ['Anime'];
+            // Title can be empty, use english/japanese as fallback
+            title = data.title || data.english || data.japanese || data.judul || 'Unknown';
+            // Synopsis can be an object with paragraphs array
+            if (data.synopsis && typeof data.synopsis === 'object' && data.synopsis.paragraphs) {
+                description = data.synopsis.paragraphs.join(' ') || 'Tidak ada deskripsi';
+            } else {
+                description = data.synopsis || data.description || 'Tidak ada deskripsi';
+            }
+            totalEp = data.totalEpisodes || data.episodes?.length || state.episodes.length || '??';
+            // Score can be object with value property
+            if (data.score && typeof data.score === 'object') {
+                rating = data.score.value || '8.0';
+            } else {
+                rating = data.rating || data.score || '8.0';
+            }
+            // genreList is array of objects with title property
+            if (data.genreList && Array.isArray(data.genreList) && data.genreList[0]?.title) {
+                genres = data.genreList.map(g => g.title);
+            } else {
+                genres = data.genreList || data.genres || data.genre || ['Anime'];
+            }
             status = data.status || 'Ongoing';
             break;
         case 'komik':
@@ -1387,6 +1450,117 @@ function clearHistory() {
     }
 }
 
+// ============ Filter Buttons ============
+function initFilters() {
+    // Add click handlers to all filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filterBar = this.closest('.filter-bar');
+            const page = this.closest('.page');
+            const filter = this.dataset.filter;
+            
+            // Update active state
+            filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Determine content type from page id
+            if (page) {
+                const pageId = page.id;
+                if (pageId === 'page-drama') {
+                    filterContent('drama', filter);
+                } else if (pageId === 'page-anime') {
+                    filterContent('anime', filter);
+                } else if (pageId === 'page-komik') {
+                    filterContent('komik', filter);
+                }
+            }
+        });
+    });
+}
+
+async function filterContent(type, filter) {
+    const grid = $(`#${type}-grid`);
+    
+    // Show loading
+    grid.innerHTML = `
+        <div class="skeleton-container grid">
+            ${Array(6).fill('<div class="skeleton-card"></div>').join('')}
+        </div>
+    `;
+    
+    try {
+        let endpoint;
+        let data;
+        
+        if (filter === 'all') {
+            // Load all content
+            if (type === 'drama') {
+                const response = await fetch(`${API_BASE}/drama?action=latest`);
+                const result = await response.json();
+                data = result.data || result;
+            } else if (type === 'anime') {
+                const response = await fetch(`${API_BASE}/anime?action=popular`);
+                const result = await response.json();
+                data = result.data || result;
+            } else if (type === 'komik') {
+                const response = await fetch(`${API_BASE}/komik?action=trending`);
+                const result = await response.json();
+                data = result.data || result;
+            }
+        } else {
+            // Filter by genre/status/type
+            if (type === 'drama') {
+                const response = await fetch(`${API_BASE}/drama?action=search&query=${filter}`);
+                const result = await response.json();
+                data = result.data || result;
+            } else if (type === 'anime') {
+                if (filter === 'ongoing' || filter === 'completed') {
+                    const response = await fetch(`${API_BASE}/anime?action=${filter}`);
+                    const result = await response.json();
+                    data = result.data || result;
+                } else if (filter === 'movie') {
+                    const response = await fetch(`${API_BASE}/anime?action=search&query=movie`);
+                    const result = await response.json();
+                    data = result.data || result;
+                }
+            } else if (type === 'komik') {
+                const response = await fetch(`${API_BASE}/komik?action=filter&type=${filter}`);
+                const result = await response.json();
+                data = result.data || result;
+            }
+        }
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderGrid(type, grid, data);
+        } else {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>Tidak ada ${type} ditemukan untuk filter "${filter}"</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error(`Error filtering ${type}:`, error);
+        grid.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Gagal memuat konten. Coba lagi.</p>
+            </div>
+        `;
+    }
+}
+
+function renderGrid(type, grid, data) {
+    if (type === 'drama') {
+        grid.innerHTML = data.map(item => renderDramaCard(item)).join('');
+    } else if (type === 'anime') {
+        grid.innerHTML = data.map(item => renderAnimeCard(item)).join('');
+    } else if (type === 'komik') {
+        grid.innerHTML = data.map(item => renderKomikCard(item)).join('');
+    }
+}
+
 // ============ Favorites ============
 function initFavorites() {
     // Initialize from localStorage
@@ -1453,10 +1627,34 @@ function loadFavorites() {
 function initContinueWatching() {
     const history = JSON.parse(localStorage.getItem('dado_history') || '[]');
     const videoHistory = history.filter(h => h.type !== 'komik').slice(0, 5);
+    const section = $('#continue-watching-section');
     
-    if (videoHistory.length > 0) {
-        $('#continue-watching-section').style.display = 'block';
-        // Render continue watching cards
+    if (videoHistory.length > 0 && section) {
+        section.style.display = 'block';
+        const container = section.querySelector('.scroll-row') || section.querySelector('.content-grid');
+        
+        if (container) {
+            container.innerHTML = videoHistory.map(item => `
+                <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
+                    <div class="card-image">
+                        <img src="${item.image || PLACEHOLDER_SMALL}" alt="${item.title}" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                        <div class="card-overlay">
+                            <div class="card-play">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        <div class="card-progress">
+                            <div class="card-progress-bar" style="width: ${item.progress || 50}%"></div>
+                        </div>
+                        <span class="card-badge">${item.type}</span>
+                    </div>
+                    <h3 class="card-title">${item.title || 'Unknown'}</h3>
+                    <p class="card-episode">${item.episode || 'Episode 1'}</p>
+                </div>
+            `).join('');
+        }
+    } else if (section) {
+        section.style.display = 'none';
     }
 }
 
