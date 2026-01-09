@@ -1973,15 +1973,28 @@ body {
     width: 100%;
     max-width: 728px;
     margin: 20px auto;
-    padding: 10px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
+    padding: 12px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 90px;
     overflow: hidden;
+    position: relative;
+}
+
+.ad-banner-container::before {
+    content: 'Iklan';
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
 }
 
 .ad-banner-container > div {
@@ -1990,13 +2003,23 @@ body {
     justify-content: center;
 }
 
+/* Ad on content pages - full width */
+.ad-banner-container.ad-page {
+    max-width: 100%;
+    margin: 15px 0;
+    border-radius: var(--radius-md);
+}
+
 @media (max-width: 768px) {
     .ad-banner-container {
         max-width: 100%;
         margin: 15px 0;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
+        padding: 10px;
+        border-radius: var(--radius-md);
+    }
+    
+    .ad-banner-container::before {
+        font-size: 8px;
     }
 }
 
