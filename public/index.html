@@ -14,6 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/streamable.css">
+    <!-- Adsterra Popunder - Non-intrusive -->
+    <script async src="https://pl28403014.effectivegatecpm.com/f2/48/ee/f248ee0218c1012a262b50791ac32e5a.js"></script>
 </head>
 <body>
     <!-- Splash Screen -->
@@ -102,6 +104,22 @@
             </div>
         </aside>
 
+        <!-- Mobile Search Bar (Hidden by default, shown when search icon clicked) -->
+        <div class="mobile-search-overlay hidden" id="mobile-search-overlay">
+            <div class="mobile-search-container">
+                <div class="mobile-search-header">
+                    <button class="mobile-search-close" onclick="closeMobileSearch()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="mobile-search-input-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="mobile-search-input" placeholder="Cari drama, anime, komik..." autocomplete="off">
+                    </div>
+                </div>
+                <div class="mobile-search-results" id="mobile-search-results"></div>
+            </div>
+        </div>
+
         <!-- Mobile Bottom Navigation -->
         <nav class="mobile-nav">
             <button class="mobile-nav-item active" data-page="home" onclick="navigateTo('home')">
@@ -112,13 +130,13 @@
                 <i class="fas fa-film"></i>
                 <span>Drama</span>
             </button>
+            <button class="mobile-nav-item" onclick="openMobileSearch()">
+                <i class="fas fa-search"></i>
+                <span>Cari</span>
+            </button>
             <button class="mobile-nav-item" data-page="anime" onclick="navigateTo('anime')">
                 <i class="fas fa-dragon"></i>
                 <span>Anime</span>
-            </button>
-            <button class="mobile-nav-item" data-page="komik" onclick="navigateTo('komik')">
-                <i class="fas fa-book-open"></i>
-                <span>Komik</span>
             </button>
             <button class="mobile-nav-item" data-page="history" onclick="navigateTo('history')">
                 <i class="fas fa-history"></i>
@@ -372,6 +390,17 @@
     <button class="back-to-top hidden" id="back-to-top" onclick="scrollToTop()">
         <i class="fas fa-chevron-up"></i>
     </button>
+
+    <!-- Adsterra Native Banner -->
+    <div id="ad-container" style="position: fixed; bottom: 60px; left: 0; right: 0; z-index: 999; display: flex; justify-content: center; pointer-events: none;">
+        <div style="pointer-events: auto; max-width: 728px; width: 100%;">
+            <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
+            <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
+        </div>
+    </div>
+
+    <!-- Adsterra Social Bar -->
+    <script src="https://pl28403030.effectivegatecpm.com/76/ea/39/76ea39059560fa1b5f44fa42ae5d454b.js"></script>
 
     <script src="/js/streamable-app.js"></script>
 </body>

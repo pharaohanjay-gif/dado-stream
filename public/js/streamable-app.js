@@ -54,6 +54,30 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
 
+// ============ URL Route Mapping ============
+const ROUTES = {
+    'beranda': 'home',
+    'home': 'home',
+    'drama': 'drama',
+    'anime': 'anime',
+    'komik': 'komik',
+    'trending': 'trending',
+    'riwayat': 'history',
+    'history': 'history',
+    'favorit': 'favorites',
+    'favorites': 'favorites'
+};
+
+const REVERSE_ROUTES = {
+    'home': 'beranda',
+    'drama': 'drama',
+    'anime': 'anime',
+    'komik': 'komik',
+    'trending': 'trending',
+    'history': 'riwayat',
+    'favorites': 'favorit'
+};
+
 // ============ Initialization ============
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -79,11 +103,15 @@ async function initApp() {
     initFavorites();
     initScrollListener();
     initFilters();
+    initRouter();
     
     // Hide splash screen
     setTimeout(() => {
         $('#splash-screen').classList.add('hidden');
         $('#app').classList.remove('hidden');
+        
+        // Navigate based on URL path after splash
+        handleRouteFromUrl();
     }, 1500);
     
     // Auto-rotate banner
@@ -103,8 +131,49 @@ function updateThemeIcon() {
     icon.className = state.theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
 }
 
+// ============ Router ============
+function initRouter() {
+    // Handle browser back/forward
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.page) {
+            navigateTo(event.state.page, event.state.data, false);
+        } else {
+            handleRouteFromUrl();
+        }
+    });
+}
+
+function handleRouteFromUrl() {
+    const path = window.location.pathname.replace('/', '').toLowerCase();
+    
+    if (path && ROUTES[path]) {
+        navigateTo(ROUTES[path], null, false);
+    } else if (path.startsWith('detail/')) {
+        // Handle /detail/type/id URLs
+        const parts = path.split('/');
+        if (parts.length >= 3) {
+            const type = parts[1];
+            const id = parts[2];
+            openDetail(type, id);
+        }
+    } else {
+        // Default to home
+        navigateTo('home', null, false);
+    }
+}
+
+function updateUrl(page) {
+    const urlPath = REVERSE_ROUTES[page] || page;
+    const newUrl = `/${urlPath}`;
+    
+    // Only update if different from current
+    if (window.location.pathname !== newUrl) {
+        window.history.pushState({ page: page }, '', newUrl);
+    }
+}
+
 // ============ Navigation ============
-function navigateTo(page, data = null) {
+function navigateTo(page, data = null, updateHistory = true) {
     // Update sidebar & mobile nav active states
     $$('.sidebar-item').forEach(item => {
         item.classList.toggle('active', item.dataset.page === page);
@@ -118,6 +187,11 @@ function navigateTo(page, data = null) {
     $(`#page-${page}`).classList.add('active');
     
     state.currentPage = page;
+    
+    // Update URL
+    if (updateHistory && ['home', 'drama', 'anime', 'komik', 'trending', 'history', 'favorites'].includes(page)) {
+        updateUrl(page);
+    }
     
     // Load page data if needed
     switch(page) {
@@ -891,7 +965,7 @@ async function playEpisode(type, episodeId, episodeNum) {
         
         if (videoUrl) {
             renderWatchPage(type, videoUrl, episodeNum, servers);
-            saveToHistory(type, state.currentContent.id, state.currentContent.title, episodeNum);
+            saveToHistory(type, state.currentContent.id, state.currentContent.title, episodeNum, state.currentContent.image);
         } else {
             container.innerHTML = `
                 <div class="empty-state">
@@ -1085,7 +1159,7 @@ async function readChapter(chapterId) {
         
         if (data.status && data.data) {
             renderReader(data.data);
-            saveToHistory('komik', state.currentContent?.id, state.currentContent?.title, chapterId);
+            saveToHistory('komik', state.currentContent?.id, state.currentContent?.title, chapterId, state.currentContent?.image);
         } else {
             throw new Error('No data');
         }
@@ -1216,6 +1290,120 @@ function initSearch() {
             results.classList.add('hidden');
         }
     });
+    
+    // Initialize mobile search
+    initMobileSearch();
+}
+
+// Mobile Search Functions
+function initMobileSearch() {
+    const input = $('#mobile-search-input');
+    if (!input) return;
+    
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        
+        if (state.searchTimeout) clearTimeout(state.searchTimeout);
+        
+        if (query.length >= 2) {
+            state.searchTimeout = setTimeout(() => mobileSearchAll(query), 500);
+        } else {
+            $('#mobile-search-results').innerHTML = '';
+        }
+    });
+}
+
+function openMobileSearch() {
+    const overlay = $('#mobile-search-overlay');
+    overlay.classList.remove('hidden');
+    setTimeout(() => {
+        $('#mobile-search-input').focus();
+    }, 100);
+}
+
+function closeMobileSearch() {
+    const overlay = $('#mobile-search-overlay');
+    overlay.classList.add('hidden');
+    $('#mobile-search-input').value = '';
+    $('#mobile-search-results').innerHTML = '';
+}
+
+async function mobileSearchAll(query) {
+    const results = $('#mobile-search-results');
+    results.innerHTML = '<div class="loading" style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Mencari...</div>';
+    
+    try {
+        const [dramaResults, animeResults, komikResults] = await Promise.allSettled([
+            searchDrama(query),
+            searchAnime(query),
+            searchKomik(query)
+        ]);
+        
+        const allResults = [];
+        
+        if (dramaResults.status === 'fulfilled' && dramaResults.value) {
+            allResults.push(...dramaResults.value.map(d => ({ ...d, searchType: 'drama' })));
+        }
+        if (animeResults.status === 'fulfilled' && animeResults.value) {
+            allResults.push(...animeResults.value.map(a => ({ ...a, searchType: 'anime' })));
+        }
+        if (komikResults.status === 'fulfilled' && komikResults.value) {
+            allResults.push(...komikResults.value.map(k => ({ ...k, searchType: 'komik' })));
+        }
+        
+        renderMobileSearchResults(allResults);
+    } catch (error) {
+        console.error('Mobile search error:', error);
+        results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Gagal mencari</div>';
+    }
+}
+
+function renderMobileSearchResults(items) {
+    const results = $('#mobile-search-results');
+    
+    if (items.length === 0) {
+        results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Tidak ada hasil</div>';
+        return;
+    }
+    
+    results.innerHTML = items.map(item => {
+        let image, title, type, info, id;
+        
+        switch(item.searchType) {
+            case 'drama':
+                image = getProxiedImageUrl(item.cover || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
+                type = 'Drama';
+                info = `${item.totalEpisode || '??'} Episode`;
+                id = item.bookId || item.id;
+                break;
+            case 'anime':
+                image = getProxiedImageUrl(item.poster || item.image || item.thumbnail_url || '');
+                title = item.title || item.judul;
+                type = 'Anime';
+                info = item.status || 'Anime';
+                id = item.urlId || item.slug || item.id;
+                break;
+            case 'komik':
+                image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
+                title = item.title || item.judul;
+                type = item.type || 'Komik';
+                info = item.chapter || 'Manga';
+                id = item.manga_id || item.slug || item.id;
+                break;
+        }
+        
+        return `
+            <div class="search-result-item" onclick="closeMobileSearch(); openDetail('${item.searchType}', '${id}');">
+                <img class="search-result-img" src="${image}" alt="${title}" onerror="this.src='${PLACEHOLDER_SEARCH}'">
+                <div class="search-result-info">
+                    <h4>${title}</h4>
+                    <p>${info}</p>
+                    <span class="search-result-badge">${type}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 async function searchAll(query) {
@@ -1406,7 +1594,7 @@ function initHistory() {
     // Initialize from localStorage
 }
 
-function saveToHistory(type, id, title, episode) {
+function saveToHistory(type, id, title, episode, image) {
     const history = JSON.parse(localStorage.getItem('dado_history') || '[]');
     
     // Remove existing entry if any
@@ -1415,12 +1603,13 @@ function saveToHistory(type, id, title, episode) {
         history.splice(existingIndex, 1);
     }
     
-    // Add to beginning
+    // Add to beginning with image
     history.unshift({
         type,
         id,
         title,
         episode,
+        image: image || '',
         timestamp: Date.now()
     });
     
@@ -1444,23 +1633,26 @@ function loadHistory() {
         return;
     }
     
-    grid.innerHTML = history.map(item => `
-        <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
-            <div class="card-image">
-                <img src="${item.image || PLACEHOLDER_SMALL}" alt="${item.title}" onerror="this.src=PLACEHOLDER_SMALL">
-                <div class="card-overlay">
-                    <div class="card-play">
-                        <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
+    grid.innerHTML = history.map(item => {
+        const imgUrl = item.image ? getProxiedImageUrl(item.image) : PLACEHOLDER_SMALL;
+        return `
+            <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
+                <div class="card-image">
+                    <img src="${imgUrl}" alt="${item.title}" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                    <div class="card-overlay">
+                        <div class="card-play">
+                            <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
+                        </div>
                     </div>
+                    <span class="card-badge">${item.type}</span>
                 </div>
-                <span class="card-badge">${item.type}</span>
+                <h3 class="card-title">${item.title || 'Unknown'}</h3>
+                <div class="card-info">
+                    <span>${item.type === 'komik' ? 'Chapter' : 'Episode'} ${item.episode || '?'}</span>
+                </div>
             </div>
-            <h3 class="card-title">${item.title || 'Unknown'}</h3>
-            <div class="card-info">
-                <span>${item.type === 'komik' ? 'Chapter' : 'Episode'} ${item.episode || '?'}</span>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function clearHistory() {
@@ -1528,18 +1720,26 @@ async function filterContent(type, filter) {
                 data = result.data || result;
             }
         } else {
-            // Filter by genre/status/type - use search as fallback since specific endpoints don't exist
+            // Filter by genre/status/type
             if (type === 'drama') {
+                // Drama doesn't have specific endpoints, use search
                 const response = await fetch(`${API_BASE}/drama?action=search&keyword=${encodeURIComponent(filter)}`);
                 const result = await response.json();
                 data = result.data || result;
             } else if (type === 'anime') {
-                // Use search with keyword for anime filters
-                const response = await fetch(`${API_BASE}/anime?action=search&keyword=${encodeURIComponent(filter)}`);
-                const result = await response.json();
-                data = result.data || result;
+                // Anime has specific endpoints for ongoing/completed/movie
+                if (filter === 'ongoing' || filter === 'completed' || filter === 'movie') {
+                    const response = await fetch(`${API_BASE}/anime?action=${filter}`);
+                    const result = await response.json();
+                    data = result.data || result;
+                } else {
+                    // Other filters use search
+                    const response = await fetch(`${API_BASE}/anime?action=search&keyword=${encodeURIComponent(filter)}`);
+                    const result = await response.json();
+                    data = result.data || result;
+                }
             } else if (type === 'komik') {
-                // Use search for komik type filters
+                // Komik uses search for type filters
                 const response = await fetch(`${API_BASE}/komik?action=search&keyword=${encodeURIComponent(filter)}`);
                 const result = await response.json();
                 data = result.data || result;

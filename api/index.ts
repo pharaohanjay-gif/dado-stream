@@ -1033,9 +1033,36 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             const keyword = req.query.keyword || req.query.q;
             if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
             
-            const response = await axios.get(`${ANIME_API}/search`, {
+            try {
+                const response = await axios.get(`${ANIME_API}/search`, {
+                    ...config,
+                    params: { q: keyword }
+                });
+                
+                const animeList = response.data?.data?.animeList || [];
+                const items = animeList.map((item: any) => ({
+                    urlId: item.animeId,
+                    id: item.animeId,
+                    title: item.title,
+                    judul: item.title,
+                    image: item.poster,
+                    thumbnail_url: item.poster,
+                    type: 'Anime'
+                }));
+                
+                return res.json({ status: true, data: items });
+            } catch (searchError: any) {
+                console.error('[Anime Search Error]:', searchError.message);
+                return res.json({ status: true, data: [] }); // Return empty array instead of error
+            }
+        }
+
+        // New endpoints for filtering
+        if (action === 'ongoing') {
+            const page = req.query.page || '1';
+            const response = await axios.get(`${ANIME_API}/ongoing`, {
                 ...config,
-                params: { q: keyword }
+                params: { page }
             });
             
             const animeList = response.data?.data?.animeList || [];
@@ -1046,10 +1073,59 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
                 judul: item.title,
                 image: item.poster,
                 thumbnail_url: item.poster,
+                episode: item.episodes,
                 type: 'Anime'
             }));
             
             return res.json({ status: true, data: items });
+        }
+
+        if (action === 'completed') {
+            const page = req.query.page || '1';
+            const response = await axios.get(`${ANIME_API}/completed`, {
+                ...config,
+                params: { page }
+            });
+            
+            const animeList = response.data?.data?.animeList || [];
+            const items = animeList.map((item: any) => ({
+                urlId: item.animeId,
+                id: item.animeId,
+                title: item.title,
+                judul: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.episodes,
+                type: 'Anime'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'movie') {
+            const page = req.query.page || '1';
+            // Use search with "movie" keyword as fallback
+            try {
+                const response = await axios.get(`${ANIME_API}/search`, {
+                    ...config,
+                    params: { q: 'movie' }
+                });
+                
+                const animeList = response.data?.data?.animeList || [];
+                const items = animeList.map((item: any) => ({
+                    urlId: item.animeId,
+                    id: item.animeId,
+                    title: item.title,
+                    judul: item.title,
+                    image: item.poster,
+                    thumbnail_url: item.poster,
+                    type: 'Anime'
+                }));
+                
+                return res.json({ status: true, data: items });
+            } catch {
+                return res.json({ status: true, data: [] });
+            }
         }
 
         if (action === 'detail') {

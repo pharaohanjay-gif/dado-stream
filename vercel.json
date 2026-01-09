@@ -10,7 +10,17 @@
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api?path=:path*" }
+    { "source": "/api/:path*", "destination": "/api?path=:path*" },
+    { "source": "/beranda", "destination": "/index.html" },
+    { "source": "/drama", "destination": "/index.html" },
+    { "source": "/anime", "destination": "/index.html" },
+    { "source": "/komik", "destination": "/index.html" },
+    { "source": "/trending", "destination": "/index.html" },
+    { "source": "/riwayat", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" },
+    { "source": "/favorit", "destination": "/index.html" },
+    { "source": "/favorites", "destination": "/index.html" },
+    { "source": "/detail/:type/:id", "destination": "/index.html" }
   ],
   "headers": [
     {
