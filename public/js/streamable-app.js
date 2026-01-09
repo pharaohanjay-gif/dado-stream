@@ -833,21 +833,42 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
     const container = $('#watch-container');
     const title = state.currentContent?.title || 'Video';
     const epIndex = state.episodes.findIndex(ep => 
-        (ep.id || ep.slug || ep.episodeId) === state.currentEpisode.id
+        (ep.id || ep.slug || ep.episodeId || ep.chapterId) === state.currentEpisode.id
     );
     const hasPrev = epIndex > 0;
     const hasNext = epIndex < state.episodes.length - 1;
     
+    // Detect if video is direct mp4 or embed URL
+    const isDirectVideo = videoUrl.endsWith('.mp4') || videoUrl.includes('.mp4?') || videoUrl.includes('dramaboxdb.com');
+    
+    // Video player HTML based on type
+    const videoPlayerHtml = isDirectVideo ? `
+        <video 
+            id="video-player"
+            class="video-player" 
+            src="${videoUrl}" 
+            controls
+            autoplay
+            playsinline
+            style="width: 100%; max-height: 70vh; background: #000;"
+        >
+            Your browser does not support the video tag.
+        </video>
+    ` : `
+        <iframe 
+            id="video-player"
+            class="video-player" 
+            src="${videoUrl}" 
+            frameborder="0" 
+            allowfullscreen
+            allow="autoplay; fullscreen; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-presentation"
+        ></iframe>
+    `;
+    
     container.innerHTML = `
         <div class="video-player-wrapper">
-            <iframe 
-                class="video-player" 
-                src="${videoUrl}" 
-                frameborder="0" 
-                allowfullscreen
-                allow="autoplay; fullscreen; picture-in-picture"
-                sandbox="allow-scripts allow-same-origin allow-presentation"
-            ></iframe>
+            ${videoPlayerHtml}
         </div>
         
         <div class="watch-info">
@@ -875,10 +896,10 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
         
         ${servers.length > 0 ? `
             <div class="server-section">
-                <h3 class="server-title"><i class="fas fa-server"></i> Pilih Server</h3>
+                <h3 class="server-title"><i class="fas fa-server"></i> Pilih Kualitas</h3>
                 <div class="server-list">
                     ${servers.map((server, i) => `
-                        <button class="server-btn ${i === 0 ? 'active' : ''}" onclick="changeServer('${server.url || server.file}', this)">
+                        <button class="server-btn ${i === 0 ? 'active' : ''}" onclick="changeServer('${server.url || server.file}', this, ${isDirectVideo})">
                             ${server.name || server.quality || 'Server ' + (i + 1)}
                         </button>
                     `).join('')}
@@ -890,12 +911,14 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             <h3 class="detail-section-title"><i class="fas fa-play-circle"></i> Episode Lainnya</h3>
             <div class="episode-grid">
                 ${state.episodes.map((ep, index) => {
-                    const epNum = ep.episode || ep.eps || index + 1;
-                    const epId = ep.id || ep.slug || ep.episodeId;
+                    // Support both drama (chapterIndex) and anime (episode) fields
+                    const epNum = ep.chapterIndex !== undefined ? (ep.chapterIndex + 1) : (ep.episode || ep.eps || index + 1);
+                    const epId = ep.chapterId || ep.id || ep.slug || ep.episodeId;
                     const isWatching = epId === state.currentEpisode.id;
+                    const epName = ep.chapterName || `Episode ${epNum}`;
                     return `
-                        <button class="episode-btn ${isWatching ? 'watching' : ''}" onclick="playEpisode('${type}', '${epId}', ${epNum})">
-                            Episode ${epNum}
+                        <button class="episode-btn ${isWatching ? 'watching' : ''}" onclick="playEpisode('${type}', '${epId}', ${epNum})" title="${epName}">
+                            ${epName}
                         </button>
                     `;
                 }).join('')}
@@ -906,32 +929,46 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
 
 function playNextEpisode(type) {
     const epIndex = state.episodes.findIndex(ep => 
-        (ep.id || ep.slug || ep.episodeId) === state.currentEpisode.id
+        (ep.chapterId || ep.id || ep.slug || ep.episodeId) === state.currentEpisode.id
     );
     if (epIndex < state.episodes.length - 1) {
         const nextEp = state.episodes[epIndex + 1];
-        const epId = nextEp.id || nextEp.slug || nextEp.episodeId;
-        const epNum = nextEp.episode || nextEp.eps || epIndex + 2;
+        const epId = nextEp.chapterId || nextEp.id || nextEp.slug || nextEp.episodeId;
+        const epNum = nextEp.chapterIndex !== undefined ? (nextEp.chapterIndex + 1) : (nextEp.episode || nextEp.eps || epIndex + 2);
         playEpisode(type, epId, epNum);
     }
 }
 
 function playPrevEpisode(type) {
     const epIndex = state.episodes.findIndex(ep => 
-        (ep.id || ep.slug || ep.episodeId) === state.currentEpisode.id
+        (ep.chapterId || ep.id || ep.slug || ep.episodeId) === state.currentEpisode.id
     );
     if (epIndex > 0) {
         const prevEp = state.episodes[epIndex - 1];
-        const epId = prevEp.id || prevEp.slug || prevEp.episodeId;
-        const epNum = prevEp.episode || prevEp.eps || epIndex;
+        const epId = prevEp.chapterId || prevEp.id || prevEp.slug || prevEp.episodeId;
+        const epNum = prevEp.chapterIndex !== undefined ? (prevEp.chapterIndex + 1) : (prevEp.episode || prevEp.eps || epIndex);
         playEpisode(type, epId, epNum);
     }
 }
 
-function changeServer(url, btn) {
+function changeServer(url, btn, isDirectVideo = false) {
     $$('.server-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    $('.video-player').src = url;
+    
+    const player = $('#video-player');
+    if (player) {
+        if (isDirectVideo || url.endsWith('.mp4') || url.includes('.mp4?')) {
+            // For direct video, update src attribute
+            player.src = url;
+            if (player.tagName === 'VIDEO') {
+                player.load();
+                player.play().catch(e => console.log('Autoplay blocked'));
+            }
+        } else {
+            // For iframe embeds
+            player.src = url;
+        }
+    }
 }
 
 // ============ Reader Page ============
