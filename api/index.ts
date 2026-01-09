@@ -3,12 +3,12 @@ import axios from 'axios';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import * as cheerio from 'cheerio';
 
 // API endpoints
 const API_BASE = 'https://api.sansekai.my.id/api';
 const ANIME_API = 'https://www.sankavollerei.com/anime/samehadaku';
-const KOMIK_API = 'https://api-manga-five.vercel.app';
-const KOMIK_PROVIDER = 'shinigami';
+const KOMIK_BASE_URL = 'https://komikindo2.com';
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'dado-stream-secret-key-2024';
@@ -1005,83 +1005,305 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
     }
 }
 
-// Komik handler (new format)
+// Komik handler - Scraper Komikindo (CuymangaAPI style)
 async function handleKomikNew(action: string, req: VercelRequest, res: VercelResponse) {
-    const config = { timeout: 20000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+    const config = { 
+        timeout: 30000, 
+        headers: { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'
+        } 
+    };
+
+    // Helper function to get path from URL
+    function getPathFromUrl(url: string): string {
+        if (!url) return '';
+        if (url.startsWith(KOMIK_BASE_URL)) {
+            try {
+                const parsedUrl = new URL(url);
+                return parsedUrl.pathname;
+            } catch {
+                return url;
+            }
+        }
+        return url;
+    }
+
+    // Helper to clean text
+    function cleanText(text: string): string {
+        if (!text) return '';
+        return text.replace(/\s+/g, ' ').trim();
+    }
 
     try {
+        // Latest/Popular komik
         if (action === 'popular' || action === 'latest' || !action) {
-            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/popular`, config);
-            const mangas = response.data?.data || [];
+            const page = req.query.page || '1';
+            const url = `${KOMIK_BASE_URL}/komik-terbaru/page/${page}`;
             
-            const items = mangas.map((item: any) => ({
-                manga_id: item.manga_id || item.slug || item.id,
-                id: item.manga_id || item.slug || item.id,
-                title: item.title,
-                judul: item.title,
-                image: item.thumbnail || item.cover || item.image,
-                thumbnail: item.thumbnail || item.cover || item.image,
-                chapter: item.chapter,
-                type: item.type || 'Manga'
-            }));
+            const response = await axios.get(url, config);
+            const $ = cheerio.load(response.data);
             
-            return res.json({ status: true, data: items });
-        }
-
-        if (action === 'search') {
-            const keyword = req.query.keyword || req.query.q;
-            if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
+            const results: any[] = [];
+            const komikPopuler: any[] = [];
             
-            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/search`, {
-                ...config,
-                params: { q: keyword }
+            // Get latest manga
+            $('.animepost').each((i, el) => {
+                const title = $(el).find('.tt h4').text().trim() || 'Tidak ada judul';
+                const link = getPathFromUrl($(el).find('a[rel="bookmark"]').attr('href') || '');
+                const image = $(el).find('img[itemprop="image"]').attr('src') || '';
+                const typeClass = $(el).find('.typeflag').attr('class') || '';
+                const type = typeClass.split(' ').pop() || 'Manga';
+                const color = $(el).find('.warnalabel').text().trim() || 'Hitam';
+                
+                const chapters: any[] = [];
+                $(el).find('.lsch').each((j, chEl) => {
+                    const chTitle = $(chEl).find('a').text().trim().replace('Ch.', 'Chapter') || 'Chapter';
+                    const chLink = getPathFromUrl($(chEl).find('a').attr('href') || '');
+                    const chDate = $(chEl).find('.datech').text().trim() || '';
+                    chapters.push({ judul: chTitle, link: chLink, tanggal_rilis: chDate });
+                });
+                
+                // Extract manga_id from link
+                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                
+                results.push({
+                    manga_id,
+                    id: manga_id,
+                    judul: title,
+                    title: title,
+                    link,
+                    gambar: image,
+                    image,
+                    thumbnail: image,
+                    tipe: type,
+                    type,
+                    warna: color,
+                    chapter: chapters.length > 0 ? chapters[0].judul : '',
+                    chapters
+                });
             });
             
-            const mangas = response.data?.data || [];
-            const items = mangas.map((item: any) => ({
-                manga_id: item.manga_id || item.slug || item.id,
-                id: item.manga_id || item.slug || item.id,
-                title: item.title,
-                judul: item.title,
-                image: item.thumbnail || item.cover || item.image,
-                thumbnail: item.thumbnail || item.cover || item.image,
-                chapter: item.chapter,
-                type: item.type || 'Manga'
-            }));
+            // Get popular manga
+            $('.serieslist.pop li').each((i, el) => {
+                const rank = $(el).find('.ctr').text().trim() || String(i + 1);
+                const title = $(el).find('h4 a').text().trim() || 'Tidak ada judul';
+                const link = getPathFromUrl($(el).find('h4 a').attr('href') || '');
+                const image = $(el).find('.imgseries img').attr('src') || '';
+                const author = $(el).find('.author').text().trim() || '';
+                const ratingText = $(el).find('.loveviews').text().trim() || '';
+                const rating = ratingText.split(' ').pop() || '';
+                
+                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                
+                komikPopuler.push({
+                    manga_id,
+                    id: manga_id,
+                    peringkat: rank,
+                    judul: title,
+                    title: title,
+                    link,
+                    penulis: author,
+                    rating,
+                    gambar: image,
+                    image,
+                    thumbnail: image
+                });
+            });
             
-            return res.json({ status: true, data: items });
+            // Get pagination
+            const pagination = $('.pagination a.page-numbers');
+            const totalPages = pagination.length > 1 
+                ? parseInt($(pagination[pagination.length - 2]).text().trim()) || 1 
+                : 1;
+            
+            return res.json({ 
+                status: true, 
+                data: results.length > 0 ? results : komikPopuler,
+                komik_populer: komikPopuler,
+                total_halaman: totalPages
+            });
         }
 
+        // Search komik
+        if (action === 'search') {
+            const keyword = req.query.keyword || req.query.q;
+            const page = req.query.page || '1';
+            if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
+            
+            const url = `${KOMIK_BASE_URL}/page/${page}/?s=${encodeURIComponent(String(keyword))}`;
+            const response = await axios.get(url, config);
+            const $ = cheerio.load(response.data);
+            
+            const results: any[] = [];
+            
+            $('.animepost').each((i, el) => {
+                const title = $(el).find('.tt h4').text().trim() || 'Tidak ada judul';
+                const rating = $(el).find('.rating i').text().trim() || '0';
+                const link = getPathFromUrl($(el).find('a[rel="bookmark"]').attr('href') || '');
+                const image = $(el).find('img[itemprop="image"]').attr('src') || '';
+                const typeClass = $(el).find('.typeflag').attr('class') || '';
+                const type = typeClass.split(' ').pop() || 'Manga';
+                
+                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                
+                results.push({
+                    manga_id,
+                    id: manga_id,
+                    judul: title,
+                    title: title,
+                    rating,
+                    link,
+                    gambar: image,
+                    image,
+                    thumbnail: image,
+                    tipe: type,
+                    type
+                });
+            });
+            
+            return res.json({ status: true, data: results });
+        }
+
+        // Detail komik
         if (action === 'detail') {
-            const { manga_id } = req.query;
+            const manga_id = req.query.manga_id;
             if (!manga_id) return res.status(400).json({ status: false, error: 'manga_id required' });
             
-            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/detail/${manga_id}`, config);
-            const data = response.data?.data || response.data;
+            const url = `${KOMIK_BASE_URL}/komik/${manga_id}`;
+            const response = await axios.get(url, config);
+            const $ = cheerio.load(response.data);
+            
+            const title = $('h1.entry-title').text().trim() || 'Tidak ada judul';
+            const description = cleanText($('.entry-content.entry-content-single[itemprop="description"] p').text()) || 'Tidak ada deskripsi';
+            const image = $('.thumb img').attr('src') || '';
+            const rating = $('i[itemprop="ratingValue"]').text().trim() || '';
+            const votes = $('.votescount').text().trim() || '';
+            
+            const detail: any = {
+                judul_alternatif: null,
+                status: null,
+                pengarang: null,
+                ilustrator: null,
+                jenis_komik: null,
+                tema: null
+            };
+            
+            $('.spe span').each((i, el) => {
+                const key = $(el).find('b').text().trim().replace(':', '').toLowerCase();
+                let value = cleanText($(el).text().replace($(el).find('b').text(), ''));
+                
+                switch (key) {
+                    case 'judul alternatif': detail.judul_alternatif = value; break;
+                    case 'status': detail.status = value; break;
+                    case 'pengarang': detail.pengarang = value; break;
+                    case 'ilustrator': detail.ilustrator = value; break;
+                    case 'tema': detail.tema = value; break;
+                    case 'jenis komik': detail.jenis_komik = value; break;
+                }
+            });
+            
+            const genre: any[] = [];
+            $('.genre-info a').each((i, el) => {
+                genre.push({
+                    nama: $(el).text().trim(),
+                    link: getPathFromUrl($(el).attr('href') || '').replace('/genres/', '')
+                });
+            });
+            
+            const chapters: any[] = [];
+            $('.listeps ul li').each((i, el) => {
+                const chapterTitle = $(el).find('.lchx a').text().trim() || 'Chapter';
+                const chapterLink = getPathFromUrl($(el).find('.lchx a').attr('href') || '');
+                const releaseTime = $(el).find('.dt a').text().trim() || '';
+                
+                // Extract chapter ID from link
+                const chapterId = chapterLink.replace(/^\//, '').replace(/\/$/, '');
+                
+                chapters.push({
+                    judul_chapter: chapterTitle,
+                    link_chapter: chapterLink,
+                    chapterId: chapterId,
+                    id: chapterId,
+                    waktu_rilis: releaseTime
+                });
+            });
+            
+            const id = $('article').attr('id')?.replace('post-', '') || manga_id;
             
             return res.json({ 
                 status: true, 
                 data: {
-                    ...data,
+                    id,
                     manga_id,
-                    chapters: data?.chapters || data?.chapterList || []
+                    judul: title,
+                    title: title,
+                    gambar: image,
+                    image,
+                    thumbnail: image,
+                    rating,
+                    votes,
+                    detail,
+                    genre,
+                    genres: genre.map(g => g.nama),
+                    desk: description,
+                    synopsis: description,
+                    daftar_chapter: chapters,
+                    chapters
                 }
             });
         }
 
+        // Read chapter
         if (action === 'chapter') {
-            const { chapterId } = req.query;
+            const chapterId = req.query.chapterId;
             if (!chapterId) return res.status(400).json({ status: false, error: 'chapterId required' });
             
-            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/chapter/${chapterId}`, config);
-            const data = response.data?.data || response.data;
+            const url = `${KOMIK_BASE_URL}/${chapterId}`;
+            const response = await axios.get(url, config);
+            const $ = cheerio.load(response.data);
             
-            return res.json({ status: true, data });
+            const title = $('.entry-title').text().trim() || 'Chapter';
+            const id = $('article').attr('id')?.replace('post-', '') || '';
+            
+            const navigasi = {
+                sebelumnya: getPathFromUrl($('a[rel="prev"]').attr('href') || ''),
+                selanjutnya: getPathFromUrl($('a[rel="next"]').attr('href') || '')
+            };
+            
+            const images: any[] = [];
+            $('.chapter-image img').each((index, el) => {
+                const imgSrc = $(el).attr('src');
+                if (imgSrc) {
+                    images.push({
+                        id: index + 1,
+                        url: imgSrc
+                    });
+                }
+            });
+            
+            // Info komik
+            const infoKomik = {
+                judul: $('.infox h2').text().trim() || '',
+                desk: $('.shortcsc').text().trim() || ''
+            };
+            
+            return res.json({ 
+                status: true, 
+                data: {
+                    id,
+                    judul: title,
+                    title: title,
+                    navigasi,
+                    gambar: images,
+                    images: images,
+                    info_komik: infoKomik
+                }
+            });
         }
 
         return res.status(404).json({ status: false, error: 'Unknown komik action' });
     } catch (error: any) {
-        console.error('[Komik Error]:', error.message);
+        console.error('[Komik Scraper Error]:', error.message);
         return res.status(500).json({ status: false, error: 'Failed to fetch komik data', details: error.message });
     }
 }
