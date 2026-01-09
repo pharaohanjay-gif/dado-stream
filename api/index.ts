@@ -972,7 +972,8 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             const { urlId } = req.query;
             if (!urlId) return res.status(400).json({ status: false, error: 'urlId required' });
             
-            const response = await axios.get(`${ANIME_API}/detail/${urlId}`, config);
+            // Correct endpoint format: /anime/{animeId} not /detail/{animeId}
+            const response = await axios.get(`${ANIME_API}/anime/${urlId}`, config);
             const data = response.data?.data || response.data;
             
             // Get episode list
@@ -997,10 +998,39 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             const { episodeId } = req.query;
             if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
             
-            const response = await axios.get(`${ANIME_API}/watch/${episodeId}`, config);
+            // Correct endpoint format: /episode/{episodeId} not /watch/{episodeId}
+            const response = await axios.get(`${ANIME_API}/episode/${episodeId}`, config);
             const data = response.data?.data || response.data;
             
-            return res.json({ status: true, data });
+            // Extract video URL from defaultStreamingUrl or server list
+            let videoUrl = data?.defaultStreamingUrl;
+            let servers: any[] = [];
+            
+            // Extract server list
+            if (data?.server?.qualities) {
+                data.server.qualities.forEach((q: any) => {
+                    if (q.serverList && q.serverList.length > 0) {
+                        q.serverList.forEach((s: any) => {
+                            servers.push({
+                                name: s.title,
+                                quality: q.title,
+                                serverId: s.serverId,
+                                href: s.href
+                            });
+                        });
+                    }
+                });
+            }
+            
+            return res.json({ 
+                status: true, 
+                data: {
+                    ...data,
+                    video: videoUrl,
+                    url: videoUrl,
+                    servers
+                }
+            });
         }
 
         return res.status(404).json({ status: false, error: 'Unknown anime action' });

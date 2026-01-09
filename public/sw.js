@@ -46,6 +46,9 @@ self.addEventListener('fetch', event => {
   
   // Skip admin panel - always fetch from network
   if (event.request.url.includes('/admin/')) return;
+  
+  // Skip external resources
+  if (!event.request.url.startsWith(self.location.origin)) return;
 
   event.respondWith(
     fetch(event.request)
@@ -64,7 +67,19 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         // Fallback to cache
-        return caches.match(event.request);
+        return caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Return a simple offline response for HTML pages
+          if (event.request.headers.get('accept').includes('text/html')) {
+            return new Response('<html><body><h1>Offline</h1><p>Tidak ada koneksi internet.</p></body></html>', {
+              headers: { 'Content-Type': 'text/html' }
+            });
+          }
+          // Return empty response for other resources
+          return new Response('', { status: 503, statusText: 'Service Unavailable' });
+        });
       })
   );
 });

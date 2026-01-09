@@ -7,6 +7,11 @@
 const API_BASE = '/api'; // Use internal API
 const IMAGE_PROXY = 'https://wsrv.nl/?url=';
 
+// Placeholder images (SVG data URLs - no network request needed)
+const PLACEHOLDER_SMALL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="225" viewBox="0 0 150 225"%3E%3Crect fill="%231a1a1a" width="150" height="225"/%3E%3Ctext fill="%23666" font-family="Arial" font-size="12" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+const PLACEHOLDER_LARGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="180" height="270" viewBox="0 0 180 270"%3E%3Crect fill="%231a1a1a" width="180" height="270"/%3E%3Ctext fill="%237d5fff" font-family="Arial" font-size="12" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+const PLACEHOLDER_SEARCH = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="50" height="70" viewBox="0 0 50 70"%3E%3Crect fill="%231a1a1a" width="50" height="70"/%3E%3Ctext fill="%23666" font-family="Arial" font-size="8" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo%3C/text%3E%3C/svg%3E';
+
 // ============ State Management ============
 const state = {
     currentPage: 'home',
@@ -461,12 +466,12 @@ function createCard(item, type) {
             break;
     }
     
-    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://via.placeholder.com/150x225/1a1a1a/666?text=No+Image';
+    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : PLACEHOLDER_SMALL;
     
     return `
         <div class="card" onclick="openDetail('${type}', '${id}')">
             <div class="card-image">
-                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x225/1a1a1a/666?text=No+Image'">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src=PLACEHOLDER_SMALL">
                 <div class="card-overlay">
                     <div class="card-play">
                         <i class="fas fa-${type === 'komik' ? 'book-reader' : 'play'}"></i>
@@ -592,7 +597,7 @@ function renderDetail(type, data) {
             break;
     }
     
-    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : 'https://via.placeholder.com/180x270/1a1a1a/7d5fff?text=No+Image';
+    const imgUrl = image ? IMAGE_PROXY + encodeURIComponent(image) : PLACEHOLDER_LARGE;
     
     // Handle genres - can be string or array
     let genresList = [];
@@ -604,11 +609,11 @@ function renderDetail(type, data) {
     
     container.innerHTML = `
         <div class="detail-header">
-            <img src="${imgUrl}" alt="${title}" class="detail-backdrop" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop'">
+            <img src="${imgUrl}" alt="${title}" class="detail-backdrop" onerror="this.style.display='none'">
             <div class="detail-backdrop-overlay"></div>
             <div class="detail-content">
                 <div class="detail-poster">
-                    <img src="${imgUrl}" alt="${title}" onerror="this.src='https://via.placeholder.com/180x270/1a1a1a/7d5fff?text=No+Image'">
+                    <img src="${imgUrl}" alt="${title}" onerror="this.src=PLACEHOLDER_LARGE">
                 </div>
                 <div class="detail-info">
                     <h1 class="detail-title">${title}</h1>
@@ -670,11 +675,14 @@ function renderEpisodeList(type) {
     return `
         <div class="episode-grid">
             ${state.episodes.map((ep, index) => {
-                const epNum = ep.episode || ep.eps || index + 1;
-                const epId = ep.id || ep.slug || ep.episodeId;
+                // For drama: use chapterId and chapterIndex
+                // For anime: use episodeId or id
+                const epNum = ep.chapterIndex !== undefined ? (ep.chapterIndex + 1) : (ep.episode || ep.eps || index + 1);
+                const epId = ep.chapterId || ep.episodeId || ep.id || ep.slug;
+                const epName = ep.chapterName || ep.title || `Episode ${epNum}`;
                 return `
-                    <button class="episode-btn" onclick="playEpisode('${type}', '${epId}', ${epNum})">
-                        Episode ${epNum}
+                    <button class="episode-btn" onclick="playEpisode('${type}', '${epId}', ${epNum})" title="${epName}">
+                        ${epName}
                     </button>
                 `;
             }).join('')}
@@ -708,8 +716,10 @@ async function watchContent(type, id) {
     // Get first episode
     if (state.episodes && state.episodes.length > 0) {
         const firstEp = state.episodes[0];
-        const epId = firstEp.id || firstEp.slug || firstEp.episodeId;
-        playEpisode(type, epId, 1);
+        // Use chapterId for drama, episodeId for anime
+        const epId = firstEp.chapterId || firstEp.episodeId || firstEp.id || firstEp.slug;
+        const epNum = (firstEp.chapterIndex !== undefined) ? (firstEp.chapterIndex + 1) : 1;
+        playEpisode(type, epId, epNum);
     } else {
         showToast('Tidak ada episode tersedia', 'error');
     }
@@ -722,7 +732,7 @@ async function watchDrama(id) {
         const data = await response.json();
         if (data.status && data.data) {
             const drama = data.data;
-            state.currentContent = { type: 'drama', id, title: drama.title || drama.judul };
+            state.currentContent = { type: 'drama', id, title: drama.title || drama.judul || drama.bookName };
             // Fetch all episodes
             const epResponse = await fetch(`${API_BASE}/drama?action=allepisode&bookId=${id}`);
             const epData = await epResponse.json();
@@ -731,7 +741,10 @@ async function watchDrama(id) {
             }
             if (state.episodes && state.episodes.length > 0) {
                 const firstEp = state.episodes[0];
-                playEpisode('drama', firstEp.id || firstEp.episodeId || firstEp.bookId, 1);
+                // Drama uses chapterId as episode ID
+                const epId = firstEp.chapterId || firstEp.id || firstEp.episodeId;
+                const epNum = (firstEp.chapterIndex !== undefined) ? (firstEp.chapterIndex + 1) : 1;
+                playEpisode('drama', epId, epNum);
             } else {
                 showToast('Tidak ada episode tersedia', 'error');
             }
@@ -991,7 +1004,7 @@ function renderReader(data) {
                         src="${IMAGE_PROXY}${encodeURIComponent(imgUrl)}" 
                         alt="Page ${i + 1}"
                         loading="lazy"
-                        onerror="this.src='https://via.placeholder.com/800x1200/1a1a1a/666?text=Page+${i + 1}'"
+                        onerror="this.style.opacity='0.5'"
                     >
                 `;
             }).join('')}
@@ -1161,7 +1174,7 @@ function renderSearchResults(items) {
         
         return `
             <div class="search-result-item" onclick="openDetail('${item.searchType}', '${id}'); $('#search-results').classList.add('hidden');">
-                <img class="search-result-img" src="${image}" alt="${title}" onerror="this.src='https://via.placeholder.com/50x70/1a1a1a/666?text=No'">
+                <img class="search-result-img" src="${image}" alt="${title}" onerror="this.src=PLACEHOLDER_SEARCH">
                 <div class="search-result-info">
                     <h4>${title}</h4>
                     <p>${info}</p>
@@ -1248,7 +1261,7 @@ function renderTrendingList(items, type) {
         return `
             <div class="trending-item" onclick="openDetail('${type}', '${id}')">
                 <span class="trending-rank">${index + 1}</span>
-                <img class="trending-img" src="${image}" alt="${title}" onerror="this.src='https://via.placeholder.com/70x100/1a1a1a/666?text=${index + 1}'">
+                <img class="trending-img" src="${image}" alt="${title}" onerror="this.src=PLACEHOLDER_SMALL">
                 <div class="trending-info">
                     <h4 class="trending-title">${title}</h4>
                     <p class="trending-meta">${info}</p>
@@ -1304,7 +1317,7 @@ function loadHistory() {
     grid.innerHTML = history.map(item => `
         <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
             <div class="card-image">
-                <img src="https://via.placeholder.com/150x225/1a1a1a/7d5fff?text=${encodeURIComponent(item.title?.substring(0, 10) || 'Content')}" alt="${item.title}">
+                <img src="${item.image || PLACEHOLDER_SMALL}" alt="${item.title}" onerror="this.src=PLACEHOLDER_SMALL">
                 <div class="card-overlay">
                     <div class="card-play">
                         <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
@@ -1377,7 +1390,7 @@ function loadFavorites() {
     grid.innerHTML = favorites.map(item => `
         <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
             <div class="card-image">
-                <img src="${item.image || 'https://via.placeholder.com/150x225/1a1a1a/7d5fff?text=' + encodeURIComponent(item.title?.substring(0, 10) || 'Fav')}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/150x225/1a1a1a/7d5fff?text=Fav'">
+                <img src="${item.image || PLACEHOLDER_SMALL}" alt="${item.title}" onerror="this.src=PLACEHOLDER_SMALL">
                 <div class="card-overlay">
                     <div class="card-play">
                         <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
