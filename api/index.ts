@@ -1053,10 +1053,12 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
             const results: any[] = [];
             const komikPopuler: any[] = [];
             
-            // Get latest manga
+            // Get latest manga - using correct selectors for new komikindo.ch structure
             $('.animepost').each((i, el) => {
-                const title = $(el).find('.tt h4').text().trim() || 'Tidak ada judul';
-                const link = getPathFromUrl($(el).find('a[rel="bookmark"]').attr('href') || '');
+                // Title is in .tt h3 a (not h4)
+                const titleEl = $(el).find('.tt h3 a');
+                const title = titleEl.text().trim() || $(el).find('a[rel="bookmark"]').attr('title')?.replace('Komik ', '') || 'Tidak ada judul';
+                const link = getPathFromUrl(titleEl.attr('href') || $(el).find('a[rel="bookmark"]').attr('href') || '');
                 const image = $(el).find('img[itemprop="image"]').attr('src') || '';
                 const typeClass = $(el).find('.typeflag').attr('class') || '';
                 const type = typeClass.split(' ').pop() || 'Manga';
@@ -1090,15 +1092,17 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
                 });
             });
             
-            // Get popular manga
+            // Get popular manga - using correct selectors for new structure
             $('.serieslist.pop li').each((i, el) => {
                 const rank = $(el).find('.ctr').text().trim() || String(i + 1);
-                const title = $(el).find('h4 a').text().trim() || 'Tidak ada judul';
-                const link = getPathFromUrl($(el).find('h4 a').attr('href') || '');
+                // Title is in h3 a.series (not h4)
+                const titleEl = $(el).find('h3 a.series');
+                const title = titleEl.text().trim() || titleEl.attr('title')?.replace('Komik ', '') || 'Tidak ada judul';
+                const link = getPathFromUrl(titleEl.attr('href') || $(el).find('a.series').attr('href') || '');
                 const image = $(el).find('.imgseries img').attr('src') || '';
                 const author = $(el).find('.author').text().trim() || '';
                 const ratingText = $(el).find('.loveviews').text().trim() || '';
-                const rating = ratingText.split(' ').pop() || '';
+                const rating = ratingText.split(/\s+/).pop() || '';
                 
                 const manga_id = getMangaIdFromPath(link);
                 
@@ -1144,9 +1148,11 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
             const results: any[] = [];
             
             $('.animepost').each((i, el) => {
-                const title = $(el).find('.tt h4').text().trim() || 'Tidak ada judul';
+                // Title is in .tt h3 a (not h4)
+                const titleEl = $(el).find('.tt h3 a');
+                const title = titleEl.text().trim() || $(el).find('a[rel="bookmark"]').attr('title')?.replace('Komik ', '') || 'Tidak ada judul';
                 const rating = $(el).find('.rating i').text().trim() || '0';
-                const link = getPathFromUrl($(el).find('a[rel="bookmark"]').attr('href') || '');
+                const link = getPathFromUrl(titleEl.attr('href') || $(el).find('a[rel="bookmark"]').attr('href') || '');
                 const image = $(el).find('img[itemprop="image"]').attr('src') || '';
                 const typeClass = $(el).find('.typeflag').attr('class') || '';
                 const type = typeClass.split(' ').pop() || 'Manga';

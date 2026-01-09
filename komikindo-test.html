@@ -1,0 +1,1662 @@
+﻿<!DOCTYPE html>
+<html xmlns="https://www.w3.org/1999/xhtml" lang="id-ID">
+<head profile="http://gmpg.org/xfn/11"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script>if(navigator.userAgent.match(/MSIE|Internet Explorer/i)||navigator.userAgent.match(/Trident\/7\..*?rv:11/i)){var href=document.location.href;if(!href.match(/[?&]nowprocket/)){if(href.indexOf("?")==-1){if(href.indexOf("#")==-1){document.location.href=href+"?nowprocket=1"}else{document.location.href=href.replace("#","?nowprocket=1#")}}else{if(href.indexOf("#")==-1){document.location.href=href+"&nowprocket=1"}else{document.location.href=href.replace("#","&nowprocket=1#")}}}}</script><script>(()=>{class RocketLazyLoadScripts{constructor(){this.v="1.2.5.1",this.triggerEvents=["keydown","mousedown","mousemove","touchmove","touchstart","touchend","wheel"],this.userEventHandler=this.t.bind(this),this.touchStartHandler=this.i.bind(this),this.touchMoveHandler=this.o.bind(this),this.touchEndHandler=this.h.bind(this),this.clickHandler=this.u.bind(this),this.interceptedClicks=[],this.interceptedClickListeners=[],this.l(this),window.addEventListener("pageshow",(t=>{this.persisted=t.persisted,this.everythingLoaded&&this.m()})),document.addEventListener("DOMContentLoaded",(()=>{this.p()})),this.delayedScripts={normal:[],async:[],defer:[]},this.trash=[],this.allJQueries=[]}k(t){document.hidden?t.t():(this.triggerEvents.forEach((e=>window.addEventListener(e,t.userEventHandler,{passive:!0}))),window.addEventListener("touchstart",t.touchStartHandler,{passive:!0}),window.addEventListener("mousedown",t.touchStartHandler),document.addEventListener("visibilitychange",t.userEventHandler))}_(){this.triggerEvents.forEach((t=>window.removeEventListener(t,this.userEventHandler,{passive:!0}))),document.removeEventListener("visibilitychange",this.userEventHandler)}i(t){"HTML"!==t.target.tagName&&(window.addEventListener("touchend",this.touchEndHandler),window.addEventListener("mouseup",this.touchEndHandler),window.addEventListener("touchmove",this.touchMoveHandler,{passive:!0}),window.addEventListener("mousemove",this.touchMoveHandler),t.target.addEventListener("click",this.clickHandler),this.L(t.target,!0),this.M(t.target,"onclick","rocket-onclick"),this.C())}o(t){window.removeEventListener("touchend",this.touchEndHandler),window.removeEventListener("mouseup",this.touchEndHandler),window.removeEventListener("touchmove",this.touchMoveHandler,{passive:!0}),window.removeEventListener("mousemove",this.touchMoveHandler),t.target.removeEventListener("click",this.clickHandler),this.L(t.target,!1),this.M(t.target,"rocket-onclick","onclick"),this.O()}h(){window.removeEventListener("touchend",this.touchEndHandler),window.removeEventListener("mouseup",this.touchEndHandler),window.removeEventListener("touchmove",this.touchMoveHandler,{passive:!0}),window.removeEventListener("mousemove",this.touchMoveHandler)}u(t){t.target.removeEventListener("click",this.clickHandler),this.L(t.target,!1),this.M(t.target,"rocket-onclick","onclick"),this.interceptedClicks.push(t),t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),this.O()}D(){window.removeEventListener("touchstart",this.touchStartHandler,{passive:!0}),window.removeEventListener("mousedown",this.touchStartHandler),this.interceptedClicks.forEach((t=>{t.target.dispatchEvent(new MouseEvent("click",{view:t.view,bubbles:!0,cancelable:!0}))}))}l(t){EventTarget.prototype.addEventListenerBase=EventTarget.prototype.addEventListener,EventTarget.prototype.addEventListener=function(e,i,o){"click"!==e||t.windowLoaded||i===t.clickHandler||t.interceptedClickListeners.push({target:this,func:i,options:o}),(this||window).addEventListenerBase(e,i,o)}}L(t,e){this.interceptedClickListeners.forEach((i=>{i.target===t&&(e?t.removeEventListener("click",i.func,i.options):t.addEventListener("click",i.func,i.options))})),t.parentNode!==document.documentElement&&this.L(t.parentNode,e)}S(){return new Promise((t=>{this.T?this.O=t:t()}))}C(){this.T=!0}O(){this.T=!1}M(t,e,i){t.hasAttribute&&t.hasAttribute(e)&&(event.target.setAttribute(i,event.target.getAttribute(e)),event.target.removeAttribute(e))}t(){this._(this),"loading"===document.readyState?document.addEventListener("DOMContentLoaded",this.R.bind(this)):this.R()}p(){let t=[];document.querySelectorAll("script[type=rocketlazyloadscript][data-rocket-src]").forEach((e=>{let i=e.getAttribute("data-rocket-src");if(i&&0!==i.indexOf("data:")){0===i.indexOf("//")&&(i=location.protocol+i);try{const o=new URL(i).origin;o!==location.origin&&t.push({src:o,crossOrigin:e.crossOrigin||"module"===e.getAttribute("data-rocket-type")})}catch(t){}}})),t=[...new Map(t.map((t=>[JSON.stringify(t),t]))).values()],this.j(t,"preconnect")}async R(){this.lastBreath=Date.now(),this.P(this),this.F(this),this.q(),this.A(),this.I(),await this.U(this.delayedScripts.normal),await this.U(this.delayedScripts.defer),await this.U(this.delayedScripts.async);try{await this.W(),await this.H(this),await this.J()}catch(t){console.error(t)}window.dispatchEvent(new Event("rocket-allScriptsLoaded")),this.everythingLoaded=!0,this.S().then((()=>{this.D()})),this.N()}A(){document.querySelectorAll("script[type=rocketlazyloadscript]").forEach((t=>{t.hasAttribute("data-rocket-src")?t.hasAttribute("async")&&!1!==t.async?this.delayedScripts.async.push(t):t.hasAttribute("defer")&&!1!==t.defer||"module"===t.getAttribute("data-rocket-type")?this.delayedScripts.defer.push(t):this.delayedScripts.normal.push(t):this.delayedScripts.normal.push(t)}))}async B(t){if(await this.G(),!0!==t.noModule||!("noModule"in HTMLScriptElement.prototype))return new Promise((e=>{let i;function o(){(i||t).setAttribute("data-rocket-status","executed"),e()}try{if(navigator.userAgent.indexOf("Firefox/")>0||""===navigator.vendor)i=document.createElement("script"),[...t.attributes].forEach((t=>{let e=t.nodeName;"type"!==e&&("data-rocket-type"===e&&(e="type"),"data-rocket-src"===e&&(e="src"),i.setAttribute(e,t.nodeValue))})),t.text&&(i.text=t.text),i.hasAttribute("src")?(i.addEventListener("load",o),i.addEventListener("error",(function(){i.setAttribute("data-rocket-status","failed"),e()})),setTimeout((()=>{i.isConnected||e()}),1)):(i.text=t.text,o()),t.parentNode.replaceChild(i,t);else{const i=t.getAttribute("data-rocket-type"),n=t.getAttribute("data-rocket-src");i?(t.type=i,t.removeAttribute("data-rocket-type")):t.removeAttribute("type"),t.addEventListener("load",o),t.addEventListener("error",(function(){t.setAttribute("data-rocket-status","failed"),e()})),n?(t.removeAttribute("data-rocket-src"),t.src=n):t.src="data:text/javascript;base64,"+window.btoa(unescape(encodeURIComponent(t.text)))}}catch(i){t.setAttribute("data-rocket-status","failed"),e()}}));t.setAttribute("data-rocket-status","skipped")}async U(t){const e=t.shift();return e&&e.isConnected?(await this.B(e),this.U(t)):Promise.resolve()}I(){this.j([...this.delayedScripts.normal,...this.delayedScripts.defer,...this.delayedScripts.async],"preload")}j(t,e){var i=document.createDocumentFragment();t.forEach((t=>{const o=t.getAttribute&&t.getAttribute("data-rocket-src")||t.src;if(o){const n=document.createElement("link");n.href=o,n.rel=e,"preconnect"!==e&&(n.as="script"),t.getAttribute&&"module"===t.getAttribute("data-rocket-type")&&(n.crossOrigin=!0),t.crossOrigin&&(n.crossOrigin=t.crossOrigin),t.integrity&&(n.integrity=t.integrity),i.appendChild(n),this.trash.push(n)}})),document.head.appendChild(i)}P(t){let e={};function i(i,o){return e[o].eventsToRewrite.indexOf(i)>=0&&!t.everythingLoaded?"rocket-"+i:i}function o(t,o){!function(t){e[t]||(e[t]={originalFunctions:{add:t.addEventListener,remove:t.removeEventListener},eventsToRewrite:[]},t.addEventListener=function(){arguments[0]=i(arguments[0],t),e[t].originalFunctions.add.apply(t,arguments)},t.removeEventListener=function(){arguments[0]=i(arguments[0],t),e[t].originalFunctions.remove.apply(t,arguments)})}(t),e[t].eventsToRewrite.push(o)}function n(e,i){let o=e[i];e[i]=null,Object.defineProperty(e,i,{get:()=>o||function(){},set(n){t.everythingLoaded?o=n:e["rocket"+i]=o=n}})}o(document,"DOMContentLoaded"),o(window,"DOMContentLoaded"),o(window,"load"),o(window,"pageshow"),o(document,"readystatechange"),n(document,"onreadystatechange"),n(window,"onload"),n(window,"onpageshow")}F(t){let e;function i(e){return t.everythingLoaded?e:e.split(" ").map((t=>"load"===t||0===t.indexOf("load.")?"rocket-jquery-load":t)).join(" ")}function o(o){if(o&&o.fn&&!t.allJQueries.includes(o)){o.fn.ready=o.fn.init.prototype.ready=function(e){return t.domReadyFired?e.bind(document)(o):document.addEventListener("rocket-DOMContentLoaded",(()=>e.bind(document)(o))),o([])};const e=o.fn.on;o.fn.on=o.fn.init.prototype.on=function(){return this[0]===window&&("string"==typeof arguments[0]||arguments[0]instanceof String?arguments[0]=i(arguments[0]):"object"==typeof arguments[0]&&Object.keys(arguments[0]).forEach((t=>{const e=arguments[0][t];delete arguments[0][t],arguments[0][i(t)]=e}))),e.apply(this,arguments),this},t.allJQueries.push(o)}e=o}o(window.jQuery),Object.defineProperty(window,"jQuery",{get:()=>e,set(t){o(t)}})}async H(t){const e=document.querySelector("script[data-webpack]");e&&(await async function(){return new Promise((t=>{e.addEventListener("load",t),e.addEventListener("error",t)}))}(),await t.K(),await t.H(t))}async W(){this.domReadyFired=!0,await this.G(),document.dispatchEvent(new Event("rocket-readystatechange")),await this.G(),document.rocketonreadystatechange&&document.rocketonreadystatechange(),await this.G(),document.dispatchEvent(new Event("rocket-DOMContentLoaded")),await this.G(),window.dispatchEvent(new Event("rocket-DOMContentLoaded"))}async J(){await this.G(),document.dispatchEvent(new Event("rocket-readystatechange")),await this.G(),document.rocketonreadystatechange&&document.rocketonreadystatechange(),await this.G(),window.dispatchEvent(new Event("rocket-load")),await this.G(),window.rocketonload&&window.rocketonload(),await this.G(),this.allJQueries.forEach((t=>t(window).trigger("rocket-jquery-load"))),await this.G();const t=new Event("rocket-pageshow");t.persisted=this.persisted,window.dispatchEvent(t),await this.G(),window.rocketonpageshow&&window.rocketonpageshow({persisted:this.persisted}),this.windowLoaded=!0}m(){document.onreadystatechange&&document.onreadystatechange(),window.onload&&window.onload(),window.onpageshow&&window.onpageshow({persisted:this.persisted})}q(){const t=new Map;document.write=document.writeln=function(e){const i=document.currentScript;i||console.error("WPRocket unable to document.write this: "+e);const o=document.createRange(),n=i.parentElement;let s=t.get(i);void 0===s&&(s=i.nextSibling,t.set(i,s));const c=document.createDocumentFragment();o.setStart(c,0),c.appendChild(o.createContextualFragment(e)),n.insertBefore(c,s)}}async G(){Date.now()-this.lastBreath>45&&(await this.K(),this.lastBreath=Date.now())}async K(){return document.hidden?new Promise((t=>setTimeout(t))):new Promise((t=>requestAnimationFrame(t)))}N(){this.trash.forEach((t=>t.remove()))}static run(){const t=new RocketLazyLoadScripts;t.k(t)}}RocketLazyLoadScripts.run()})();</script>
+  
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noodp">
+  <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+
+	<!-- This site is optimized with the Yoast SEO plugin v26.6 - https://yoast.com/wordpress/plugins/seo/ -->
+	<title>Komik Terbaru - KomikIndo</title>
+	<meta name="description" content="Baca Komik Terbaru bahasa Indonesia. Di KomikIndo kamu bisa membaca dan download komik manga, manhua, manhwa terlengkap dan terupdate." />
+	<link rel="canonical" href="https://komikindo.ch/komik-terbaru/" />
+	<meta property="og:locale" content="id_ID" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="Komik Terbaru - KomikIndo" />
+	<meta property="og:description" content="Baca Komik Terbaru bahasa Indonesia. Di KomikIndo kamu bisa membaca dan download komik manga, manhua, manhwa terlengkap dan terupdate." />
+	<meta property="og:url" content="https://komikindo.ch/komik-terbaru/" />
+	<meta property="og:site_name" content="KomikIndo" />
+	<meta property="article:modified_time" content="2023-01-25T17:01:28+00:00" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://komikindo.ch/komik-terbaru/","url":"https://komikindo.ch/komik-terbaru/","name":"Komik Terbaru - KomikIndo","isPartOf":{"@id":"https://komikindo.ch/#website"},"datePublished":"2020-11-29T01:37:58+00:00","dateModified":"2023-01-25T17:01:28+00:00","description":"Baca Komik Terbaru bahasa Indonesia. Di KomikIndo kamu bisa membaca dan download komik manga, manhua, manhwa terlengkap dan terupdate.","inLanguage":"id","potentialAction":[{"@type":"ReadAction","target":["https://komikindo.ch/komik-terbaru/"]}]},{"@type":"WebSite","@id":"https://komikindo.ch/#website","url":"https://komikindo.ch/","name":"KomikIndo","description":"Baca Komik Manga Bahasa Indonesia","potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://komikindo.ch/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"id"}]}</script>
+	<!-- / Yoast SEO plugin. -->
+
+
+<link rel='dns-prefetch' href='//use.fontawesome.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel='dns-prefetch' href='//www.w3.org' />
+<link rel='dns-prefetch' href='//gmpg.org' />
+<link rel='dns-prefetch' href='//www.google-analytics.com' />
+<link rel='dns-prefetch' href='//www.googletagmanager.com' />
+
+<style id='wp-img-auto-sizes-contain-inline-css' type='text/css'>
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id='wp-block-library-inline-css' type='text/css'>
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}.has-text-align-center{text-align:center}.has-text-align-left{text-align:left}.has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-wrap:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style*=border-top-color]){border-top-style:solid}html :where([style*=border-right-color]){border-right-style:solid}html :where([style*=border-bottom-color]){border-bottom-style:solid}html :where([style*=border-left-color]){border-left-style:solid}html :where([style*=border-width]){border-style:solid}html :where([style*=border-top-width]){border-top-style:solid}html :where([style*=border-right-width]){border-right-style:solid}html :where([style*=border-bottom-width]){border-bottom-style:solid}html :where([style*=border-left-width]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+
+/*# sourceURL=wp-block-library-inline-css */
+</style><style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<style id='classic-theme-styles-inline-css' type='text/css'>
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+<link data-minify="1" rel='stylesheet' id='owl-carousel-css' href='https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/css/owl.carousel.css?ver=1767983384' type='text/css' media='all' />
+<link data-minify="1" rel='stylesheet' id='icon-css' href='https://komikindo.ch/wp-content/cache/min/1/releases/v5.9.0/css/all.css?ver=1767983384' type='text/css' media='all' />
+<link data-minify="1" rel='stylesheet' id='ki-front-style-css' href='https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/css/front.style.css?ver=1767983384' type='text/css' media='all' />
+<style id='ki-front-style-inline-css' type='text/css'>
+
+        .advancedsearch button.searchz,.hpage a,.boxurl strong,.pagination span.page-numbers.current,#footer-menu,.infoanime .infox .spe span:before,.boxdl .boxtitle,#footer-widget .boxbar .genre li a:hover,#slider .slide-caption .btn,.seriestitle,.owl-dot.active span, .owl-dot.active:hover span,.bookmark,#sidebar .senc .sencs h3 .linkwidget,.filter.submit .btn,.quickswitcher .slider.round:before,.filterss:hover,.ctss,.postbody p.index,.ajax-auth input.submit_button
+,.serieslist.pop ul li.topone .ctr,.page_inf .infs .inf_gen a:hover,.naveps .nvsc a,a.selected .item.swiper-slide,.widget.schedule .widget-body .slider .items .item:hover,.autocomplete-suggestion:nth-child(odd):hover, .autocomplete-suggestion:hover,.taxlist li a:hover,#sidebar .senc .sencs .ongoingwgt li .r, .footerwgt .widfoot .sct .ongoingwgt li .r,#sidebar .senc .sencs ul.genre li:before,#sidebar .senc .sencs ul.season li:before,.login,.recommended h3,.widget-title .reset,.nextprev a[rel='next'],.nextprev a[rel='prev'],.counter_outside,.allproject,.alert-warning,.dlch,.logos img,#headhome,#main-menu ul li a:hover,.owl-prev, .owl-next{background: #0053b8}
+.radiox input:checked ~ .checkmarkx,.mCSB_scrollTools .mCSB_dragger .mCSB_dragger_bar,.mCSB_scrollTools .mCSB_dragger:active .mCSB_dragger_bar,.mCSB_scrollTools .mCSB_dragger.mCSB_dragger_onDrag .mCSB_dragger_bar,#overlay, .ctr,ul.amenu li a.selected{background-color:#0053b8 }
+
+.widget-title h3,.widget-title h2,.widget-title h1,.jdlbar ul li,.postbody .dev ul li .dtl h2 a:hover, .postbody .boxed .right .lts ul li .dtl span a:hover,.letter-cell a,.white .bottom a:hover,#sidebar .senc .sencs h3.widget-title,a,.filterss,.searchx #form #s:focus+button,.searchx2 #form2 #s2:focus+button,a#pop_signup, a#pop_login,.headpost h1,#sidebar .side a:hover,.filters .filter li label:hover, .filters .filter li:hover,.filters .filter li input:checked+label:before, .page_inf .infs .inf_gen a,
+ul.smenu li a.selected,h1.titless,a:hover,.widget.info .info .head .title a,.widget.info .info dl.meta dd a
+,.widget.schedule .widget-body .timeline .item .info .name:hover,.widget.schedule .widget-body .timeline .item .watch:hover,.barispenz a,.jdlbar a:hover,.dtlx h1,.bs .bsx .limit .ply .dashicons,.slide-content .title a:hover,.centernav,.pagination a,#sidebar .senc .sencs ul.genre li i,.centernavig,#main-menu ul li a,.quickfilter .filters .filter ul li input:checked+label.checkradiox:before, .scrollToTop{color: #4DA2FF}
+
+ .page_inf .infs .inf_gen a,.serieslist ul li .ctr,.filter.submit .btn,.filterss,.filterss:hover,.searchx #form #s:focus,.searchx2 #form2 #s2:focus,.pagination span.page-numbers.current,.ajax-auth input.submit_button,a#pop_signup, a#pop_login,.taxlist li a:hover,.advancedsearch button.searchz,.widget.schedule .widget-body .timeline .item .watch:hover,.form-control:focus,blockquote, q,.nextprev a[rel='next'],.nextprev a[rel='prev'],.pagination span.page-numbers.current,#footer,#main-menu, .scrollToTop{border-color: #0053b8}
+.genx .checkmark:after{border: solid #0053b8;    left: 0px;
+    top: -6px;
+    width: 9px;
+    height: 14px;
+    border-width: 0 3px 4px 0;
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);}
+    a.more.live_search_click:hover,.Manga{background: #0053b8!important}
+@media only screen and (max-width: 769px){
+.th {
+background: #0053b8
+} }
+@media only screen and (max-width: 769px){
+.darkmode .th {
+
+background: #0053b8
+
+}
+.darkmode .searchx #form #s{background:transparent}
+.darkmode .searchx #form #s{border: 1px solid #fff;}
+.darkmode .searchx #form #s::placeholder{color:#fff}
+.darkmode .searchx #form #s:focus {
+    border-color: #fff;
+}
+.darkmode .searchx #form #s:focus+button{color: #fff;}
+.darkmode .searchx #form #submit{color:#fff}
+}
+        
+/*# sourceURL=ki-front-style-inline-css */
+</style>
+<link data-minify="1" rel='stylesheet' id='dark-theme-css' href='https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/css/front.dark.css?ver=1767983384' type='text/css' media='all' />
+<script type="text/javascript" src="https://komikindo.ch/wp-includes/js/jquery/jquery.min.js?ver=3.7.1" id="jquery-core-js"></script>
+<script type="text/javascript" src="https://komikindo.ch/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1" id="jquery-migrate-js" defer></script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/generate-nonces.js?ver=1767983384" id="ki-generate-nonces-js" defer></script>
+<script type="text/javascript" id="ki-function-js-extra">
+/* <![CDATA[ */
+var kiFunction = {"url":"/wp-admin/admin-ajax.php","is_logged_in":"","nonces":{"ki_dynamic_view":"8df9739ec5","ki_prune_chapter_history":"da16681089","ki_is_manga_bookmarked":"c5cdecd632"}};
+//# sourceURL=ki-function-js-extra
+/* ]]> */
+</script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/function.js?ver=1767983384" id="ki-function-js" defer></script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/scripts.js?ver=1767983384" id="ki-scripts-js" defer></script>
+<script type="text/javascript" src="https://komikindo.ch/wp-content/themes/ki-newgen-pagination/assets/js/jquery.idTabs.min.js?ver=2.0.3.4" id="idTabs-js" defer></script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/owl.carousel.js?ver=1767983384" id="owl-carousel-js" defer></script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/infinity-scroll.js?ver=1767983384" id="infinity-scroll-js" defer></script>
+        <script type="rocketlazyloadscript" data-rocket-type='text/javascript'>
+            (function($) {
+                $(window).scroll(function() {
+                    if ($(this).scrollTop() > 100) {
+                        $('.scrollToTop').fadeIn();
+                    } else {
+                        $('.scrollToTop').fadeOut();
+                    }
+                });
+                $(document).ready(function() {
+                    $(".shme").click(function() {
+                        $(".mm").toggleClass("shwx");
+                    });
+                    $(".filterss").click(function() {
+                        $(".advancedsearch").fadeToggle("advs");
+                    });
+
+                });
+            })(jQuery);
+        </script>
+<link data-minify="1" rel="preload" href="https://komikindo.ch/wp-content/cache/min/1/wp-content/wp-cloudflare-super-page-cache/komikindo.ch/fonts/b1568e2c62d2d3b1791b2c85c447f8e6.css?ver=1767983384" as="style" onload="this.onload=null;this.rel='stylesheet'" crossorigin>
+<noscript><link data-minify="1" rel="stylesheet" href="https://komikindo.ch/wp-content/cache/min/1/wp-content/wp-cloudflare-super-page-cache/komikindo.ch/fonts/b1568e2c62d2d3b1791b2c85c447f8e6.css?ver=1767983384" crossorigin></noscript>
+<link rel="icon" href="https://komikindo.ch/wp-content/uploads/2020/12/fav-79x83.png" sizes="32x32" />
+<link rel="icon" href="https://komikindo.ch/wp-content/uploads/2020/12/fav.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://komikindo.ch/wp-content/uploads/2020/12/fav.png" />
+<meta name="msapplication-TileImage" content="https://komikindo.ch/wp-content/uploads/2020/12/fav.png" />
+  <script type="rocketlazyloadscript">
+    var defaultTheme = "light";
+  </script>
+</head>
+    <div class="ajax-auth auth-modal">
+        <h3>
+            Masuk ke Komikindo        </h3>
+            <form id="sunset_login_user" class="lgsg_form" method="post">
+        <div id="lgsgrespon"></div>
+        <fieldset>
+            <input type="text" name="username" placeholder="Nama Pengguna" id="user_login" value="" required />
+        </fieldset>
+        <fieldset>
+            <input type="password" name="password" placeholder="Kata Sandi" id="user_pass" value="" required />
+        </fieldset>
+                <fieldset>
+            <button type="submit" id="sunset_login_btn" data-text="Masuk" class="submit button">Masuk</button>
+            <span>Masih belum memiliki akun? <a href="https://komikindo.ch/akun?action=sign-up">Daftar Disini </a></span>
+            <span><a href="https://komikindo.ch/akun/lostpassword" target="_blank">Lupa Kata Sandi</a></span>
+        </fieldset>
+        <input type="hidden" id="_wpnonce" name="_wpnonce" value="8d50740f73" /><input type="hidden" name="_wp_http_referer" value="/komik-terbaru/" />        <input name="action" type="hidden" id="action" value="ki_login_user" />
+        <input type="hidden" name="redirect" value="">
+    </form>
+            <button class="close"><i class="fa fa-times" aria-hidden="true"></i></button>
+    </div>
+
+
+<script type="rocketlazyloadscript">
+  var ajaxurl = "https://komikindo.ch/wp-admin/admin-ajax.php";
+</script>
+
+
+
+
+<body class="wp-singular page-template page-template-pages page-template-latest page-template-pageslatest-php page page-id-52 wp-theme-ki-newgen-pagination dark" itemscope="itemscope" itemtype="http://schema.org/WebPage">
+
+
+  <div id='shadow'></div>
+
+  <div class="th">
+    <div class="centernav bound">
+        <div class="shme logo-mobile">
+                        <a title="KomikIndo" itemprop="url" href="https://komikindo.ch/">
+                <img src="https://i0.wp.com/komikindo.ch/wp-content/uploads/2020/12/fav.png?w=50" alt="KomikIndo"> </a>
+        </div>
+                <div class="searchx2">
+            <form action="https://komikindo.ch/" id="form2" method="get" class="search-live"
+                itemprop="potentialAction" itemscope itemtype="http://schema.org/SearchAction">
+                <meta itemprop="target" content="https://komikindo.ch/?s={query}" />
+                <input id="s2" itemprop="query-input" type="text" placeholder="Pencarian..." name="s"
+                    autocomplete="off" />
+                <button type="submit" id="submit2" aria-label="Cari"><span class="fa fa-search"></span></button>
+            </form>
+        </div>
+    </div>
+</div>
+<div id="main-menu" class="mm">
+    <div class="centernav navs">
+        <div class="bound">
+
+            <nav id="main-menu" class="sorceres bound-item" role="navigation" itemscope="itemscope"
+                itemtype="http://schema.org/SiteNavigationElement">
+
+                <ul id="menu-menu" class="menu"><li id="menu-item-288435" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-288435"><a href="/komik-populer/" title="Komik Populer"><span itemprop="name"><i class="fas fa-fire"></i> Komik HOT</span></a></li>
+<li id="menu-item-288436" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-288436"><a href="https://www.facebook.com/komikindo.id" title="Facebook KomikIndo"><span itemprop="name"><i class="fab fa-facebook"></i> Fanspage</span></a></li>
+<li id="menu-item-288434" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-288434"><a href="https://s.id/komikindo" title="APK KomikIndo"><span itemprop="name"><i class="fab fa-android"></i> APK</span></a></li>
+</ul>
+                <div class="clear"></div>
+            </nav>
+
+
+            <header id="masthead" class="site-header bound-item" role="banner" itemscope="itemscope"
+    itemtype="http://schema.org/WPHeader">
+    <div class="site-branding logox">
+                    <span class="logos">
+                <a title="KomikIndo" itemprop="url"
+                    href="https://komikindo.ch/">
+                                                                <img src="https://komikindo.ch/wp-content/uploads/2020/12/komikindo-e1704648943874.png"
+                            alt="KomikIndo">
+                    
+                    <span class="hdl">
+                        KomikIndo                    </span></a>
+            </span>
+                <meta itemprop="name" content="KomikIndo" />
+    </div>
+</header>
+            <div class="right-menu bound-item">
+
+                <div class="searchx">
+                    <form action="https://komikindo.ch/" id="form" method="get">
+                        <input id="s" type="text" placeholder="Pencarian..." name="s" autocomplete="off">
+                        <button type="submit" id="submit" aria-label="Cari"><span class="fa fa-search"></span></button>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div><nav class="second-nav" itemscope="" itemtype="http://www.schema.org/SiteNavigationElement">
+    <div class="centernav navs">
+        <ul id="menu-second-menu" class="menu"><li id="menu-item-19335" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-19335"><a href="https://komikindo.ch/komik-terbaru/"><span itemprop="name">Komik Terbaru</span></a></li>
+<li id="menu-item-237498" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-237498"><a href="https://komikindo.ch/komik-berwarna/" title="Baca Komik Berwarna"><span itemprop="name">Komik Berwarna</span></a></li>
+<li id="menu-item-208282" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-208282"><a href="https://komikindo.ch/daftar-manga/"><span itemprop="name">Daftar Komik</span></a></li>
+<li id="menu-item-288437" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-288437"><a href="https://komikindo.ch/manga/" title="Baca Manga"><span itemprop="name">Manga (Komik Jepang)</span></a></li>
+<li id="menu-item-19388" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-19388"><a href="https://komikindo.ch/manhwa/" title="Baca Manhwa"><span itemprop="name">Manhwa (Komik Korea)</span></a></li>
+<li id="menu-item-19364" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-19364"><a href="https://komikindo.ch/manhua/" title="Baca Manhua"><span itemprop="name">Manhua (Komik China)</span></a></li>
+<li id="menu-item-19418" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-19418"><a href="/komik/boruto-two-blue-vortex/" title="Komik Boruto: Two Blue Vortex"><span itemprop="name">Boruto</span></a></li>
+<li id="menu-item-19438" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-19438"><a href="/komik/one-piece/" title="Komik One Piece"><span itemprop="name">One Piece</span></a></li>
+</ul>    </div>
+</nav>
+    <div class="clear"></div>
+  <main >
+    <div id="wrap" >
+              <div class="gulai_asam_manis">
+          <div class="double">
+<a href="https://menujupenta.site/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgD33k5Hi6VGzxk4tFnhPkl-2AgYfVgGSc06jSq4xympOl2sn-6-clw4uVaYuRRgij6PPavN5A1epDliKDam77QL4M3o_j76Qaxhve_MwH-OaM1VJ3ScFWuaFV2ZsM-1yXxLGvcV5FlBljl-N6AtCMJQAVK7tkM0RFQcnzOSZlym_Zt-LutUh_Wn1V-Nj17/s1600/BpepyrXpWMYgSbqLtoUgZd.gif" title="PENTASLOT" alt="PENTASLOT"/></a></div>
+
+<div class="double">
+<a href="https://akseskaiko.cam/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiwRsoVXhL8VcsLrSGLMUqJ_it91oAzbPrLGEu1ojltsGdiYUB8pxWSAgMayPdVuARyuh45UsKXdz-V63o3WM1JjJOig__zshrbmoo5NtlpNOyhyWQ0w7RuX_4Erq4sBdNrAbUxp_WFWRnCT9M-cXH8HbAPywO-g4nLQj-n96vXJEGk-YY-3JEceeU5LH6X/s1600/wKkHUZdywDOvlOztbZmnPT.gif" title="KAIKOSLOT" alt="KAIKOSLOT"/></a></div>
+
+<div class="double">
+<a href="https://terbangrusia.site/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-aVS9VmuKLxtX0e7pMYO5nHh04P-h4qtManmHuDEX5F3eu82gdrpsY0qYfGKNRzxs2_IGnZapBoh4Ux8RmbLEkQehb7zvwjtpSD9Dqz75f27Iso-obgJ_Rhek7CogC0l1rnHdN_p11tvdUPu3W_CCBhIVDuQn11BgHBPQD7Ec9-Ab2Jo4Krl1QHCvTe0l/s1600/vhqKZipmTmHZyUhUWiUAzW.gif" title="RUSIA777" alt="RUSIA777"/></a></div>
+
+<div class="double">
+<a href="https://bergurukecina.fun/cn7">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjUB1A5P5_-25Qj0oj6T9-AYTX2iNte33zEvCu09M6fxg3H7R7InCl__NmWSlxBp_aAhcBF0ylMEEMGSFLZAQ4Lg0I7Dh_6DEttufpD0-kyPerj8wvkIYdUMQArNYT2uOXBZRw6-cpvad2RClyyT9LLDeK2C-H3COt23L9qQB5qir3Nt0j9yoZ8EVk4XBTP/s1600/NizezlEPRUjItgqhtHmIYn.gif" title="CINA777" alt="CINA777"/></a></div>
+
+<div class="double">
+<a href="https://injd.site/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiGapAmk1H1GVH16-Qmx2QXHhMDYxzhmM6dNrNy14OeuQPOur2YcH4RenirIvxpBNUQ_C468GeS4J8Qh4cocVDkAdLAoCvVEdoC-OOTKAip4AhL62EuCsfe3c_suAvjpCVHTKfbzF_aOIatLiZvtYW8GLmFvZRUyVhu_W-cZAAFON_AY-lV55FW_jpU9HsV/s1600/bIejIzTjwORxIkKuoYVMzG.gif" title="JUDI89" alt="JUDI89"/></a></div>
+
+
+<div class="double">
+<a href="https://goratu.site/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQ-I31rQ7_nBT0gDbi8eEC0R30m3xhNfilJD00TFrbD-qsdzotXx-cXuVCT_ntHgxD4E80ahSvrj7doX-vyqW9Rm_H_voXdoxZGGjTEiq-Ijm3dtWI62pHTeZz2Az7zFbapvT5Cf01a8RaX0teJSEEqMnecOFh3BO_7ZePTutbje5a58Bx2hEq0TR3huMy/s1600/PCyCdDDVAaKXrDFBPfskmM.gif" title="RATU89" alt="RATU89"/></a></div>
+
+<div class="double">
+<a href="https://kegz.site/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6bvFGRcrHQNwICoxxvv_MMNoIKpyuAn6M1mpFKai7Qmdk5XBbpFZDHgyvUmWe4LcUkS5Es9A0AYHdjYiS8GHHQWoWvQhCoQoaT0LUtUWbAOET2B9cNLm3ZQFqTSB7r95HmN5EcTRGlRFWUfVdPCpdchRcOO0hXa4h4lTa95AGevRS4W4cqaiiv0S1_CCC/s1600/JpgGqJjZOtWrYHEqRxgogz.gif" title="GAZA88" alt="GAZA88"/></a></div>
+
+<div class="double">
+<a href="https://goid.space/login">
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgbhDo00OYVUSC2HkJWMpq5xS0u76gHO9yIrX_GIqHa9ywvKMiI1Z2o2HpPzvffB1CdMfEsTgTCn4iDxLYQ_BxDyFRiBLjJFCCFvLdM6z4fp8aFs-icRE1GqAP1976IN1atHS9vYauUM2g3XrdzsSuhQY94CnAz5BMzoFh9eVOokpFX87RqXxsafpBZkpS0/s1600/iLuCRufpMayRqzqtfKWuHt.gif" title="INDO666" alt="INDO666"/></a></div>        </div>
+            
+<div id="content">
+
+
+   <div class="postbody">
+
+      <section id="headhome">
+         <h1>KomikIndo - Komik Terbaru</h1>
+         <p style="width:100%">Kamu sedang berada dihalaman khusus update chapter komik terbaru. Tentunya semua sudah diterjemahkan kedalam bahasa Indonesia. Kami juga memiliki semua judul-judul komik yang rilis di tahun ini dalam berbagai genre. Seperti komik berwarna, dan untuk manga yang terkenal yang sedang hype kami memberikan tanda <i class="fa fa-fire" aria-hidden="true"></i> HOT. Hanya di KomikIndo situs baca manga online terlengkap dan terupdate!</p>
+         <div class="informasi">
+         </div>
+      </section>
+
+      <section class="whites">
+
+         <div class="widget-title">
+            <h2 class="page-title" itemprop="headline">Update Chapter Komik Terbaru</h2>
+         </div>
+         <div class="widget-body">
+            <div class="content">
+               <div class="listupd">
+  <div class="film-list">
+    <div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/shibou-yuugi-de-meshi-wo-kuu/" itemprop="url" title="Komik Shibou Yuugi de Meshi wo Kuu." alt="Komik Shibou Yuugi de Meshi wo Kuu." rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/11/Komik-Shibou-Yuugi-de-Meshi-wo-Kuu-224x319.jpg" title="Komik Shibou Yuugi de Meshi wo Kuu." itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/shibou-yuugi-de-meshi-wo-kuu/" itemprop="url" title="Komik Shibou Yuugi de Meshi wo Kuu." alt="Komik Shibou Yuugi de Meshi wo Kuu." rel="bookmark">
+                        Shibou Yuugi de Meshi wo Kuu.                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/shibou-yuugi-de-meshi-wo-kuu-chapter-15/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 15    </a>
+            <span class="datech">
+            3 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/lostend/" itemprop="url" title="Komik LOSTEND" alt="Komik LOSTEND" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/11/Komik-LOSTEND-224x319.jpg" title="Komik LOSTEND" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/lostend/" itemprop="url" title="Komik LOSTEND" alt="Komik LOSTEND" rel="bookmark">
+                        LOSTEND                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/lostend-chapter-21/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 21    </a>
+            <span class="datech">
+            4 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/kingdom/" itemprop="url" title="Komik Kingdom" alt="Komik Kingdom" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <span class="hot"><i class="fa fa-fire" aria-hidden="true"></i></span>
+    <span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Kingdom-222x319.jpg" title="Komik Kingdom" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/kingdom/" itemprop="url" title="Komik Kingdom" alt="Komik Kingdom" rel="bookmark">
+                        Kingdom                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/kingdom-chapter-862/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 862    </a>
+            <span class="datech">
+            4 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/healing-life-through-camping-in-another-world/" itemprop="url" title="Komik Healing Life Through Camping In Another World" alt="Komik Healing Life Through Camping In Another World" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/04/Komik-Healing-Life-Through-Camping-in-Another-World-220x319.jpg" title="Komik Healing Life Through Camping In Another World" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/healing-life-through-camping-in-another-world/" itemprop="url" title="Komik Healing Life Through Camping In Another World" alt="Komik Healing Life Through Camping In Another World" rel="bookmark">
+                        Healing Life Through Camping In Another World                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/healing-life-through-camping-in-another-world-chapter-91/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 91    </a>
+            <span class="datech">
+            7 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/the-worlds-best-kunlun-tavern/" itemprop="url" title="Komik The World’s Best Kunlun Tavern" alt="Komik The World’s Best Kunlun Tavern" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/03/Komik-The-Worlds-Best-Kunlun-Tavern-223x319.jpg" title="Komik The World’s Best Kunlun Tavern" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/the-worlds-best-kunlun-tavern/" itemprop="url" title="Komik The World’s Best Kunlun Tavern" alt="Komik The World’s Best Kunlun Tavern" rel="bookmark">
+                        The World’s Best Kunlun Tavern                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-worlds-best-kunlun-tavern-chapter-92/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 92    </a>
+            <span class="datech">
+            11 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/269600-the-little-brother-is-the-academys-hotshot/" itemprop="url" title="Komik The Little Brother Is the Academy’s Hotshot" alt="Komik The Little Brother Is the Academy’s Hotshot" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/02/Komik-The-Little-Brother-Is-the-Academys-Hotshot-223x319.jpg" title="Komik The Little Brother Is the Academy’s Hotshot" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/269600-the-little-brother-is-the-academys-hotshot/" itemprop="url" title="Komik The Little Brother Is the Academy’s Hotshot" alt="Komik The Little Brother Is the Academy’s Hotshot" rel="bookmark">
+                        The Little Brother Is the Academy’s Hotshot                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-little-brother-is-the-academys-hotshot-chapter-101/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 101    </a>
+            <span class="datech">
+            11 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/375645-the-knight-king-who-returned-with-a-god/" itemprop="url" title="Komik The Knight King Who Returned with a God" alt="Komik The Knight King Who Returned with a God" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/05/Komik-The-Knight-King-Who-Returned-with-a-God-220x319.jpg" title="Komik The Knight King Who Returned with a God" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/375645-the-knight-king-who-returned-with-a-god/" itemprop="url" title="Komik The Knight King Who Returned with a God" alt="Komik The Knight King Who Returned with a God" rel="bookmark">
+                        The Knight King Who Returned with a God                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-knight-king-who-returned-with-a-god-chapter-146/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 146    </a>
+            <span class="datech">
+            12 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/iron-ladies/" itemprop="url" title="Komik Iron Ladies" alt="Komik Iron Ladies" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Iron-Ladies-236x315.jpg" title="Komik Iron Ladies" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/iron-ladies/" itemprop="url" title="Komik Iron Ladies" alt="Komik Iron Ladies" rel="bookmark">
+                        Iron Ladies                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/iron-ladies-chapter-680/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 680    </a>
+            <span class="datech">
+            12 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/red-shirt/" itemprop="url" title="Komik Red Shirt" alt="Komik Red Shirt" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/06/Komik-Red-Shirt-236x306.jpg" title="Komik Red Shirt" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/red-shirt/" itemprop="url" title="Komik Red Shirt" alt="Komik Red Shirt" rel="bookmark">
+                        Red Shirt                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/red-shirt-chapter-40/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 40    </a>
+            <span class="datech">
+            14 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/yuan-zun/" itemprop="url" title="Komik Yuan Zun" alt="Komik Yuan Zun" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2021/01/Komik-Yuan-Zun-226x319.png" title="Komik Yuan Zun" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/yuan-zun/" itemprop="url" title="Komik Yuan Zun" alt="Komik Yuan Zun" rel="bookmark">
+                        Yuan Zun                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/yuan-zun-chapter-643-5/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 643.5    </a>
+            <span class="datech">
+            14 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/976370-reality-quest/" itemprop="url" title="Komik Reality Quest" alt="Komik Reality Quest" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2021/10/Komik-Reality-Quest-220x319.jpg" title="Komik Reality Quest" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/976370-reality-quest/" itemprop="url" title="Komik Reality Quest" alt="Komik Reality Quest" rel="bookmark">
+                        Reality Quest                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/reality-quest-chapter-187/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 187    </a>
+            <span class="datech">
+            15 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/f-class-destiny-hunter/" itemprop="url" title="Komik F-Class Destiny Hunter" alt="Komik F-Class Destiny Hunter" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/04/Komik-F-Class-Destiny-Hunter-222x319.png" title="Komik F-Class Destiny Hunter" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/f-class-destiny-hunter/" itemprop="url" title="Komik F-Class Destiny Hunter" alt="Komik F-Class Destiny Hunter" rel="bookmark">
+                        F-Class Destiny Hunter                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/f-class-destiny-hunter-chapter-118/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 118    </a>
+            <span class="datech">
+            16 menit lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/876010-insanely-talented-player/" itemprop="url" title="Komik Insanely-Talented Player" alt="Komik Insanely-Talented Player" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/09/Komik-Insanely-Talented-Player-220x319.jpg" title="Komik Insanely-Talented Player" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/876010-insanely-talented-player/" itemprop="url" title="Komik Insanely-Talented Player" alt="Komik Insanely-Talented Player" rel="bookmark">
+                        Insanely-Talented Player                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/insanely-talented-player-chapter-100/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 100    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/reborn-as-the-heavenly-demon/" itemprop="url" title="Komik Reborn as The Heavenly Demon" alt="Komik Reborn as The Heavenly Demon" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/03/Komik-Reborn-as-The-Heavenly-Demon-236x306.jpg" title="Komik Reborn as The Heavenly Demon" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/reborn-as-the-heavenly-demon/" itemprop="url" title="Komik Reborn as The Heavenly Demon" alt="Komik Reborn as The Heavenly Demon" rel="bookmark">
+                        Reborn as The Heavenly Demon                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/reborn-as-the-heavenly-demon-chapter-102/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 102    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/dark-summoner-to-dekiteiru/" itemprop="url" title="Komik Dark Summoner to Dekiteiru" alt="Komik Dark Summoner to Dekiteiru" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/02/Komik-Dark-Summoner-to-Dekiteiru-224x319.jpg" title="Komik Dark Summoner to Dekiteiru" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/dark-summoner-to-dekiteiru/" itemprop="url" title="Komik Dark Summoner to Dekiteiru" alt="Komik Dark Summoner to Dekiteiru" rel="bookmark">
+                        Dark Summoner to Dekiteiru                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/dark-summoner-to-dekiteiru-chapter-21/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 21    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/inko-demo-seishun-shitai/" itemprop="url" title="Komik Inko demo Seishun Shitai" alt="Komik Inko demo Seishun Shitai" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2026/01/Komik-Inko-demo-Seishun-Shitai-224x319.jpg" title="Komik Inko demo Seishun Shitai" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/inko-demo-seishun-shitai/" itemprop="url" title="Komik Inko demo Seishun Shitai" alt="Komik Inko demo Seishun Shitai" rel="bookmark">
+                        Inko demo Seishun Shitai                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/inko-demo-seishun-shitai-chapter-10/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 10    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/i-took-over-the-academy-with-a-single-sashimi-knife/" itemprop="url" title="Komik I Took Over the Academy With a Single Sashimi Knife" alt="Komik I Took Over the Academy With a Single Sashimi Knife" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/09/Komik-Conquering-the-Academy-with-Just-a-Sashimi-Knife-236x306.jpg" title="Komik I Took Over the Academy With a Single Sashimi Knife" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/i-took-over-the-academy-with-a-single-sashimi-knife/" itemprop="url" title="Komik I Took Over the Academy With a Single Sashimi Knife" alt="Komik I Took Over the Academy With a Single Sashimi Knife" rel="bookmark">
+                        I Took Over the Academy With a Single Sashimi Knife                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/i-took-over-the-academy-with-a-single-sashimi-knife-chapter-61/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 61    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/face-genius-0-year-old-top-star/" itemprop="url" title="Komik Face Genius, 0 Year-Old Top Star" alt="Komik Face Genius, 0 Year-Old Top Star" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/09/Komik-Face-Genius-0-Year-Old-Top-Star-223x319.jpg" title="Komik Face Genius, 0 Year-Old Top Star" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/face-genius-0-year-old-top-star/" itemprop="url" title="Komik Face Genius, 0 Year-Old Top Star" alt="Komik Face Genius, 0 Year-Old Top Star" rel="bookmark">
+                        Face Genius, 0 Year-Old Top Star                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/face-genius-0-year-old-top-star-chapter-38/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 38    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/803540-the-heavenly-demon-wants-a-quiet-life/" itemprop="url" title="Komik The Heavenly Demon Wants A Quiet Life" alt="Komik The Heavenly Demon Wants A Quiet Life" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/11/Komik-The-Heavenly-Demon-Wants-A-Quiet-Life-220x319.jpg" title="Komik The Heavenly Demon Wants A Quiet Life" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/803540-the-heavenly-demon-wants-a-quiet-life/" itemprop="url" title="Komik The Heavenly Demon Wants A Quiet Life" alt="Komik The Heavenly Demon Wants A Quiet Life" rel="bookmark">
+                        The Heavenly Demon Wants A Quiet Life                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-heavenly-demon-wants-a-quiet-life-chapter-64/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 64    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/reincarnated-as-a-genius-prodigy-of-a-prestigious-family/" itemprop="url" title="Komik Reincarnated as a Genius Prodigy of a Prestigious Family" alt="Komik Reincarnated as a Genius Prodigy of a Prestigious Family" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/10/Komik-Reincarnated-as-a-Genius-Prodigy-of-a-Prestigious-Family-223x319.jpg" title="Komik Reincarnated as a Genius Prodigy of a Prestigious Family" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/reincarnated-as-a-genius-prodigy-of-a-prestigious-family/" itemprop="url" title="Komik Reincarnated as a Genius Prodigy of a Prestigious Family" alt="Komik Reincarnated as a Genius Prodigy of a Prestigious Family" rel="bookmark">
+                        Reincarnated as a Genius Prodigy of a Prestigious Family                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/reincarnated-as-a-genius-prodigy-of-a-prestigious-family-chapter-74/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 74    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/807679-the-returned-c-rank-tank-wont-die/" itemprop="url" title="Komik The Returned C-Rank Tank Won’t Die!" alt="Komik The Returned C-Rank Tank Won’t Die!" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/04/Komik-The-Returned-C-Rank-Tank-Wont-Die-213x319.jpg" title="Komik The Returned C-Rank Tank Won’t Die!" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/807679-the-returned-c-rank-tank-wont-die/" itemprop="url" title="Komik The Returned C-Rank Tank Won’t Die!" alt="Komik The Returned C-Rank Tank Won’t Die!" rel="bookmark">
+                        The Returned C-Rank Tank Won’t Die!                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-returned-c-rank-tank-wont-die-chapter-43/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 43    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/supreme-curse-master/" itemprop="url" title="Komik Supreme Curse Master" alt="Komik Supreme Curse Master" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/04/Komik-Supreme-Curse-Master-236x312.jpg" title="Komik Supreme Curse Master" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/supreme-curse-master/" itemprop="url" title="Komik Supreme Curse Master" alt="Komik Supreme Curse Master" rel="bookmark">
+                        Supreme Curse Master                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/supreme-curse-master-chapter-44/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 44    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/star-ginseng-store/" itemprop="url" title="Komik Star Ginseng Store" alt="Komik Star Ginseng Store" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/05/Komik-Star-Ginseng-Store-236x306.jpg" title="Komik Star Ginseng Store" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/star-ginseng-store/" itemprop="url" title="Komik Star Ginseng Store" alt="Komik Star Ginseng Store" rel="bookmark">
+                        Star Ginseng Store                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/star-ginseng-store-chapter-212/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 212    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/how-to-live-as-the-vampire-lord-crimson-reset/" itemprop="url" title="Komik How to Live as the Vampire Lord (Crimson Reset)" alt="Komik How to Live as the Vampire Lord (Crimson Reset)" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/12/Komik-How-to-Live-as-the-Vampire-Lord-231x319.jpg" title="Komik How to Live as the Vampire Lord (Crimson Reset)" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/how-to-live-as-the-vampire-lord-crimson-reset/" itemprop="url" title="Komik How to Live as the Vampire Lord (Crimson Reset)" alt="Komik How to Live as the Vampire Lord (Crimson Reset)" rel="bookmark">
+                        How to Live as the Vampire Lord (Crimson Reset)                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/how-to-live-as-the-vampire-lord-crimson-reset-chapter-25/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 25    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/976292-i-became-the-tyrant-of-a-defense-game/" itemprop="url" title="Komik I Became the Tyrant of a Defense Game" alt="Komik I Became the Tyrant of a Defense Game" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2022/08/Komik-I-Became-the-Tyrant-of-a-Defense-Game-220x319.jpg" title="Komik I Became the Tyrant of a Defense Game" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/976292-i-became-the-tyrant-of-a-defense-game/" itemprop="url" title="Komik I Became the Tyrant of a Defense Game" alt="Komik I Became the Tyrant of a Defense Game" rel="bookmark">
+                        I Became the Tyrant of a Defense Game                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/i-became-the-tyrant-of-a-defense-game-chapter-161/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 161    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/star-martial-god-technique/" itemprop="url" title="Komik Star Martial God Technique" alt="Komik Star Martial God Technique" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+        <span class="hot"><i class="fa fa-fire" aria-hidden="true"></i></span>
+    <span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Star-Martial-God-Technique-228x319.jpg" title="Komik Star Martial God Technique" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/star-martial-god-technique/" itemprop="url" title="Komik Star Martial God Technique" alt="Komik Star Martial God Technique" rel="bookmark">
+                        Star Martial God Technique                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/star-martial-god-technique-chapter-772/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 772    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/became-the-patron-of-villains/" itemprop="url" title="Komik Became The Patron Of Villains" alt="Komik Became The Patron Of Villains" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/11/Komik-I-Became-the-Patron-of-Villains-220x319.jpg" title="Komik Became The Patron Of Villains" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/became-the-patron-of-villains/" itemprop="url" title="Komik Became The Patron Of Villains" alt="Komik Became The Patron Of Villains" rel="bookmark">
+                        Became The Patron Of Villains                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/became-the-patron-of-villains-chapter-17/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 17    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/the-eunuchs-second-life/" itemprop="url" title="Komik The Eunuchs Second Life" alt="Komik The Eunuchs Second Life" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/04/Komik-The-Eunuchs-Second-Life-223x319.jpg" title="Komik The Eunuchs Second Life" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/the-eunuchs-second-life/" itemprop="url" title="Komik The Eunuchs Second Life" alt="Komik The Eunuchs Second Life" rel="bookmark">
+                        The Eunuchs Second Life                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-eunuchs-second-life-chapter-24/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 24    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/the-boss-is-too-strong/" itemprop="url" title="Komik The Boss Is Too Strong" alt="Komik The Boss Is Too Strong" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2026/01/Komik-The-Boss-Is-Too-Strong-223x319.jpg" title="Komik The Boss Is Too Strong" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/the-boss-is-too-strong/" itemprop="url" title="Komik The Boss Is Too Strong" alt="Komik The Boss Is Too Strong" rel="bookmark">
+                        The Boss Is Too Strong                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-boss-is-too-strong-chapter-19/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 19    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/614827-transcension-academy/" itemprop="url" title="Komik Transcension Academy" alt="Komik Transcension Academy" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2022/07/Komik-Transcension-Academy-223x319.png" title="Komik Transcension Academy" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/614827-transcension-academy/" itemprop="url" title="Komik Transcension Academy" alt="Komik Transcension Academy" rel="bookmark">
+                        Transcension Academy                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/transcension-academy-chapter-184/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 184    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/the-veteran-healer-is-overpowered/" itemprop="url" title="Komik The Veteran Healer Is Overpowered" alt="Komik The Veteran Healer Is Overpowered" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/03/Komik-The-Veteran-Healer-Is-Overpowered-236x306.jpg" title="Komik The Veteran Healer Is Overpowered" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/the-veteran-healer-is-overpowered/" itemprop="url" title="Komik The Veteran Healer Is Overpowered" alt="Komik The Veteran Healer Is Overpowered" rel="bookmark">
+                        The Veteran Healer Is Overpowered                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-veteran-healer-is-overpowered-chapter-64/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 64    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/kami-chi-no-kyuuseishu-0-00000001-o-hikiate-saikyou-e/" itemprop="url" title="Komik Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-" alt="Komik Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/07/Komik-Kami-Chi-no-Kyuuseishu-0-00000001-o-Hikiate-Saikyou-e-225x319.png" title="Komik Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/kami-chi-no-kyuuseishu-0-00000001-o-hikiate-saikyou-e/" itemprop="url" title="Komik Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-" alt="Komik Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-" rel="bookmark">
+                        Kami Chi no Kyuuseishu -0. 00000001% o Hikiate Saikyou e-                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/kami-chi-no-kyuuseishu-0-00000001-o-hikiate-saikyou-e-chapter-116/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 116    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/931897-reborn-as-the-enemy-prince/" itemprop="url" title="Komik Reborn As The Enemy Prince" alt="Komik Reborn As The Enemy Prince" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/09/Komik-Reborn-As-The-Enemy-Prince-215x319.jpg" title="Komik Reborn As The Enemy Prince" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/931897-reborn-as-the-enemy-prince/" itemprop="url" title="Komik Reborn As The Enemy Prince" alt="Komik Reborn As The Enemy Prince" rel="bookmark">
+                        Reborn As The Enemy Prince                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/reborn-as-the-enemy-prince-chapter-86/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 86    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/367057-survive-as-a-barbarian-in-the-game/" itemprop="url" title="Komik Survive as a Barbarian in the Game" alt="Komik Survive as a Barbarian in the Game" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2023/04/Komik-Survive-as-a-Barbarian-in-the-Game-220x319.jpg" title="Komik Survive as a Barbarian in the Game" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/367057-survive-as-a-barbarian-in-the-game/" itemprop="url" title="Komik Survive as a Barbarian in the Game" alt="Komik Survive as a Barbarian in the Game" rel="bookmark">
+                        Survive as a Barbarian in the Game                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/survive-as-a-barbarian-in-the-game-chapter-137/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 137    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/455620-return-of-the-high-ranking-civil-servant/" itemprop="url" title="Komik Return of the High-Ranking Civil Servant" alt="Komik Return of the High-Ranking Civil Servant" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhwa"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/11/Komik-Return-of-the-High-Ranking-Civil-Servant-223x319.jpg" title="Komik Return of the High-Ranking Civil Servant" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/455620-return-of-the-high-ranking-civil-servant/" itemprop="url" title="Komik Return of the High-Ranking Civil Servant" alt="Komik Return of the High-Ranking Civil Servant" rel="bookmark">
+                        Return of the High-Ranking Civil Servant                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/return-of-the-high-ranking-civil-servant-chapter-73/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 73    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/counterattacking-system-available-at-the-grand-ascension-stage/" itemprop="url" title="Komik Counterattacking System Available At The Grand Ascension Stage" alt="Komik Counterattacking System Available At The Grand Ascension Stage" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/07/Komik-Counterattacking-System-Available-At-The-Grand-Ascension-Stage-236x315.jpg" title="Komik Counterattacking System Available At The Grand Ascension Stage" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/counterattacking-system-available-at-the-grand-ascension-stage/" itemprop="url" title="Komik Counterattacking System Available At The Grand Ascension Stage" alt="Komik Counterattacking System Available At The Grand Ascension Stage" rel="bookmark">
+                        Counterattacking System Available At The Grand Ascension Stage                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/counterattacking-system-available-at-the-grand-ascension-stage-chapter-61/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 61    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/the-omni-guardian/" itemprop="url" title="Komik The Omni Guardian" alt="Komik The Omni Guardian" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+        <div class="warnalabel"><i class="fas fa-palette"></i> Warna</div>
+<span class="typeflag Manhua"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/01/Komik-The-Omni-Guardian-236x315.jpg" title="Komik The Omni Guardian" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/the-omni-guardian/" itemprop="url" title="Komik The Omni Guardian" alt="Komik The Omni Guardian" rel="bookmark">
+                        The Omni Guardian                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/the-omni-guardian-chapter-60/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 60    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/kabeyaku-nado-fuyou-to-tsuihousareta-s-kyuu-boukensha/" itemprop="url" title="Komik Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha" alt="Komik Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2024/10/Komik-Kabeyaku-Nado-Fuyou-to-Tsuihousareta-S-kyuu-Boukensha-226x319.jpg" title="Komik Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/kabeyaku-nado-fuyou-to-tsuihousareta-s-kyuu-boukensha/" itemprop="url" title="Komik Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha" alt="Komik Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha" rel="bookmark">
+                        Kabeyaku Nado Fuyou to Tsuihousareta S-kyuu Boukensha                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/kabeyaku-nado-fuyou-to-tsuihousareta-s-kyuu-boukensha-chapter-19/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 19    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/kuroiwa-medaka-ni-watashi-no-kawaii-ga-tsuujinai/" itemprop="url" title="Komik Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai" alt="Komik Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Kuroiwa-Medaka-ni-Watashi-no-Kawaii-ga-Tsuujinai-222x319.jpg" title="Komik Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/kuroiwa-medaka-ni-watashi-no-kawaii-ga-tsuujinai/" itemprop="url" title="Komik Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai" alt="Komik Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai" rel="bookmark">
+                        Kuroiwa Medaka ni Watashi no Kawaii ga Tsuujinai                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/kuroiwa-medaka-ni-watashi-no-kawaii-ga-tsuujinai-chapter-204/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 204    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+<div class="animepost">
+    <div class="animposx">
+                    <a href="https://komikindo.ch/komik/monster-no-niku-wo-kutte-itara-oui-no-tsuita-ken/" itemprop="url" title="Komik Monster no Niku wo Kutte Itara Oui no Tsuita Ken" alt="Komik Monster no Niku wo Kutte Itara Oui no Tsuita Ken" rel="bookmark">
+                <div class="limit">
+                    <div class="ply"></div>
+<span class="typeflag Manga"></span>
+<img src="https://komikindo.ch/wp-content/uploads/2025/07/Komik-Monster-no-Niku-wo-Kutte-Itara-Oui-no-Tsuita-Ken-224x319.jpg" title="Komik Monster no Niku wo Kutte Itara Oui no Tsuita Ken" itemprop="image" />                </div>
+            </a>
+                <div class="bigors">
+            <div class="tt">
+                <h3>
+                    <a href="https://komikindo.ch/komik/monster-no-niku-wo-kutte-itara-oui-no-tsuita-ken/" itemprop="url" title="Komik Monster no Niku wo Kutte Itara Oui no Tsuita Ken" alt="Komik Monster no Niku wo Kutte Itara Oui no Tsuita Ken" rel="bookmark">
+                        Monster no Niku wo Kutte Itara Oui no Tsuita Ken                    </a>
+                </h3>
+            </div>
+            <div class="adds">
+                <div class="lsch">
+    <a href="https://komikindo.ch/monster-no-niku-wo-kutte-itara-oui-no-tsuita-ken-chapter-13/" itemprop="url" rel="bookmark" title="Komik ">
+        Ch. 13    </a>
+            <span class="datech">
+            6 jam lalu        </span>
+    </div>            </div>
+        </div>
+    </div>
+</div>
+  </div>
+  <div class="pagination">
+    <span aria-current="page" class="page-numbers current">1</span>
+<a class="page-numbers" href="https://komikindo.ch/komik-terbaru/page/2/">2</a>
+<a class="page-numbers" href="https://komikindo.ch/komik-terbaru/page/3/">3</a>
+<span class="page-numbers dots">&hellip;</span>
+<a class="page-numbers" href="https://komikindo.ch/komik-terbaru/page/204/">204</a>
+<a class="next page-numbers" href="https://komikindo.ch/komik-terbaru/page/2/">Berikutnya &raquo;</a>  </div>
+  </div>            </div>
+         </div>
+      </section>
+   </div>
+
+   <div id="sidebar">
+  <div class="senc">
+    <aside class="widgets"><div class="sencs"><h2 class="widget-title">Komik Terpopuler</h2>			<div class='widget-post'>
+				<div class="serieslist pop">
+					<ul>
+						<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/783596-pick-me-up/" title="Komik Pick Me Up!">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2022/12/Komik-Pick-Me-Up-79x114.jpg" title="Komik Pick Me Up!" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr first">1</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/783596-pick-me-up/" title="Komik Pick Me Up!">Pick Me Up!</a></h3>
+        <span class="author">Hermod, nicesun</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7.26        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/686339-i-obtained-a-mythic-item/" title="Komik I Obtained a Mythic Item">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2022/06/Komik-I-Obtained-a-Mythic-Item-79x114.jpg" title="Komik I Obtained a Mythic Item" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr second">2</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/686339-i-obtained-a-mythic-item/" title="Komik I Obtained a Mythic Item">I Obtained a Mythic Item</a></h3>
+        <span class="author">Jung SeonYul (정선율)</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/821637-my-gift-lvl-9999-unlimited-gacha/" title="Komik My Gift LVL 9999 Unlimited Gacha">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2021/06/Komik-My-Gift-LVL-9999-Unlimited-Gacha-79x45.png" title="Komik My Gift LVL 9999 Unlimited Gacha" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr third">3</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/821637-my-gift-lvl-9999-unlimited-gacha/" title="Komik My Gift LVL 9999 Unlimited Gacha">My Gift LVL 9999 Unlimited Gacha</a></h3>
+        <span class="author">Shisui Meikyo</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/289209-battle-through-the-heavens/" title="Komik Battle Through the Heavens">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Fights-Breaking-Through-The-Heavens-79x114.png" title="Komik Battle Through the Heavens" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">4</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/289209-battle-through-the-heavens/" title="Komik Battle Through the Heavens">Battle Through the Heavens</a></h3>
+        <span class="author">Tian Can Tu Dou</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            8.36        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/910146-return-of-the-frozen-player/" title="Komik Return of the Frozen Player">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2021/03/Komik-Return-of-the-Frozen-Player-79x107.jpg" title="Komik Return of the Frozen Player" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">5</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/910146-return-of-the-frozen-player/" title="Komik Return of the Frozen Player">Return of the Frozen Player</a></h3>
+        <span class="author">제리엠</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7.98        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/308020-leveling-with-the-gods/" title="Komik Leveling With the Gods">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2021/07/Komik-Leveling-With-the-Gods-79x107.jpg" title="Komik Leveling With the Gods" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">6</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/308020-leveling-with-the-gods/" title="Komik Leveling With the Gods">Leveling With the Gods</a></h3>
+        <span class="author">Heuk Ah-In</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/817591-rebirth-of-the-urban-immortal-cultivator/" title="Komik Rebirth of the Urban Immortal Cultivator">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-Rebirth-of-the-Urban-Immortal-Cultivator-79x105.png" title="Komik Rebirth of the Urban Immortal Cultivator" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">7</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/817591-rebirth-of-the-urban-immortal-cultivator/" title="Komik Rebirth of the Urban Immortal Cultivator">Rebirth of the Urban Immortal Cultivator</a></h3>
+        <span class="author">Shiu jianshen</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7.37        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/solo-leveling-ragnarok/" title="Komik Solo Leveling: Ragnarok">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2024/07/Komik-Solo-Leveling-Ragnarok-79x114.jpg" title="Komik Solo Leveling: Ragnarok" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">8</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/solo-leveling-ragnarok/" title="Komik Solo Leveling: Ragnarok">Solo Leveling: Ragnarok</a></h3>
+        <span class="author">DAUL</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/744328-the-dark-magician-transmigrates-after-66666-years/" title="Komik The Dark Magician Transmigrates After 66666 Years">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2021/06/Komik-The-Dark-Magician-Transmigrates-After-66666-Years-79x114.jpg" title="Komik The Dark Magician Transmigrates After 66666 Years" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">9</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/744328-the-dark-magician-transmigrates-after-66666-years/" title="Komik The Dark Magician Transmigrates After 66666 Years">The Dark Magician Transmigrates After 66666 Years</a></h3>
+        <span class="author">타루, 화봉</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            7        </span>
+    </div>
+</li>
+
+<li>
+    <div class="imgseries ">
+        <a class="series" href="https://komikindo.ch/komik/963068-god-of-blackfield/" title="Komik God of Blackfield">
+            <div class="ply"></div>
+            <img src="https://komikindo.ch/wp-content/uploads/2020/12/Komik-God-of-Blackfield-79x107.png" title="Komik God of Blackfield" itemprop="image" />        </a>
+    </div>
+    <div class="leftseries">
+                    <div class="ctr ">10</div>
+                <h3><a class="series" href="https://komikindo.ch/komik/963068-god-of-blackfield/" title="Komik God of Blackfield">God of Blackfield</a></h3>
+        <span class="author">무장, 운(雲)</span>
+        <span class="loveviews">
+            <i class="fa fa-heart"></i>
+            8.13        </span>
+    </div>
+</li>
+
+					</ul>
+				</div>
+			</div>
+		</div></aside>  </div>
+</div></div>
+</div>
+
+<noscript>
+	<div id="nosc" style="text-align:center"><b style="color:red;">AKTIFKAN JAVASCRIPT UNTUK MELIHAT GAMBAR</b><br>
+		<small style="color:blue">Atau gunakan browser: Google Chrome / Firefox</small>
+	</div>
+</noscript>
+
+<script type="rocketlazyloadscript" data-rocket-type='text/javascript'>
+	(function($) {
+		$('body').on('click', function() {
+			$('body').toggleClass('click');
+		});
+	})(jQuery);
+</script>
+
+<nav class="floating-nav second-nav" itemscope="" itemtype="http://www.schema.org/SiteNavigationElement">
+	
+	<div class="centernav navs">
+		<div class="scrolltopcont">
+			<div class="scrollToTop">
+				<span class="fas fa-chevron-up"></span>
+			</div>
+		</div>
+		<ul id="menu-menu-float" class="menu"><li id="menu-item-237322" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-237322"><a href="/" title="KomikIndo"><span itemprop="name"><i class="fas fa-home"></i> Beranda</span></a></li>
+<li id="menu-item-237323" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-237323"><a href="https://komikindo.ch/komik-terbaru/" title="Update Terbaru KomikIndo"><span itemprop="name"><i class="fas fa-book-open"></i> New Updates</span></a></li>
+<li id="menu-item-237324" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-237324"><a href="https://komikindo.ch/daftar-manga/" title="Daftar Isi KomikIndo"><span itemprop="name"><i class="fas fa-list-alt"></i> Daftar Isi</span></a></li>
+<li id="menu-item-237325" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-237325"><a href="https://komikindo.ch/akun/" title="Akun"><span itemprop="name"><i class="fas fa-user"></i> Akun</span></a></li>
+</ul>	</div>
+</nav>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150447198-8"></script>
+<script>
+	window.dataLayer = window.dataLayer || [];
+
+	function gtag() {
+		dataLayer.push(arguments);
+	}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-150447198-8');
+</script>
+
+<script type="rocketlazyloadscript" data-cfasync="false" async data-rocket-type="text/javascript" data-rocket-src="//qk.windowylarvule.com/r01gUXhI8aTo/73945"></script>
+<script type="rocketlazyloadscript" data-cfasync="false" async data-rocket-type="text/javascript" data-rocket-src="//ew.ileacringes.com/r8b89iFS2O9QSPPUO/73945"></script>
+
+</main>
+<div class="clear"></div>
+
+<div id="footer">
+
+	<div class="footermenu">
+		<ul id="menu-footer" class="menu"><li id="menu-item-19561" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-19561"><a href="/"><span itemprop="name">Beranda</span></a></li>
+<li id="menu-item-19605" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-19605"><a href="/konten/ecchi/"><span itemprop="name">Komik Mantap</span></a></li>
+<li id="menu-item-135821" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-135821"><a href="https://komikindo.ch/dmca/"><span itemprop="name">DMCA</span></a></li>
+<li id="menu-item-241142" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-241142"><a href="https://komikindo.ch/iklan/" title="Pasang Iklan"><span itemprop="name">Iklan</span></a></li>
+</ul>	</div>
+	<div class='copyright_east'><p>© 2026 by <strong>KomikIndo</strong>. All Rights Reserved.
+		</p></div></div>
+
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/ki-newgen-pagination/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script type="rocketlazyloadscript" data-rocket-type="module" data-rocket-src="https://komikindo.ch/wp-content/plugins/wp-cloudflare-page-cache/assets/js/instantpage.min.js?ver=5.2.0" id="swcfpc_instantpage-js" defer></script>
+<script type="rocketlazyloadscript" data-rocket-type="text/javascript" id="swcfpc_auto_prefetch_url-js-before">
+/* <![CDATA[ */
+			function swcfpc_wildcard_check(str, rule) {
+			let escapeRegex = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+			return new RegExp("^" + rule.split("*").map(escapeRegex).join(".*") + "$").test(str);
+			}
+
+			function swcfpc_can_url_be_prefetched(href) {
+
+			if( href.length == 0 )
+			return false;
+
+			if( href.startsWith("mailto:") )
+			return false;
+
+			if( href.startsWith("https://") )
+			href = href.split("https://"+location.host)[1];
+			else if( href.startsWith("http://") )
+			href = href.split("http://"+location.host)[1];
+
+			for( let i=0; i < swcfpc_prefetch_urls_to_exclude.length; i++) {
+
+			if( swcfpc_wildcard_check(href, swcfpc_prefetch_urls_to_exclude[i]) )
+			return false;
+
+			}
+
+			return true;
+
+			}
+
+			let swcfpc_prefetch_urls_to_exclude = '[]';
+			swcfpc_prefetch_urls_to_exclude = (swcfpc_prefetch_urls_to_exclude) ? JSON.parse(swcfpc_prefetch_urls_to_exclude) : [];
+
+			
+//# sourceURL=swcfpc_auto_prefetch_url-js-before
+/* ]]> */
+</script>
+<script type="text/javascript" id="ki-bookmark-js-extra">
+/* <![CDATA[ */
+var kiBookmark = {"url":"/wp-admin/admin-ajax.php","loading":"Loading..","afavorites":"Add to favorites","rfavorites":"Remove of favorites","remove":"Remove","error":"Error","enabled":"Enable","disabled":"Disable"};
+//# sourceURL=ki-bookmark-js-extra
+/* ]]> */
+</script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/bookmark.js?ver=1767983384" id="ki-bookmark-js" defer></script>
+<script type="text/javascript" id="ki-account-js-extra">
+/* <![CDATA[ */
+var kiAccount = {"url":"/wp-admin/admin-ajax.php"};
+//# sourceURL=ki-account-js-extra
+/* ]]> */
+</script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/account.js?ver=1767983384" id="ki-account-js" defer></script>
+<script type="text/javascript" id="ki-auth-js-extra">
+/* <![CDATA[ */
+var kiAuth = {"url":"/wp-admin/admin-ajax.php","loading":"Loading..."};
+//# sourceURL=ki-auth-js-extra
+/* ]]> */
+</script>
+<script type="rocketlazyloadscript" data-minify="1" data-rocket-type="text/javascript" data-rocket-src="https://komikindo.ch/wp-content/cache/min/1/wp-content/themes/ki-newgen-pagination/assets/js/auth.js?ver=1767983384" id="ki-auth-js" defer></script>
+
+		<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"78dd717206ba40ce8c70467f5bb8f0c7","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9bb6b7e73c7d0725',t:'MTc2Nzk5MDg5Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+
+</html><!--
+Performance optimized by Redis Object Cache. Learn more: https://wprediscache.com
+
+Retrieved 2756 objects (466 KB) from Redis using PhpRedis (v6.2.0).
+-->
+
+<!-- This website is like a Rocket, isn't it? Performance optimized by WP Rocket. Learn more: https://wp-rocket.me - Debug: cached@1767983404 -->
