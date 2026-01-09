@@ -138,7 +138,8 @@ function toggleMobileMenu() {
 async function loadBanners() {
     try {
         const response = await fetch(`${API_BASE}/drama?action=latest`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             const banners = data.slice(0, 5);
@@ -241,7 +242,8 @@ function startBannerAutoPlay() {
 async function loadHomeDrama() {
     try {
         const response = await fetch(`${API_BASE}/drama?action=latest`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result; // Handle both formats
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#home-drama', data.slice(0, 10), 'drama');
@@ -257,7 +259,8 @@ async function loadHomeDrama() {
 async function loadHomeAnime() {
     try {
         const response = await fetch(`${API_BASE}/anime?action=latest`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result; // Handle both formats
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#home-anime', data.slice(0, 10), 'anime');
@@ -273,7 +276,8 @@ async function loadHomeAnime() {
 async function loadHomeKomik() {
     try {
         const response = await fetch(`${API_BASE}/komik?action=popular`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result; // Handle both formats
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#home-komik', data.slice(0, 10), 'komik');
@@ -293,7 +297,8 @@ async function loadDramaPage() {
     
     try {
         const response = await fetch(`${API_BASE}/drama?action=latest`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#drama-grid', data, 'drama', true);
@@ -314,7 +319,8 @@ async function loadMoreDrama() {
     try {
         // Drama API doesn't have pagination, so we load trending instead
         const response = await fetch(`${API_BASE}/drama?action=trending`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             const grid = $('#drama-grid');
@@ -336,7 +342,8 @@ async function loadAnimePage() {
     
     try {
         const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#anime-grid', data, 'anime', true);
@@ -356,7 +363,8 @@ async function loadMoreAnime() {
     
     try {
         const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             const grid = $('#anime-grid');
@@ -378,7 +386,8 @@ async function loadKomikPage() {
     
     try {
         const response = await fetch(`${API_BASE}/komik?action=popular`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             renderCards('#komik-grid', data, 'komik', true);
@@ -398,7 +407,8 @@ async function loadMoreKomik() {
     
     try {
         const response = await fetch(`${API_BASE}/komik?action=popular&page=${state.komikPage}`);
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             const grid = $('#komik-grid');
@@ -514,12 +524,14 @@ async function loadDetail(type, id) {
 
 async function fetchDramaDetail(id) {
     const response = await fetch(`${API_BASE}/drama?action=detail&bookId=${id}`);
-    const data = await response.json();
+    const result = await response.json();
+    const data = result.data || result;
     
     // Get episodes
     try {
         const epResponse = await fetch(`${API_BASE}/drama?action=allepisode&bookId=${id}`);
-        const epData = await epResponse.json();
+        const epResult = await epResponse.json();
+        const epData = epResult.data || epResult;
         state.episodes = Array.isArray(epData) ? epData : [];
     } catch (e) {
         state.episodes = [];
@@ -530,15 +542,17 @@ async function fetchDramaDetail(id) {
 
 async function fetchAnimeDetail(id) {
     const response = await fetch(`${API_BASE}/anime?action=detail&urlId=${id}`);
-    const data = await response.json();
+    const result = await response.json();
+    const data = result.data || result;
     state.episodes = data.episodes || [];
     return data;
 }
 
 async function fetchKomikDetail(id) {
     const response = await fetch(`${API_BASE}/komik?action=detail&manga_id=${id}`);
-    const data = await response.json();
-    state.chapters = data.chapters || [];
+    const result = await response.json();
+    const data = result.data || result;
+    state.chapters = data.chapters || data.daftar_chapter || [];
     return data;
 }
 
@@ -1177,20 +1191,21 @@ async function loadTrending(type) {
             case 'drama':
                 const dramaRes = await fetch(`${API_BASE}/drama?action=trending`);
                 const dramaData = await dramaRes.json();
-                items = dramaData.status && dramaData.data ? dramaData.data.slice(0, 10) : [];
+                items = (dramaData.data || dramaData || []).slice(0, 10);
                 break;
             case 'anime':
                 const animeRes = await fetch(`${API_BASE}/anime?action=latest`);
                 const animeData = await animeRes.json();
-                items = animeData.status && animeData.data ? animeData.data.slice(0, 10) : [];
+                items = (animeData.data || animeData || []).slice(0, 10);
                 break;
             case 'komik':
                 const komikRes = await fetch(`${API_BASE}/komik?action=popular`);
                 const komikData = await komikRes.json();
-                items = komikData.status && komikData.data ? komikData.data.slice(0, 10) : [];
+                items = (komikData.data || komikData || []).slice(0, 10);
                 break;
         }
         
+        if (!Array.isArray(items)) items = [];
         renderTrendingList(items, type);
     } catch (error) {
         console.error('Error loading trending:', error);
