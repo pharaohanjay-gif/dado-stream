@@ -8,7 +8,7 @@ import * as cheerio from 'cheerio';
 // API endpoints
 const API_BASE = 'https://api.sansekai.my.id/api';
 const ANIME_API = 'https://www.sankavollerei.com/anime/samehadaku';
-const KOMIK_BASE_URL = 'https://komikindo2.com';
+const KOMIK_BASE_URL = 'https://komikindo.ch';
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'dado-stream-secret-key-2024';
@@ -1017,15 +1017,22 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
     // Helper function to get path from URL
     function getPathFromUrl(url: string): string {
         if (!url) return '';
-        if (url.startsWith(KOMIK_BASE_URL)) {
-            try {
-                const parsedUrl = new URL(url);
+        // Handle multiple possible komikindo domains
+        const komikDomains = ['komikindo.ch', 'komikindo2.com', 'komikindo.co', 'komikindo.lol'];
+        try {
+            const parsedUrl = new URL(url);
+            if (komikDomains.some(domain => parsedUrl.hostname.includes(domain))) {
                 return parsedUrl.pathname;
-            } catch {
-                return url;
             }
+        } catch {
+            // Not a valid URL, just return as-is
         }
         return url;
+    }
+
+    // Helper to extract manga_id from path
+    function getMangaIdFromPath(path: string): string {
+        return path.replace('/komik/', '').replace(/^\//, '').replace(/\/$/, '');
     }
 
     // Helper to clean text
@@ -1064,7 +1071,7 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
                 });
                 
                 // Extract manga_id from link
-                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                const manga_id = getMangaIdFromPath(link);
                 
                 results.push({
                     manga_id,
@@ -1093,7 +1100,7 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
                 const ratingText = $(el).find('.loveviews').text().trim() || '';
                 const rating = ratingText.split(' ').pop() || '';
                 
-                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                const manga_id = getMangaIdFromPath(link);
                 
                 komikPopuler.push({
                     manga_id,
@@ -1144,7 +1151,7 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
                 const typeClass = $(el).find('.typeflag').attr('class') || '';
                 const type = typeClass.split(' ').pop() || 'Manga';
                 
-                const manga_id = link.replace('/komik/', '').replace(/\/$/, '');
+                const manga_id = getMangaIdFromPath(link);
                 
                 results.push({
                     manga_id,
