@@ -1,6 +1,6 @@
 {
   "name": "wibustream",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "WibuStream - Platform streaming drama China, anime, dan baca komik dengan Admin Panel",
   "main": "dist/server.js",
   "scripts": {
