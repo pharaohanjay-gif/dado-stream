@@ -1968,6 +1968,38 @@ body {
     background: var(--secondary);
 }
 
+/* Ad Banner Container - Native Banner */
+.ad-banner-container {
+    width: 100%;
+    max-width: 728px;
+    margin: 20px auto;
+    padding: 10px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90px;
+    overflow: hidden;
+}
+
+.ad-banner-container > div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .ad-banner-container {
+        max-width: 100%;
+        margin: 15px 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}
+
 /* Mobile Search Overlay */
 .mobile-search-overlay {
     position: fixed;
