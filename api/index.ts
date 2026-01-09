@@ -128,12 +128,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).end();
     }
 
-    const { path } = req.query;
+    const { path, action } = req.query;
     const pathStr = Array.isArray(path) ? path.join('/') : path || '';
 
     try {
-        // Route handling
-        if (pathStr.startsWith('auth/')) {
+        // Route handling - support both /api/drama?action=latest AND /api?path=dramabox/latest
+        if (pathStr === 'drama' || pathStr.startsWith('drama/')) {
+            // Handle /api/drama?action=xxx format
+            const actionStr = (action as string) || pathStr.replace('drama/', '') || '';
+            return await handleDrama(actionStr, req, res);
+        } else if (pathStr === 'anime' || pathStr.startsWith('anime/')) {
+            const actionStr = (action as string) || pathStr.replace('anime/', '') || '';
+            return await handleAnimeNew(actionStr, req, res);
+        } else if (pathStr === 'komik' || pathStr.startsWith('komik/')) {
+            const actionStr = (action as string) || pathStr.replace('komik/', '') || '';
+            return await handleKomikNew(actionStr, req, res);
+        } else if (pathStr.startsWith('auth/')) {
             return await handleAuth(pathStr.replace('auth/', ''), req, res);
         } else if (pathStr.startsWith('admin/')) {
             return await handleAdmin(pathStr.replace('admin/', ''), req, res);
@@ -141,18 +151,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return await handleAnalytics(pathStr.replace('analytics/', ''), req, res);
         } else if (pathStr.startsWith('dramabox/')) {
             return await handleDramabox(pathStr.replace('dramabox/', ''), req, res);
-        } else if (pathStr.startsWith('anime/')) {
-            return await handleAnime(pathStr.replace('anime/', ''), req, res);
-        } else if (pathStr.startsWith('komik/')) {
-            return await handleKomik(pathStr.replace('komik/', ''), req, res);
         } else if (pathStr.startsWith('proxy/')) {
             return await handleProxy(pathStr.replace('proxy/', ''), req, res);
         }
 
-        return res.status(404).json({ error: 'Not found' });
+        return res.status(404).json({ error: 'Not found', path: pathStr });
     } catch (error: any) {
         console.error('API Error:', error.message);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 }
 
@@ -795,7 +801,292 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
     return res.status(404).json({ error: 'Unknown analytics action' });
 }
 
-// Dramabox handlers
+// ==================== NEW HANDLERS FOR /api/drama, /api/anime, /api/komik ====================
+
+// Drama handler (using dramabox API)
+async function handleDrama(action: string, req: VercelRequest, res: VercelResponse) {
+    const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+
+    try {
+        if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou' || !action) {
+            const endpoint = action || 'latest';
+            const response = await axios.get(`${API_BASE}/dramabox/${endpoint}`, config);
+            const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
+            
+            // Normalize data format
+            const items = results.map((item: any) => ({
+                bookId: item.bookId || item.id,
+                id: item.bookId || item.id,
+                title: item.judul || item.title,
+                judul: item.judul || item.title,
+                image: item.thumbnail_url || item.cover || item.image,
+                thumbnail_url: item.thumbnail_url || item.cover || item.image,
+                totalEpisode: item.total_episode || item.totalEpisode,
+                rating: item.rating || '8.5',
+                type: 'Drama'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'search') {
+            const keyword = req.query.keyword || req.query.q || req.query.query;
+            if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
+            const response = await axios.get(`${API_BASE}/dramabox/search`, {
+                ...config,
+                params: { query: keyword }
+            });
+            const results = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.value || []);
+            const items = results.map((item: any) => ({
+                bookId: item.bookId || item.id,
+                id: item.bookId || item.id,
+                title: item.judul || item.title,
+                judul: item.judul || item.title,
+                image: item.thumbnail_url || item.cover || item.image,
+                thumbnail_url: item.thumbnail_url || item.cover || item.image,
+                totalEpisode: item.total_episode || item.totalEpisode,
+                type: 'Drama'
+            }));
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'detail') {
+            const { bookId } = req.query;
+            if (!bookId) return res.status(400).json({ status: false, error: 'bookId required' });
+            const response = await axios.get(`${API_BASE}/dramabox/detail`, {
+                ...config,
+                params: { bookId }
+            });
+            const result = response.data?.data || response.data;
+            return res.json({ status: true, data: result });
+        }
+
+        if (action === 'allepisode') {
+            const { bookId } = req.query;
+            if (!bookId) return res.status(400).json({ status: false, error: 'bookId required' });
+            const response = await axios.get(`${API_BASE}/dramabox/allepisode`, {
+                ...config,
+                params: { bookId }
+            });
+            const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            return res.json({ status: true, data: results });
+        }
+
+        if (action === 'video') {
+            const { episodeId } = req.query;
+            if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
+            const response = await axios.get(`${API_BASE}/dramabox/video`, {
+                ...config,
+                params: { episodeId }
+            });
+            const result = response.data?.data || response.data;
+            return res.json({ status: true, data: result });
+        }
+
+        return res.status(404).json({ status: false, error: 'Unknown drama action' });
+    } catch (error: any) {
+        console.error('[Drama Error]:', error.message);
+        return res.status(500).json({ status: false, error: 'Failed to fetch drama data', details: error.message });
+    }
+}
+
+// Anime handler (new format)
+async function handleAnimeNew(action: string, req: VercelRequest, res: VercelResponse) {
+    const config = { timeout: 20000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+
+    try {
+        if (action === 'latest' || !action) {
+            const page = req.query.page || '1';
+            const response = await axios.get(`${ANIME_API}/recent`, {
+                ...config,
+                params: { page }
+            });
+            
+            const animeList = response.data?.data?.animeList || [];
+            const items = animeList.map((item: any) => ({
+                urlId: item.animeId,
+                id: item.animeId,
+                title: item.title,
+                judul: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.episodes || 'Latest',
+                releaseDate: item.releasedOn,
+                type: 'Anime'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'trending' || action === 'popular') {
+            const page = req.query.page || '1';
+            const response = await axios.get(`${ANIME_API}/popular`, {
+                ...config,
+                params: { page }
+            });
+            
+            const animeList = response.data?.data?.animeList || [];
+            const items = animeList.map((item: any) => ({
+                urlId: item.animeId,
+                id: item.animeId,
+                title: item.title,
+                judul: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                episode: item.episodes,
+                type: 'Anime'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'search') {
+            const keyword = req.query.keyword || req.query.q;
+            if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
+            
+            const response = await axios.get(`${ANIME_API}/search`, {
+                ...config,
+                params: { q: keyword }
+            });
+            
+            const animeList = response.data?.data?.animeList || [];
+            const items = animeList.map((item: any) => ({
+                urlId: item.animeId,
+                id: item.animeId,
+                title: item.title,
+                judul: item.title,
+                image: item.poster,
+                thumbnail_url: item.poster,
+                type: 'Anime'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'detail') {
+            const { urlId } = req.query;
+            if (!urlId) return res.status(400).json({ status: false, error: 'urlId required' });
+            
+            const response = await axios.get(`${ANIME_API}/detail/${urlId}`, config);
+            const data = response.data?.data || response.data;
+            
+            // Get episode list
+            const episodes = data?.episodeList || [];
+            
+            return res.json({ 
+                status: true, 
+                data: {
+                    ...data,
+                    urlId,
+                    episodes: episodes.map((ep: any) => ({
+                        id: ep.episodeId,
+                        episodeId: ep.episodeId,
+                        episode: ep.title || ep.episode,
+                        title: ep.title
+                    }))
+                }
+            });
+        }
+
+        if (action === 'getvideo') {
+            const { episodeId } = req.query;
+            if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
+            
+            const response = await axios.get(`${ANIME_API}/watch/${episodeId}`, config);
+            const data = response.data?.data || response.data;
+            
+            return res.json({ status: true, data });
+        }
+
+        return res.status(404).json({ status: false, error: 'Unknown anime action' });
+    } catch (error: any) {
+        console.error('[Anime Error]:', error.message);
+        return res.status(500).json({ status: false, error: 'Failed to fetch anime data', details: error.message });
+    }
+}
+
+// Komik handler (new format)
+async function handleKomikNew(action: string, req: VercelRequest, res: VercelResponse) {
+    const config = { timeout: 20000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+
+    try {
+        if (action === 'popular' || action === 'latest' || !action) {
+            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/popular`, config);
+            const mangas = response.data?.data || [];
+            
+            const items = mangas.map((item: any) => ({
+                manga_id: item.manga_id || item.slug || item.id,
+                id: item.manga_id || item.slug || item.id,
+                title: item.title,
+                judul: item.title,
+                image: item.thumbnail || item.cover || item.image,
+                thumbnail: item.thumbnail || item.cover || item.image,
+                chapter: item.chapter,
+                type: item.type || 'Manga'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'search') {
+            const keyword = req.query.keyword || req.query.q;
+            if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
+            
+            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/search`, {
+                ...config,
+                params: { q: keyword }
+            });
+            
+            const mangas = response.data?.data || [];
+            const items = mangas.map((item: any) => ({
+                manga_id: item.manga_id || item.slug || item.id,
+                id: item.manga_id || item.slug || item.id,
+                title: item.title,
+                judul: item.title,
+                image: item.thumbnail || item.cover || item.image,
+                thumbnail: item.thumbnail || item.cover || item.image,
+                chapter: item.chapter,
+                type: item.type || 'Manga'
+            }));
+            
+            return res.json({ status: true, data: items });
+        }
+
+        if (action === 'detail') {
+            const { manga_id } = req.query;
+            if (!manga_id) return res.status(400).json({ status: false, error: 'manga_id required' });
+            
+            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/detail/${manga_id}`, config);
+            const data = response.data?.data || response.data;
+            
+            return res.json({ 
+                status: true, 
+                data: {
+                    ...data,
+                    manga_id,
+                    chapters: data?.chapters || data?.chapterList || []
+                }
+            });
+        }
+
+        if (action === 'chapter') {
+            const { chapterId } = req.query;
+            if (!chapterId) return res.status(400).json({ status: false, error: 'chapterId required' });
+            
+            const response = await axios.get(`${KOMIK_API}/${KOMIK_PROVIDER}/chapter/${chapterId}`, config);
+            const data = response.data?.data || response.data;
+            
+            return res.json({ status: true, data });
+        }
+
+        return res.status(404).json({ status: false, error: 'Unknown komik action' });
+    } catch (error: any) {
+        console.error('[Komik Error]:', error.message);
+        return res.status(500).json({ status: false, error: 'Failed to fetch komik data', details: error.message });
+    }
+}
+
+// Dramabox handlers (legacy)
 async function handleDramabox(action: string, req: VercelRequest, res: VercelResponse) {
     const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
 
