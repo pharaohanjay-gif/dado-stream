@@ -11,6 +11,7 @@ const JIKAN_API = 'https://api.jikan.moe/v4';
 
 // Jikan cover cache to avoid repeated API calls
 const jikanCoverCache = new Map();
+const jikanPendingRequests = new Map(); // Prevent duplicate concurrent requests
 
 // Helper function to get the right proxy for an image URL
 function getProxiedImageUrl(imageUrl) {
@@ -32,47 +33,54 @@ function getProxiedImageUrl(imageUrl) {
     return IMAGE_PROXY + encodeURIComponent(imageUrl);
 }
 
-// Get high-quality anime cover from Jikan API
+// Get high-quality anime cover from Jikan API via backend proxy
 async function getJikanCover(title) {
     if (!title) return null;
     
-    // Check cache first
     const cacheKey = title.toLowerCase().trim();
+    
+    // Return from cache if available
     if (jikanCoverCache.has(cacheKey)) {
         return jikanCoverCache.get(cacheKey);
     }
     
-    try {
-        // Clean title for better search (remove episode numbers, special characters)
-        const cleanTitle = title
-            .replace(/\s*(episode|ep\.?|eps?\.?)\s*\d+/gi, '')
-            .replace(/\s*season\s*\d+/gi, '')
-            .replace(/\s*\d+(st|nd|rd|th)\s*season/gi, '')
-            .replace(/[^\w\s]/g, ' ')
-            .trim();
-        
-        const response = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(cleanTitle)}&limit=1`);
-        
-        if (!response.ok) {
-            throw new Error('Jikan API error');
-        }
-        
-        const data = await response.json();
-        const animeData = data?.data?.[0];
-        
-        if (animeData && animeData.images) {
-            const coverUrl = animeData.images.jpg?.large_image_url || animeData.images.jpg?.image_url;
-            jikanCoverCache.set(cacheKey, coverUrl);
-            return coverUrl;
-        }
-        
-        jikanCoverCache.set(cacheKey, null);
-        return null;
-    } catch (error) {
-        console.warn('[Jikan] Failed to get cover for:', title, error.message);
-        jikanCoverCache.set(cacheKey, null);
-        return null;
+    // If request is already pending for this title, wait for it
+    if (jikanPendingRequests.has(cacheKey)) {
+        return jikanPendingRequests.get(cacheKey);
     }
+    
+    // Create promise for this request
+    const requestPromise = (async () => {
+        try {
+            // Use backend proxy to avoid CORS and rate limiting
+            const response = await fetch(`${API_BASE}/anime?action=jikan-cover&title=${encodeURIComponent(title)}`);
+            
+            if (!response.ok) {
+                throw new Error('Backend Jikan API error');
+            }
+            
+            const result = await response.json();
+            
+            if (result.status && result.data && result.data.image) {
+                const coverUrl = result.data.image;
+                jikanCoverCache.set(cacheKey, coverUrl);
+                console.log('[Jikan] Got cover for:', title);
+                return coverUrl;
+            }
+            
+            jikanCoverCache.set(cacheKey, null);
+            return null;
+        } catch (error) {
+            console.warn('[Jikan] Failed to get cover for:', title, error.message);
+            jikanCoverCache.set(cacheKey, null);
+            return null;
+        } finally {
+            jikanPendingRequests.delete(cacheKey);
+        }
+    })();
+    
+    jikanPendingRequests.set(cacheKey, requestPromise);
+    return requestPromise;
 }
 
 // Placeholder images (SVG data URLs - no network request needed)
@@ -624,7 +632,12 @@ async function loadAnimePage() {
         const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
-            renderCards('#anime-grid', data, 'anime', true);
+            // Store items for Jikan enhancement
+            const animeItems = data;
+            renderCards('#anime-grid', animeItems, 'anime', true);
+            
+            // Explicitly fetch Jikan covers for all anime on the page
+            fetchJikanCoversForList(animeItems, '#anime-grid');
         } else {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-dragon"></i><p>Tidak ada anime tersedia</p></div>';
         }
@@ -992,20 +1005,31 @@ function renderDetail(type, data) {
             }
             status = data.status || 'Ongoing';
             
-            // If still no image, try to fetch from Jikan asynchronously
-            if (!image && title) {
-                // Update image async after render
+            // Always try to fetch Jikan cover for anime (async after render)
+            // This ensures we always get the best quality image
+            if (title) {
                 setTimeout(async () => {
                     try {
                         const jikanCover = await getJikanCover(title);
                         if (jikanCover) {
                             const posterImg = document.querySelector('.detail-poster img');
                             const backdropImg = document.querySelector('.detail-backdrop');
-                            if (posterImg) posterImg.src = jikanCover;
-                            if (backdropImg) backdropImg.src = jikanCover;
+                            if (posterImg && posterImg.src.includes('No%20Image') || posterImg.src === PLACEHOLDER_LARGE) {
+                                posterImg.src = jikanCover;
+                            }
+                            if (backdropImg && (backdropImg.src.includes('No%20Image') || !backdropImg.src || backdropImg.style.display === 'none')) {
+                                backdropImg.src = jikanCover;
+                                backdropImg.style.display = '';
+                            }
+                            // Also update if current image is from problematic source
+                            if (posterImg && !posterImg.dataset.jikan) {
+                                posterImg.src = jikanCover;
+                                posterImg.dataset.jikan = 'true';
+                            }
+                            console.log('[Jikan] Applied cover to detail page for:', title);
                         }
                     } catch (e) {
-                        console.log('Failed to fetch Jikan cover async');
+                        console.log('Failed to fetch Jikan cover async:', e);
                     }
                 }, 100);
             }
@@ -1343,7 +1367,7 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
                         const displayName = serverName ? `${serverName} ${serverQuality}` : (serverQuality || 'Server ' + (i + 1));
                         const encodedUrl = encodeURIComponent(serverUrl);
                         return `
-                            <button class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" data-serverid="${server.serverId || ''}" onclick="changeServerByData(this)">
+                            <button type="button" class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" data-serverid="${server.serverId || ''}" onclick="changeServerByData(event, this); return false;">
                                 ${displayName.trim()}
                             </button>
                         `;
@@ -1417,30 +1441,48 @@ function changeServer(url, btn, isDirectVideo = false) {
 }
 
 // New function to handle server change via data attributes (prevents URL parsing issues)
-async function changeServerByData(btn) {
+async function changeServerByData(event, btn) {
+    // Prevent default behavior and stop propagation to avoid page redirect
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const url = decodeURIComponent(btn.dataset.url || '');
     const isDirectVideo = btn.dataset.direct === 'true';
     const serverId = btn.dataset.serverid;
+    const originalText = btn.dataset.originaltext || btn.textContent.trim();
+    
+    // Store original text for restoration
+    if (!btn.dataset.originaltext) {
+        btn.dataset.originaltext = btn.textContent.trim();
+    }
     
     $$('.server-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
     const player = $('#video-player');
-    if (!player) return;
+    if (!player) {
+        console.error('Video player not found');
+        return false;
+    }
     
     // Show loading indicator
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    btn.disabled = true;
     
     try {
         let videoUrl = url;
         
-        // If serverId exists and no direct URL, fetch from server endpoint
-        if (serverId && (!url || url === 'undefined' || url === '')) {
+        // If serverId exists, always fetch fresh URL from server endpoint
+        if (serverId) {
             try {
+                console.log('[Server] Fetching video URL for serverId:', serverId);
                 const response = await fetch(`${API_BASE}/anime?action=getserver&serverId=${serverId}`);
                 const data = await response.json();
+                console.log('[Server] Response:', data);
                 if (data.status && data.data) {
-                    videoUrl = data.data.url || data.data.video || '';
+                    videoUrl = data.data.url || data.data.video || videoUrl;
                 }
             } catch (e) {
                 console.error('Failed to fetch server URL:', e);
@@ -1448,10 +1490,11 @@ async function changeServerByData(btn) {
         }
         
         // Restore button text
-        const serverName = btn.textContent.replace('Loading...', '').trim() || 'Server';
-        btn.innerHTML = serverName;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         
-        if (videoUrl) {
+        if (videoUrl && videoUrl !== 'undefined' && videoUrl !== '') {
+            console.log('[Server] Changing video to:', videoUrl);
             if (isDirectVideo || videoUrl.endsWith('.mp4') || videoUrl.includes('.mp4?') || videoUrl.includes('dramaboxdb.com')) {
                 // For direct video, update src attribute
                 player.src = videoUrl;
@@ -1469,8 +1512,12 @@ async function changeServerByData(btn) {
         }
     } catch (error) {
         console.error('Error changing server:', error);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         showToast('Gagal mengubah kualitas', 'error');
     }
+    
+    return false; // Prevent any default action
 }
 
 // ============ Reader Page ============

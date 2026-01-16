@@ -14,6 +14,82 @@ const KOMIK_BASE_URL = 'https://komikindo.ch';
 const JWT_SECRET = process.env.JWT_SECRET || 'dado-stream-secret-key-2024';
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
+// Jikan API Cache (server-side to avoid rate limiting)
+interface JikanCacheEntry {
+    data: any;
+    timestamp: number;
+}
+const jikanCache = new Map<string, JikanCacheEntry>();
+const JIKAN_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const JIKAN_RATE_LIMIT_DELAY = 350; // 350ms between requests (max ~3 per second)
+let lastJikanRequest = 0;
+
+async function getJikanCoverWithCache(title: string): Promise<any> {
+    const cacheKey = title.toLowerCase().trim();
+    
+    // Check cache first
+    const cached = jikanCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < JIKAN_CACHE_TTL) {
+        console.log('[Jikan Cache] Hit for:', title);
+        return cached.data;
+    }
+    
+    // Rate limiting - wait if needed
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastJikanRequest;
+    if (timeSinceLastRequest < JIKAN_RATE_LIMIT_DELAY) {
+        await new Promise(resolve => setTimeout(resolve, JIKAN_RATE_LIMIT_DELAY - timeSinceLastRequest));
+    }
+    lastJikanRequest = Date.now();
+    
+    // Clean title for better search
+    const cleanTitle = title
+        .replace(/\s*(episode|ep\.?|eps?\.?)\s*\d+/gi, '')
+        .replace(/\s*season\s*\d+/gi, '')
+        .replace(/\s*\d+(st|nd|rd|th)\s*season/gi, '')
+        .replace(/\([^)]*\)/g, '') // Remove parentheses content
+        .replace(/[^\w\s]/g, ' ')
+        .trim();
+    
+    try {
+        console.log('[Jikan] Fetching for:', cleanTitle);
+        const response = await axios.get('https://api.jikan.moe/v4/anime', {
+            params: { q: cleanTitle, limit: 1 },
+            timeout: 10000
+        });
+        
+        const animeData = response.data?.data?.[0];
+        if (animeData) {
+            const result = {
+                mal_id: animeData.mal_id,
+                title: animeData.title,
+                title_english: animeData.title_english,
+                title_japanese: animeData.title_japanese,
+                image: animeData.images?.jpg?.large_image_url || animeData.images?.jpg?.image_url,
+                image_small: animeData.images?.jpg?.small_image_url,
+                image_webp: animeData.images?.webp?.large_image_url,
+                synopsis: animeData.synopsis,
+                score: animeData.score,
+                episodes: animeData.episodes,
+                status: animeData.status
+            };
+            
+            // Cache the result
+            jikanCache.set(cacheKey, { data: result, timestamp: Date.now() });
+            console.log('[Jikan] Cached:', title);
+            return result;
+        }
+        
+        // Cache null result too to avoid repeated failed requests
+        jikanCache.set(cacheKey, { data: null, timestamp: Date.now() });
+        return null;
+    } catch (error: any) {
+        console.error('[Jikan Error]:', error.message);
+        // Don't cache errors - allow retry
+        return null;
+    }
+}
+
 // MongoDB Connection (cached for serverless)
 let cachedDb: typeof mongoose | null = null;
 
@@ -1279,34 +1355,18 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             }
         }
 
-        // Jikan API cover lookup - get high quality cover by anime title
+        // Jikan API cover lookup - get high quality cover by anime title (with caching)
         if (action === 'jikan-cover') {
             const { title } = req.query;
             if (!title) return res.status(400).json({ status: false, error: 'Title required' });
             
             try {
-                const jikanResponse = await axios.get(`https://api.jikan.moe/v4/anime`, {
-                    params: { q: title, limit: 1 },
-                    timeout: 10000
-                });
+                const result = await getJikanCoverWithCache(title as string);
                 
-                const animeData = jikanResponse.data?.data?.[0];
-                if (animeData) {
+                if (result) {
                     return res.json({
                         status: true,
-                        data: {
-                            mal_id: animeData.mal_id,
-                            title: animeData.title,
-                            title_english: animeData.title_english,
-                            title_japanese: animeData.title_japanese,
-                            image: animeData.images?.jpg?.large_image_url || animeData.images?.jpg?.image_url,
-                            image_small: animeData.images?.jpg?.small_image_url,
-                            image_webp: animeData.images?.webp?.large_image_url,
-                            synopsis: animeData.synopsis,
-                            score: animeData.score,
-                            episodes: animeData.episodes,
-                            status: animeData.status
-                        }
+                        data: result
                     });
                 }
                 
