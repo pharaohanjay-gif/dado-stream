@@ -529,7 +529,11 @@ async function loadHomeAnime() {
         const data = result.data || result; // Handle both formats
         
         if (Array.isArray(data) && data.length > 0) {
-            renderCards('#home-anime', data.slice(0, 10), 'anime');
+            const animeItems = data.slice(0, 10);
+            renderCards('#home-anime', animeItems, 'anime');
+            
+            // Proactively fetch Jikan covers for home anime
+            fetchJikanCoversForList(animeItems, '#home-anime');
         } else {
             $('#home-anime').innerHTML = '<p class="empty-message">Tidak ada anime tersedia</p>';
         }
@@ -727,12 +731,7 @@ async function enhanceAnimeCovers(selector, items) {
         const title = item.title || item.judul;
         const currentImage = item.image || item.poster || item.thumbnail_url || '';
         
-        // Skip if already has a good image (not from thumbnail/low quality source)
-        if (currentImage && !currentImage.includes('thumbnail') && !currentImage.includes('small')) {
-            continue;
-        }
-        
-        // Try to get better cover from Jikan
+        // Always try to get Jikan cover for better quality
         try {
             const jikanCover = await getJikanCover(title);
             if (jikanCover) {
@@ -747,6 +746,41 @@ async function enhanceAnimeCovers(selector, items) {
         }
         
         // Add delay to respect Jikan rate limit (3 requests per second)
+        if ((i + 1) % 3 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1100));
+        }
+    }
+}
+
+// Fetch Jikan covers for a list of anime items
+async function fetchJikanCoversForList(items, selector) {
+    const container = $(selector);
+    if (!container) return;
+    
+    const cards = container.querySelectorAll('.card');
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const card = cards[i];
+        if (!card) continue;
+        
+        const title = item.title || item.judul;
+        
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                const img = card.querySelector('.card-image img');
+                if (img) {
+                    img.src = jikanCover;
+                    img.dataset.jikan = 'true';
+                    console.log('[Jikan] Updated cover for:', title);
+                }
+            }
+        } catch (e) {
+            console.warn('[Jikan] Failed to get cover for:', title);
+        }
+        
+        // Respect Jikan rate limit (3 requests per second)
         if ((i + 1) % 3 === 0) {
             await new Promise(resolve => setTimeout(resolve, 1100));
         }
@@ -933,8 +967,8 @@ function renderDetail(type, data) {
             status = data.status || 'Ongoing';
             break;
         case 'anime':
-            // Use Jikan cover if available, otherwise use original
-            image = data.jikanPoster || data.poster || data.image || data.thumbnail_url || '';
+            // Use Jikan cover if available, otherwise use original (with multiple fallbacks)
+            image = data.jikanPoster || data.poster || data.image || data.thumbnail_url || data.cover || '';
             // Title can be empty, use english/japanese as fallback
             title = data.title || data.english || data.japanese || data.judul || 'Unknown';
             // Synopsis can be an object with paragraphs array
@@ -957,6 +991,24 @@ function renderDetail(type, data) {
                 genres = data.genreList || data.genres || data.genre || ['Anime'];
             }
             status = data.status || 'Ongoing';
+            
+            // If still no image, try to fetch from Jikan asynchronously
+            if (!image && title) {
+                // Update image async after render
+                setTimeout(async () => {
+                    try {
+                        const jikanCover = await getJikanCover(title);
+                        if (jikanCover) {
+                            const posterImg = document.querySelector('.detail-poster img');
+                            const backdropImg = document.querySelector('.detail-backdrop');
+                            if (posterImg) posterImg.src = jikanCover;
+                            if (backdropImg) backdropImg.src = jikanCover;
+                        }
+                    } catch (e) {
+                        console.log('Failed to fetch Jikan cover async');
+                    }
+                }, 100);
+            }
             break;
         case 'komik':
             image = data.thumbnail || data.cover || data.image || '';
@@ -1285,11 +1337,14 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
                 <h3 class="server-title"><i class="fas fa-server"></i> Pilih Kualitas</h3>
                 <div class="server-list">
                     ${servers.map((server, i) => {
-                        const serverUrl = server.url || server.file || '';
+                        const serverUrl = server.url || server.href || server.file || '';
+                        const serverName = server.name || server.title || '';
+                        const serverQuality = server.quality || '';
+                        const displayName = serverName ? `${serverName} ${serverQuality}` : (serverQuality || 'Server ' + (i + 1));
                         const encodedUrl = encodeURIComponent(serverUrl);
                         return `
-                            <button class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" onclick="changeServerByData(this)">
-                                ${server.name || server.quality || 'Server ' + (i + 1)}
+                            <button class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" data-serverid="${server.serverId || ''}" onclick="changeServerByData(this)">
+                                ${displayName.trim()}
                             </button>
                         `;
                     }).join('')}
@@ -1362,26 +1417,59 @@ function changeServer(url, btn, isDirectVideo = false) {
 }
 
 // New function to handle server change via data attributes (prevents URL parsing issues)
-function changeServerByData(btn) {
+async function changeServerByData(btn) {
     const url = decodeURIComponent(btn.dataset.url || '');
     const isDirectVideo = btn.dataset.direct === 'true';
+    const serverId = btn.dataset.serverid;
     
     $$('.server-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
     const player = $('#video-player');
-    if (player && url) {
-        if (isDirectVideo || url.endsWith('.mp4') || url.includes('.mp4?') || url.includes('dramaboxdb.com')) {
-            // For direct video, update src attribute
-            player.src = url;
-            if (player.tagName === 'VIDEO') {
-                player.load();
-                player.play().catch(e => console.log('Autoplay blocked'));
+    if (!player) return;
+    
+    // Show loading indicator
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    
+    try {
+        let videoUrl = url;
+        
+        // If serverId exists and no direct URL, fetch from server endpoint
+        if (serverId && (!url || url === 'undefined' || url === '')) {
+            try {
+                const response = await fetch(`${API_BASE}/anime?action=getserver&serverId=${serverId}`);
+                const data = await response.json();
+                if (data.status && data.data) {
+                    videoUrl = data.data.url || data.data.video || '';
+                }
+            } catch (e) {
+                console.error('Failed to fetch server URL:', e);
             }
-        } else {
-            // For iframe embeds
-            player.src = url;
         }
+        
+        // Restore button text
+        const serverName = btn.textContent.replace('Loading...', '').trim() || 'Server';
+        btn.innerHTML = serverName;
+        
+        if (videoUrl) {
+            if (isDirectVideo || videoUrl.endsWith('.mp4') || videoUrl.includes('.mp4?') || videoUrl.includes('dramaboxdb.com')) {
+                // For direct video, update src attribute
+                player.src = videoUrl;
+                if (player.tagName === 'VIDEO') {
+                    player.load();
+                    player.play().catch(e => console.log('Autoplay blocked'));
+                }
+            } else {
+                // For iframe embeds
+                player.src = videoUrl;
+            }
+            showToast('Kualitas berhasil diubah', 'success');
+        } else {
+            showToast('URL video tidak tersedia', 'error');
+        }
+    } catch (error) {
+        console.error('Error changing server:', error);
+        showToast('Gagal mengubah kualitas', 'error');
     }
 }
 

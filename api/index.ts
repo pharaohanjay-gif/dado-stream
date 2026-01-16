@@ -1255,6 +1255,30 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             });
         }
 
+        // Get video from specific server
+        if (action === 'getserver') {
+            const { serverId } = req.query;
+            if (!serverId) return res.status(400).json({ status: false, error: 'serverId required' });
+            
+            try {
+                const response = await axios.get(`${ANIME_API}/server/${serverId}`, config);
+                const data = response.data?.data || response.data;
+                const videoUrl = data?.url || data?.video || data?.stream;
+                
+                return res.json({
+                    status: true,
+                    data: {
+                        url: videoUrl,
+                        video: videoUrl,
+                        raw: data
+                    }
+                });
+            } catch (err: any) {
+                console.error('[Anime Server Error]:', err.message);
+                return res.status(500).json({ status: false, error: 'Failed to get server video' });
+            }
+        }
+
         // Jikan API cover lookup - get high quality cover by anime title
         if (action === 'jikan-cover') {
             const { title } = req.query;
