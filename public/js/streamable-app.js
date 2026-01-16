@@ -2161,7 +2161,6 @@ async function fetchJikanCoversForHistory(history) {
     
     await Promise.all(promises);
 }
-}
 
 function clearHistory() {
     if (confirm('Hapus semua riwayat?')) {
