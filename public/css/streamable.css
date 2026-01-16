@@ -1742,6 +1742,24 @@ body {
     color: white;
 }
 
+/* Quality Badge for Anime */
+.quality-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: var(--radius-md);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: var(--shadow-glow);
+}
+
+.quality-badge i {
+    font-size: 18px;
+}
+
 /* Reader Page */
 .reader-container {
     max-width: 900px;

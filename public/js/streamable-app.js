@@ -537,11 +537,8 @@ async function loadHomeAnime() {
         const data = result.data || result; // Handle both formats
         
         if (Array.isArray(data) && data.length > 0) {
-            const animeItems = data.slice(0, 10);
-            renderCards('#home-anime', animeItems, 'anime');
-            
-            // Proactively fetch Jikan covers for home anime
-            fetchJikanCoversForList(animeItems, '#home-anime');
+            // renderCards will handle Jikan cover fetching automatically for anime
+            renderCards('#home-anime', data.slice(0, 10), 'anime');
         } else {
             $('#home-anime').innerHTML = '<p class="empty-message">Tidak ada anime tersedia</p>';
         }
@@ -632,12 +629,8 @@ async function loadAnimePage() {
         const data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
-            // Store items for Jikan enhancement
-            const animeItems = data;
-            renderCards('#anime-grid', animeItems, 'anime', true);
-            
-            // Explicitly fetch Jikan covers for all anime on the page
-            fetchJikanCoversForList(animeItems, '#anime-grid');
+            // renderCards will handle Jikan cover fetching automatically for anime
+            renderCards('#anime-grid', data, 'anime', true);
         } else {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-dragon"></i><p>Tidak ada anime tersedia</p></div>';
         }
@@ -659,9 +652,36 @@ async function loadMoreAnime() {
         
         if (Array.isArray(data) && data.length > 0) {
             const grid = $('#anime-grid');
+            const startIndex = grid.querySelectorAll('.card').length;
+            
+            // Add new cards
             data.forEach(anime => {
                 grid.innerHTML += createCard(anime, 'anime');
             });
+            
+            // Fetch Jikan covers for the new cards
+            const newCards = Array.from(grid.querySelectorAll('.card')).slice(startIndex);
+            const promises = data.map(async (item, i) => {
+                const card = newCards[i];
+                if (!card) return;
+                
+                const title = item.title || item.judul;
+                if (!title) return;
+                
+                try {
+                    const jikanCover = await getJikanCover(title);
+                    if (jikanCover) {
+                        const img = card.querySelector('.card-image img');
+                        if (img) {
+                            img.src = jikanCover;
+                            img.dataset.jikan = 'true';
+                        }
+                    }
+                } catch (e) {
+                    // Silently fail
+                }
+            });
+            await Promise.all(promises);
         }
     } catch (error) {
         console.error('Error loading more anime:', error);
@@ -726,58 +746,24 @@ function renderCards(selector, items, type, isGrid = false) {
     
     // For anime, try to enhance covers with Jikan API (async, after initial render)
     if (type === 'anime') {
-        enhanceAnimeCovers(selector, items);
+        fetchJikanCoversForList(items, selector);
     }
 }
 
-// Enhance anime card covers with Jikan API
-async function enhanceAnimeCovers(selector, items) {
-    const container = $(selector);
-    const cards = container.querySelectorAll('.card');
-    
-    // Process in batches to avoid rate limiting (Jikan has 3 requests per second limit)
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const card = cards[i];
-        if (!card) continue;
-        
-        const title = item.title || item.judul;
-        const currentImage = item.image || item.poster || item.thumbnail_url || '';
-        
-        // Always try to get Jikan cover for better quality
-        try {
-            const jikanCover = await getJikanCover(title);
-            if (jikanCover) {
-                const img = card.querySelector('.card-image img');
-                if (img) {
-                    img.src = jikanCover;
-                    img.dataset.jikan = 'true';
-                }
-            }
-        } catch (e) {
-            // Silently fail, keep original image
-        }
-        
-        // Add delay to respect Jikan rate limit (3 requests per second)
-        if ((i + 1) % 3 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 1100));
-        }
-    }
-}
-
-// Fetch Jikan covers for a list of anime items
+// Fetch Jikan covers for a list of anime items (parallel - backend handles rate limiting)
 async function fetchJikanCoversForList(items, selector) {
     const container = $(selector);
     if (!container) return;
     
     const cards = container.querySelectorAll('.card');
     
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+    // Process all items in parallel - backend handles rate limiting and caching
+    const promises = items.map(async (item, i) => {
         const card = cards[i];
-        if (!card) continue;
+        if (!card) return;
         
         const title = item.title || item.judul;
+        if (!title) return;
         
         try {
             const jikanCover = await getJikanCover(title);
@@ -790,14 +776,12 @@ async function fetchJikanCoversForList(items, selector) {
                 }
             }
         } catch (e) {
-            console.warn('[Jikan] Failed to get cover for:', title);
+            // Silently fail, keep original image
         }
-        
-        // Respect Jikan rate limit (3 requests per second)
-        if ((i + 1) % 3 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 1100));
-        }
-    }
+    });
+    
+    // Wait for all to complete
+    await Promise.all(promises);
 }
 
 function createCard(item, type) {
@@ -1328,6 +1312,34 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
         ></iframe>
     `;
     
+    // For anime: show simple HD label, no quality selector
+    // For drama: show server selection if available
+    const serverSectionHtml = type === 'anime' ? `
+        <div class="server-section">
+            <div class="quality-badge">
+                <i class="fas fa-hd"></i> Resolusi HD
+            </div>
+        </div>
+    ` : (servers.length > 0 ? `
+        <div class="server-section">
+            <h3 class="server-title"><i class="fas fa-server"></i> Pilih Server</h3>
+            <div class="server-list">
+                ${servers.map((server, i) => {
+                    const serverUrl = server.url || server.href || server.file || '';
+                    const serverName = server.name || server.title || '';
+                    const serverQuality = server.quality || '';
+                    const displayName = serverName ? `${serverName} ${serverQuality}` : (serverQuality || 'Server ' + (i + 1));
+                    const encodedUrl = encodeURIComponent(serverUrl);
+                    return `
+                        <button type="button" class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" data-serverid="${server.serverId || ''}" onclick="changeServerByData(event, this); return false;">
+                            ${displayName.trim()}
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    ` : '');
+    
     container.innerHTML = `
         <div class="video-player-wrapper">
             ${videoPlayerHtml}
@@ -1356,25 +1368,7 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             </div>
         </div>
         
-        ${servers.length > 0 ? `
-            <div class="server-section">
-                <h3 class="server-title"><i class="fas fa-server"></i> Pilih Kualitas</h3>
-                <div class="server-list">
-                    ${servers.map((server, i) => {
-                        const serverUrl = server.url || server.href || server.file || '';
-                        const serverName = server.name || server.title || '';
-                        const serverQuality = server.quality || '';
-                        const displayName = serverName ? `${serverName} ${serverQuality}` : (serverQuality || 'Server ' + (i + 1));
-                        const encodedUrl = encodeURIComponent(serverUrl);
-                        return `
-                            <button type="button" class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" data-serverid="${server.serverId || ''}" onclick="changeServerByData(event, this); return false;">
-                                ${displayName.trim()}
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        ` : ''}
+        ${serverSectionHtml}
         
         <div class="detail-section">
             <h3 class="detail-section-title"><i class="fas fa-play-circle"></i> Episode Lainnya</h3>
