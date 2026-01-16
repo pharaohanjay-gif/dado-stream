@@ -25,7 +25,9 @@
                 <img src="/dado.png" alt="DADO" class="splash-logo-img">
             </div>
             <h1 class="splash-title">DADO STREAM</h1>
-            <p class="splash-subtitle">Drama • Anime • Komik</p>
+            <p class="splash-subtitle">
+                Drama • Anime • Komik • <span class="new-category">Donghua (Anime China) <span class="new-badge">NEW</span></span>
+            </p>
             <div class="splash-loader">
                 <div class="loader-bar"></div>
             </div>
@@ -125,6 +127,10 @@
                             <i class="fas fa-ellipsis-h"></i> Lebih Banyak...
                         </button>
                     </div>
+                    <button class="sidebar-item" data-page="donghua" onclick="navigateTo('donghua')">
+                        <i class="fas fa-tv"></i>
+                        <span>Donghua (Anime China)</span>
+                    </button>
                     <button class="sidebar-item" data-page="komik" onclick="navigateTo('komik')">
                         <i class="fas fa-book-open"></i>
                         <span>Komik</span>
@@ -176,17 +182,21 @@
                 <i class="fas fa-film"></i>
                 <span>Drama</span>
             </button>
-            <button class="mobile-nav-item" onclick="openMobileSearch()">
-                <i class="fas fa-search"></i>
-                <span>Cari</span>
+            <button class="mobile-nav-item" data-page="donghua" onclick="navigateTo('donghua')">
+                <i class="fas fa-tv"></i>
+                <span>Donghua</span>
             </button>
             <button class="mobile-nav-item" data-page="anime" onclick="navigateTo('anime')">
                 <i class="fas fa-dragon"></i>
                 <span>Anime</span>
             </button>
-            <button class="mobile-nav-item" data-page="history" onclick="navigateTo('history')">
-                <i class="fas fa-history"></i>
-                <span>Riwayat</span>
+            <button class="mobile-nav-item" data-page="komik" onclick="navigateTo('komik')">
+                <i class="fas fa-book-open"></i>
+                <span>Komik</span>
+            </button>
+            <button class="mobile-nav-item" onclick="openMobileSearch()">
+                <i class="fas fa-search"></i>
+                <span>Cari</span>
             </button>
         </nav>
 
@@ -260,8 +270,30 @@
                     </div>
                 </section>
 
-                <!-- Ad Banner - Between Anime & Komik -->
+                <!-- Ad Banner - Between Anime & Donghua -->
                 <div class="ad-banner-728" id="ad-home-2"></div>
+
+                <!-- Donghua Section -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-tv"></i> Donghua Terbaru</h2>
+                        <button class="see-all-btn" onclick="navigateTo('donghua')">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="content-scroll" id="home-donghua">
+                        <div class="skeleton-container">
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ad Banner - Between Donghua & Komik -->
+                <div class="ad-banner-728" id="ad-home-3"></div>
 
                 <!-- Komik Section -->
                 <section class="content-section">
@@ -408,6 +440,39 @@
                 </div>
             </section>
 
+            <!-- Donghua Page -->
+            <section id="page-donghua" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-tv"></i> Donghua</h1>
+                    <p>Nonton anime China (donghua) subtitle Indonesia terbaru</p>
+                </div>
+                <!-- Status Filter -->
+                <div class="filter-bar">
+                    <button class="filter-btn active" data-filter="all" onclick="filterDonghua('all')">Semua</button>
+                    <button class="filter-btn" data-filter="ongoing" onclick="filterDonghua('ongoing')">Ongoing</button>
+                    <button class="filter-btn" data-filter="completed" onclick="filterDonghua('completed')">Completed</button>
+                </div>
+                
+                <!-- Ad Banner - Donghua Page -->
+                <div class="ad-banner-728" id="ad-donghua"></div>
+                
+                <div class="content-grid" id="donghua-grid">
+                    <div class="skeleton-container grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="load-more-donghua" onclick="loadMoreDonghua()">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+            </section>
+
             <!-- Trending Page -->
             <section id="page-trending" class="page">
                 <div class="page-header">
@@ -417,6 +482,7 @@
                 <div class="trending-tabs">
                     <button class="tab-btn active" data-tab="drama" onclick="switchTrendingTab('drama')">Drama</button>
                     <button class="tab-btn" data-tab="anime" onclick="switchTrendingTab('anime')">Anime</button>
+                    <button class="tab-btn" data-tab="donghua" onclick="switchTrendingTab('donghua')">Donghua</button>
                     <button class="tab-btn" data-tab="komik" onclick="switchTrendingTab('komik')">Komik</button>
                 </div>
                 <div class="trending-list" id="trending-list"></div>

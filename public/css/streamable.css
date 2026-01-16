@@ -181,10 +181,53 @@ body {
 .splash-subtitle {
     font-size: 14px;
     color: var(--text-muted);
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 40px;
-    opacity: 0.8;
+    opacity: 0.9;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.splash-subtitle .new-category {
+    color: var(--primary);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.splash-subtitle .new-badge {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24, #ff6b6b);
+    background-size: 200% 200%;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    animation: badge-shine 2s ease-in-out infinite, badge-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+}
+
+@keyframes badge-shine {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 5px rgba(125, 95, 255, 0.3); }
+    50% { text-shadow: 0 0 15px rgba(125, 95, 255, 0.6); }
 }
 
 .splash-loader {
@@ -669,18 +712,20 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 8px 12px;
+    gap: 3px;
+    padding: 6px 8px;
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 9px;
     cursor: pointer;
     transition: var(--transition-fast);
+    flex: 1;
+    min-width: 0;
 }
 
 .mobile-nav-item i {
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .mobile-nav-item.active {
@@ -700,10 +745,12 @@ body {
     transition: var(--transition-normal);
 }
 
-/* Page */
+/* Page - Optimized for fast transitions */
 .page {
     display: none;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.15s ease-out;
+    will-change: opacity, transform;
+    transition: opacity 0.1s ease-out;
 }
 
 .page.active {
@@ -711,7 +758,7 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -2951,6 +2998,30 @@ body {
         padding: 8px 16px;
         font-size: 13px;
     }
+    
+    /* Mobile Video Player Fix */
+    .video-player-wrapper {
+        width: 100%;
+        border-radius: var(--radius-md);
+        margin-bottom: 15px;
+        min-height: 200px;
+        position: relative;
+    }
+    
+    .video-player {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 200px;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    
+    .video-player iframe,
+    .video-player video {
+        width: 100% !important;
+        height: 100% !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -2981,6 +3052,16 @@ body {
     
     .empty-state-actions button {
         width: 100%;
+    }
+    
+    /* Mobile Video Player - Extra Small Screens */
+    .video-player-wrapper {
+        min-height: 180px;
+        border-radius: var(--radius-sm);
+    }
+    
+    .video-player {
+        min-height: 180px;
     }
 }
 

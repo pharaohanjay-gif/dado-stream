@@ -24,6 +24,7 @@
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
+    "@zhadev/anichin": "^0.0.3",
     "axios": "^1.6.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.3",

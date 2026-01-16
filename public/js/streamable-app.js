@@ -1,6 +1,7 @@
 /**
  * DADO STREAM - StreamAble Inspired App
- * Complete streaming platform for Drama China, Anime, and Komik
+ * Complete streaming platform for Drama China, Anime, Donghua, and Komik
+ * Performance optimized with caching, preloading, and lazy loading
  */
 
 // ============ API Configuration ============
@@ -9,12 +10,68 @@ const IMAGE_PROXY = 'https://wsrv.nl/?url=';
 const INTERNAL_IMAGE_PROXY = '/api/proxy/image?url=';
 const JIKAN_API = 'https://api.jikan.moe/v4';
 
+// ============ Performance Cache System ============
+const dataCache = new Map(); // Cache for API responses
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
 // Jikan cover cache to avoid repeated API calls
 const jikanCoverCache = new Map();
 const jikanPendingRequests = new Map(); // Prevent duplicate concurrent requests
 
+// Cache management functions
+function getCachedData(key) {
+    const cached = dataCache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+    }
+    dataCache.delete(key);
+    return null;
+}
+
+function setCachedData(key, data) {
+    dataCache.set(key, { data, timestamp: Date.now() });
+}
+
+// Optimized fetch with caching
+async function cachedFetch(url, cacheKey = null) {
+    const key = cacheKey || url;
+    const cached = getCachedData(key);
+    if (cached) {
+        console.log('[Cache] Hit:', key);
+        return cached;
+    }
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    setCachedData(key, data);
+    return data;
+}
+
+// Preload next page data
+function preloadData(type, page) {
+    const preloadKey = `${type}_page_${page}`;
+    if (!getCachedData(preloadKey)) {
+        // Preload in background without blocking
+        setTimeout(() => {
+            cachedFetch(`${API_BASE}/${type}?action=list&page=${page}`, preloadKey).catch(() => {});
+        }, 100);
+    }
+}
+
 // Helper function to get the right proxy for an image URL
 function getProxiedImageUrl(imageUrl) {
+    if (!imageUrl) return PLACEHOLDER_SMALL;
+    
+    // Ensure imageUrl is a string
+    if (typeof imageUrl !== 'string') {
+        // If it's an object, try to extract URL from common properties
+        if (typeof imageUrl === 'object') {
+            imageUrl = imageUrl.url || imageUrl.src || imageUrl.image || imageUrl.thumbnail || '';
+        } else {
+            return PLACEHOLDER_SMALL;
+        }
+    }
+    
     if (!imageUrl) return PLACEHOLDER_SMALL;
     
     // Some domains need internal proxy (wsrv.nl can't access them)
@@ -96,6 +153,8 @@ const state = {
     dramaPage: 1,
     animePage: 1,
     komikPage: 1,
+    donghuaPage: 1,
+    donghuaFilter: 'all',
     currentContent: null,
     currentEpisode: null,
     currentChapter: null,
@@ -115,6 +174,7 @@ const ROUTES = {
     'home': 'home',
     'drama': 'drama',
     'anime': 'anime',
+    'donghua': 'donghua',
     'komik': 'komik',
     'trending': 'trending',
     'riwayat': 'history',
@@ -127,6 +187,7 @@ const REVERSE_ROUTES = {
     'home': 'beranda',
     'drama': 'drama',
     'anime': 'anime',
+    'donghua': 'donghua',
     'komik': 'komik',
     'trending': 'trending',
     'history': 'riwayat',
@@ -162,6 +223,7 @@ async function initApp() {
     await Promise.all([
         loadHomeDrama(),
         loadHomeAnime(),
+        loadHomeDonghua(),
         loadHomeKomik(),
         loadBanners()
     ]);
@@ -298,64 +360,82 @@ function updateUrl(page, extraData = {}) {
 
 // ============ Navigation ============
 function navigateTo(page, data = null, updateHistory = true) {
-    // Update sidebar & mobile nav active states
-    $$('.sidebar-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.page === page);
+    // Quick visual feedback
+    const targetPage = $(`#page-${page}`);
+    if (targetPage) targetPage.style.opacity = '0.7';
+    
+    // Use requestAnimationFrame for smoother transitions
+    requestAnimationFrame(() => {
+        // Update sidebar & mobile nav active states
+        $$('.sidebar-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.page === page);
+        });
+        $$('.mobile-nav-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.page === page);
+        });
+        
+        // Hide all pages, show target page
+        $$('.page').forEach(p => p.classList.remove('active'));
+        if (targetPage) {
+            targetPage.classList.add('active');
+            targetPage.style.opacity = '1';
+        }
+        
+        state.currentPage = page;
+        
+        // Update URL
+        if (updateHistory && ['home', 'drama', 'anime', 'donghua', 'komik', 'trending', 'history', 'favorites'].includes(page)) {
+            updateUrl(page);
+        }
+        
+        // Load page data if needed (with preloading)
+        switch(page) {
+            case 'drama':
+                if (!$('#drama-grid').querySelector('.card')) loadDramaPage();
+                loadPageAds('drama');
+                // Preload next pages
+                preloadData('drama', 2);
+                break;
+            case 'anime':
+                if (!$('#anime-grid').querySelector('.card')) loadAnimePage();
+                loadPageAds('anime');
+                preloadData('anime', 2);
+                break;
+            case 'donghua':
+                if (!$('#donghua-grid').querySelector('.card')) loadDonghuaPage();
+                loadPageAds('donghua');
+                break;
+            case 'komik':
+                if (!$('#komik-grid').querySelector('.card')) loadKomikPage();
+                loadPageAds('komik');
+                preloadData('komik', 2);
+                break;
+            case 'trending':
+                loadTrending('drama');
+                break;
+            case 'history':
+                loadHistory();
+                break;
+            case 'favorites':
+                loadFavorites();
+                break;
+            case 'detail':
+                if (data) loadDetail(data.type, data.id);
+                break;
+            case 'watch':
+                if (data) loadWatch(data.type, data.id, data.episode);
+                break;
+            case 'read':
+                if (data) loadReader(data.id, data.chapter);
+                break;
+        }
+        
+        // Close mobile menu if open
+        $('#sidebar').classList.remove('open');
+        
+        // Instant scroll to top for faster feel
+        window.scrollTo({ top: 0, behavior: 'instant' });
     });
-    $$('.mobile-nav-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.page === page);
-    });
-    
-    // Hide all pages, show target page
-    $$('.page').forEach(p => p.classList.remove('active'));
-    $(`#page-${page}`).classList.add('active');
-    
-    state.currentPage = page;
-    
-    // Update URL
-    if (updateHistory && ['home', 'drama', 'anime', 'komik', 'trending', 'history', 'favorites'].includes(page)) {
-        updateUrl(page);
-    }
-    
-    // Load page data if needed
-    switch(page) {
-        case 'drama':
-            if (!$('#drama-grid').querySelector('.card')) loadDramaPage();
-            loadPageAds('drama');
-            break;
-        case 'anime':
-            if (!$('#anime-grid').querySelector('.card')) loadAnimePage();
-            loadPageAds('anime');
-            break;
-        case 'komik':
-            if (!$('#komik-grid').querySelector('.card')) loadKomikPage();
-            loadPageAds('komik');
-            break;
-        case 'trending':
-            loadTrending('drama');
-            break;
-        case 'history':
-            loadHistory();
-            break;
-        case 'favorites':
-            loadFavorites();
-            break;
-        case 'detail':
-            if (data) loadDetail(data.type, data.id);
-            break;
-        case 'watch':
-            if (data) loadWatch(data.type, data.id, data.episode);
-            break;
-        case 'read':
-            if (data) loadReader(data.id, data.chapter);
-            break;
-    }
-    
-    // Close mobile menu if open
-    $('#sidebar').classList.remove('open');
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function toggleMobileMenu() {
@@ -562,6 +642,104 @@ async function loadHomeKomik() {
     } catch (error) {
         console.error('Error loading home komik:', error);
         $('#home-komik').innerHTML = '<p class="error-message">Gagal memuat komik</p>';
+    }
+}
+
+// ============ Donghua Loaders ============
+async function loadHomeDonghua() {
+    try {
+        const response = await fetch(`${API_BASE}/donghua?action=ongoing&page=1`);
+        const result = await response.json();
+        const data = result.data || [];
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#home-donghua', data.slice(0, 10), 'donghua');
+        } else {
+            $('#home-donghua').innerHTML = '<p class="empty-message">Tidak ada donghua tersedia</p>';
+        }
+    } catch (error) {
+        console.error('Error loading home donghua:', error);
+        $('#home-donghua').innerHTML = '<p class="error-message">Gagal memuat donghua</p>';
+    }
+}
+
+async function loadDonghuaPage() {
+    const grid = $('#donghua-grid');
+    grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
+    
+    // Reset state
+    state.donghuaPage = 1;
+    state.donghuaFilter = 'all';
+    
+    try {
+        const response = await fetch(`${API_BASE}/donghua?action=ongoing&page=1`);
+        const result = await response.json();
+        const data = result.data || [];
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#donghua-grid', data, 'donghua', true);
+        } else {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-tv"></i><p>Tidak ada donghua tersedia</p></div>';
+        }
+    } catch (error) {
+        console.error('Error loading donghua page:', error);
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat donghua</p></div>';
+    }
+}
+
+async function loadMoreDonghua() {
+    state.donghuaPage++;
+    const btn = $('#load-more-donghua');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+    
+    try {
+        const action = state.donghuaFilter === 'all' ? 'ongoing' : state.donghuaFilter;
+        const response = await fetch(`${API_BASE}/donghua?action=${action}&page=${state.donghuaPage}`);
+        const result = await response.json();
+        const data = result.data || [];
+        
+        if (Array.isArray(data) && data.length > 0) {
+            const grid = $('#donghua-grid');
+            data.forEach(donghua => {
+                grid.innerHTML += createCard(donghua, 'donghua');
+            });
+        } else {
+            showToast('Tidak ada donghua lagi', 'info');
+        }
+    } catch (error) {
+        console.error('Error loading more donghua:', error);
+        showToast('Gagal memuat lebih banyak donghua', 'error');
+    }
+    
+    btn.innerHTML = '<i class="fas fa-plus"></i> Muat Lebih Banyak';
+}
+
+async function filterDonghua(filter) {
+    // Update active button
+    document.querySelectorAll('#page-donghua .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    
+    state.donghuaFilter = filter;
+    state.donghuaPage = 1;
+    
+    const grid = $('#donghua-grid');
+    grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
+    
+    try {
+        const action = filter === 'all' ? 'ongoing' : filter;
+        const response = await fetch(`${API_BASE}/donghua?action=${action}&page=1`);
+        const result = await response.json();
+        const data = result.data || [];
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#donghua-grid', data, 'donghua', true);
+        } else {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-tv"></i><p>Tidak ada donghua tersedia</p></div>';
+        }
+    } catch (error) {
+        console.error('Error filtering donghua:', error);
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat donghua</p></div>';
     }
 }
 
@@ -804,6 +982,13 @@ function createCard(item, type) {
             info = item.episode || item.status || 'Ongoing';
             id = item.urlId || item.id;
             break;
+        case 'donghua':
+            image = item.thumbnail || item.image || item.cover || '';
+            title = item.title || 'Unknown';
+            badge = item.type || 'Donghua';
+            info = item.episode || 'Ongoing';
+            id = item.slug || item.id;
+            break;
         case 'komik':
             image = item.thumbnail || item.cover || item.image || '';
             title = item.title || item.judul || 'Unknown';
@@ -816,7 +1001,7 @@ function createCard(item, type) {
     const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
     
     return `
-        <div class="card" onclick="openDetail('${type}', '${id}')" data-title="${title.replace(/"/g, '&quot;')}">
+        <div class="card" onclick="openDetail('${type}', '${id}')" onmouseenter="prefetchDetail('${type}', '${id}')" data-title="${title.replace(/"/g, '&quot;')}" data-type="${type}" data-id="${id}">
             <div class="card-image">
                 <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.onerror=null;tryJikanFallback(this,'${encodeURIComponent(title)}')">
                 <div class="card-overlay">
@@ -832,6 +1017,42 @@ function createCard(item, type) {
             </div>
         </div>
     `;
+}
+
+// Prefetch detail data on hover for instant loading
+let prefetchTimeout = null;
+function prefetchDetail(type, id) {
+    // Debounce to avoid too many requests
+    clearTimeout(prefetchTimeout);
+    prefetchTimeout = setTimeout(async () => {
+        const cacheKey = `detail_${type}_${id}`;
+        if (getCachedData(cacheKey)) return; // Already cached
+        
+        try {
+            let url;
+            switch(type) {
+                case 'drama':
+                    url = `${API_BASE}/drama?action=detail&bookId=${id}`;
+                    break;
+                case 'anime':
+                    url = `${API_BASE}/anime?action=detail&id=${id}`;
+                    break;
+                case 'donghua':
+                    url = `${API_BASE}/donghua?action=detail&slug=${id}`;
+                    break;
+                case 'komik':
+                    url = `${API_BASE}/komik?action=detail&slug=${id}`;
+                    break;
+            }
+            if (url) {
+                fetch(url).then(r => r.json()).then(data => {
+                    console.log('[Prefetch] Loaded:', cacheKey);
+                });
+            }
+        } catch (e) {
+            // Silently fail prefetch
+        }
+    }, 200);
 }
 
 // Fallback to Jikan cover if original image fails
@@ -875,6 +1096,16 @@ async function openDetail(type, id) {
 
 async function loadDetail(type, id) {
     const container = $('#detail-container');
+    const cacheKey = `detail_${type}_${id}`;
+    
+    // Check cache for instant loading
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+        console.log('[Cache] Detail hit:', cacheKey);
+        renderDetail(type, cached);
+        return;
+    }
+    
     container.innerHTML = '<div class="loading" style="text-align:center;padding:50px;"><i class="fas fa-spinner fa-spin" style="font-size:48px;color:var(--primary);"></i><p style="margin-top:20px;">Memuat...</p></div>';
     
     try {
@@ -886,12 +1117,16 @@ async function loadDetail(type, id) {
             case 'anime':
                 data = await fetchAnimeDetail(id);
                 break;
+            case 'donghua':
+                data = await fetchDonghuaDetail(id);
+                break;
             case 'komik':
                 data = await fetchKomikDetail(id);
                 break;
         }
         
         if (data) {
+            setCachedData(cacheKey, data);
             renderDetail(type, data);
         } else {
             container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Data tidak ditemukan</p></div>';
@@ -943,6 +1178,14 @@ async function fetchKomikDetail(id) {
     const result = await response.json();
     const data = result.data || result;
     state.chapters = data.chapters || data.daftar_chapter || [];
+    return data;
+}
+
+async function fetchDonghuaDetail(id) {
+    const response = await fetch(`${API_BASE}/donghua?action=detail&slug=${id}`);
+    const result = await response.json();
+    const data = result.data || result;
+    state.episodes = data.episodes || [];
     return data;
 }
 
@@ -1026,6 +1269,25 @@ function renderDetail(type, data) {
             rating = data.rating || '8.0';
             genres = data.genres || data.genre || [data.type || 'Manga'];
             status = data.status || 'Ongoing';
+            break;
+        case 'donghua':
+            // Handle cover being an object with thumbnail/banner properties
+            if (data.cover && typeof data.cover === 'object') {
+                image = data.cover.thumbnail || data.cover.banner || '';
+            } else {
+                image = data.thumbnail || data.poster || data.image || data.cover || '';
+            }
+            title = data.title || 'Unknown';
+            description = data.synopsis || data.mindesc || data.description || 'Tidak ada deskripsi';
+            totalEp = data.information?.total_episode || data.total_episodes || data.episodes?.length || state.episodes.length || '??';
+            // Handle rating being an object
+            if (data.rating && typeof data.rating === 'object') {
+                rating = data.rating.value || '8.0';
+            } else {
+                rating = data.rating || data.score || '8.0';
+            }
+            genres = data.genres?.map(g => g.name || g) || data.genre || ['Donghua', 'China'];
+            status = data.information?.status || data.status || 'Ongoing';
             break;
     }
     
@@ -1116,9 +1378,21 @@ function renderEpisodeList(type) {
             ${state.episodes.map((ep, index) => {
                 // For drama: use chapterId and chapterIndex
                 // For anime: use episodeId or id
-                const epNum = ep.chapterIndex !== undefined ? (ep.chapterIndex + 1) : (ep.episode || ep.eps || index + 1);
-                const epId = ep.chapterId || ep.episodeId || ep.id || ep.slug;
-                const epName = ep.chapterName || ep.title || `Episode ${epNum}`;
+                // For donghua: use episode_number or slug
+                let epNum, epId, epName;
+                
+                if (type === 'donghua') {
+                    // Episode number from API can be "06", "01" format - we need clean number for epId
+                    const rawEpNum = ep.number || ep.episode_number || ep.episode || String(index + 1);
+                    epNum = parseInt(rawEpNum, 10) || (index + 1); // Convert "06" to 6
+                    epId = epNum; // Use clean number as ID for API call
+                    epName = ep.title || `Episode ${rawEpNum}`;
+                } else {
+                    epNum = ep.chapterIndex !== undefined ? (ep.chapterIndex + 1) : (ep.episode || ep.eps || index + 1);
+                    epId = ep.chapterId || ep.episodeId || ep.id || ep.slug;
+                    epName = ep.chapterName || ep.title || `Episode ${epNum}`;
+                }
+                
                 return `
                     <button class="episode-btn" onclick="playEpisode('${type}', '${epId}', ${epNum})" title="${epName}">
                         ${epName}
@@ -1157,10 +1431,29 @@ function renderChapterList() {
 async function watchContent(type, id) {
     // Get first episode
     if (state.episodes && state.episodes.length > 0) {
-        const firstEp = state.episodes[0];
-        // Use chapterId for drama, episodeId for anime
-        const epId = firstEp.chapterId || firstEp.episodeId || firstEp.id || firstEp.slug;
-        const epNum = (firstEp.chapterIndex !== undefined) ? (firstEp.chapterIndex + 1) : 1;
+        let epId, epNum;
+        
+        if (type === 'donghua') {
+            // For donghua, episodes are usually in reverse order (newest first)
+            // So episode 1 is at the last index
+            // Find episode 1 or use the last item in the array
+            const ep1 = state.episodes.find(ep => {
+                const num = parseInt(ep.number || ep.episode_number || '0', 10);
+                return num === 1;
+            });
+            const targetEp = ep1 || state.episodes[state.episodes.length - 1];
+            
+            const rawEpNum = targetEp.number || targetEp.episode_number || targetEp.episode || '1';
+            epNum = parseInt(rawEpNum, 10) || 1;
+            epId = epNum;
+            console.log('[Donghua] watchContent - Playing episode:', epId, 'from', targetEp);
+        } else {
+            const firstEp = state.episodes[0];
+            // Use chapterId for drama, episodeId for anime
+            epId = firstEp.chapterId || firstEp.episodeId || firstEp.id || firstEp.slug;
+            epNum = (firstEp.chapterIndex !== undefined) ? (firstEp.chapterIndex + 1) : 1;
+        }
+        
         playEpisode(type, epId, epNum);
     } else {
         showToast('Tidak ada episode tersedia', 'error');
@@ -1248,6 +1541,60 @@ async function playEpisode(type, episodeId, episodeNum) {
                 }
                 servers = data.data.servers || [];
             }
+        } else if (type === 'donghua') {
+            // Donghua episode playback
+            const slug = state.currentContent?.id;
+            if (!slug) {
+                throw new Error('Donghua slug not found');
+            }
+            // Ensure episodeId is a valid number
+            const epNumber = parseInt(episodeId, 10) || 1;
+            console.log('[Donghua] Fetching episode:', slug, 'ep:', epNumber);
+            
+            const response = await fetch(`${API_BASE}/donghua?action=watch&slug=${slug}&episode=${epNumber}`);
+            const data = await response.json();
+            console.log('[Donghua] Watch response:', data.success, 'servers:', data.data?.servers?.length);
+            
+            if (data.success && data.data) {
+                const watchData = data.data;
+                // Get servers from response
+                if (watchData.servers && watchData.servers.length > 0) {
+                    // Build servers array for switching
+                    servers = watchData.servers.map((s, i) => {
+                        let url = s.server_url || '';
+                        const urlMatch = url.match(/src=["']([^"']+)["']/);
+                        if (urlMatch && urlMatch[1]) url = urlMatch[1];
+                        return {
+                            name: s.server_name || `Server ${i + 1}`,
+                            url: url,
+                            serverId: s.server_id
+                        };
+                    });
+                    
+                    // Detect if user is on mobile
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    // For mobile: prefer OK.ru or Dailymotion (better mobile compatibility)
+                    // For desktop: prefer Rumble (higher quality)
+                    let preferredServer;
+                    if (isMobile) {
+                        const okruServer = servers.find(s => s.name.toLowerCase().includes('ok.ru'));
+                        const dailymotionServer = servers.find(s => s.name.toLowerCase().includes('dailymotion'));
+                        const driveServer = servers.find(s => s.name.toLowerCase().includes('drive'));
+                        preferredServer = okruServer || dailymotionServer || driveServer || servers[0];
+                        console.log('[Donghua] Mobile detected, using:', preferredServer?.name);
+                    } else {
+                        const rumbleServer = servers.find(s => s.name.toLowerCase().includes('rumble'));
+                        const okruServer = servers.find(s => s.name.toLowerCase().includes('ok.ru'));
+                        preferredServer = rumbleServer || okruServer || servers[0];
+                    }
+                    
+                    if (preferredServer && preferredServer.url) {
+                        videoUrl = preferredServer.url;
+                        console.log('[Donghua] Using server:', preferredServer.name, videoUrl);
+                    }
+                }
+            }
         }
         
         // Validate video URL
@@ -1321,6 +1668,10 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             controls
             autoplay
             playsinline
+            webkit-playsinline
+            x5-playsinline
+            x5-video-player-type="h5"
+            x5-video-player-fullscreen="true"
             style="width: 100%; max-height: 70vh; background: #000;"
         >
             Your browser does not support the video tag.
@@ -1332,14 +1683,17 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             src="${videoUrl}" 
             frameborder="0" 
             allowfullscreen
-            allow="autoplay; fullscreen; picture-in-picture"
-            sandbox="allow-scripts allow-same-origin allow-presentation"
+            webkitallowfullscreen
+            mozallowfullscreen
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+            scrolling="no"
         ></iframe>
     `;
     
-    // For anime: show simple HD label, no quality selector
+    // For anime and donghua: show simple HD label, no quality selector
     // For drama: show server selection if available
-    const serverSectionHtml = type === 'anime' ? `
+    const serverSectionHtml = (type === 'anime' || type === 'donghua') ? `
         <div class="server-section">
             <div class="quality-badge">
                 <i class="fas fa-hd"></i> Resolusi HD
@@ -1825,9 +2179,10 @@ async function searchAll(query) {
     results.innerHTML = '<div class="loading" style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Mencari...</div>';
     
     try {
-        const [dramaResults, animeResults, komikResults] = await Promise.allSettled([
+        const [dramaResults, animeResults, donghuaResults, komikResults] = await Promise.allSettled([
             searchDrama(query),
             searchAnime(query),
+            searchDonghua(query),
             searchKomik(query)
         ]);
         
@@ -1838,6 +2193,9 @@ async function searchAll(query) {
         }
         if (animeResults.status === 'fulfilled' && animeResults.value) {
             allResults.push(...animeResults.value.map(a => ({ ...a, searchType: 'anime' })));
+        }
+        if (donghuaResults.status === 'fulfilled' && donghuaResults.value) {
+            allResults.push(...donghuaResults.value.map(d => ({ ...d, searchType: 'donghua' })));
         }
         if (komikResults.status === 'fulfilled' && komikResults.value) {
             allResults.push(...komikResults.value.map(k => ({ ...k, searchType: 'komik' })));
@@ -1860,6 +2218,12 @@ async function searchAnime(query) {
     const response = await fetch(`${API_BASE}/anime?action=search&keyword=${encodeURIComponent(query)}`);
     const data = await response.json();
     return data.status && data.data ? data.data.slice(0, 5) : [];
+}
+
+async function searchDonghua(query) {
+    const response = await fetch(`${API_BASE}/donghua?action=search&q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    return data.success && data.data ? data.data.slice(0, 5) : [];
 }
 
 async function searchKomik(query) {
@@ -1894,6 +2258,13 @@ function renderSearchResults(items) {
                 info = item.status || 'Anime';
                 id = item.urlId || item.slug || item.id;
                 break;
+            case 'donghua':
+                image = getProxiedImageUrl(item.thumbnail || item.image || item.cover || '');
+                title = item.title;
+                type = 'Donghua';
+                info = item.episode || item.type || 'Donghua';
+                id = item.slug || item.id;
+                break;
             case 'komik':
                 image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
                 title = item.title || item.judul;
@@ -1926,30 +2297,42 @@ async function switchTrendingTab(tab) {
 
 async function loadTrending(type) {
     const list = $('#trending-list');
+    
+    // Check cache first for instant loading
+    const cacheKey = `trending_${type}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+        renderTrendingList(cached, type);
+        return;
+    }
+    
     list.innerHTML = '<div class="loading" style="padding: 40px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>';
     
     try {
         let items = [];
+        let data;
         
         switch(type) {
             case 'drama':
-                const dramaRes = await fetch(`${API_BASE}/drama?action=trending`);
-                const dramaData = await dramaRes.json();
-                items = (dramaData.data || dramaData || []).slice(0, 10);
+                data = await cachedFetch(`${API_BASE}/drama?action=trending`, cacheKey);
+                items = (data.data || data || []).slice(0, 10);
                 break;
             case 'anime':
-                const animeRes = await fetch(`${API_BASE}/anime?action=latest`);
-                const animeData = await animeRes.json();
-                items = (animeData.data || animeData || []).slice(0, 10);
+                data = await cachedFetch(`${API_BASE}/anime?action=latest`, cacheKey);
+                items = (data.data || data || []).slice(0, 10);
+                break;
+            case 'donghua':
+                data = await cachedFetch(`${API_BASE}/donghua?action=ongoing`, cacheKey);
+                items = (data.data || data || []).slice(0, 10);
                 break;
             case 'komik':
-                const komikRes = await fetch(`${API_BASE}/komik?action=popular`);
-                const komikData = await komikRes.json();
-                items = (komikData.data || komikData || []).slice(0, 10);
+                data = await cachedFetch(`${API_BASE}/komik?action=popular`, cacheKey);
+                items = (data.data || data || []).slice(0, 10);
                 break;
         }
         
         if (!Array.isArray(items)) items = [];
+        setCachedData(cacheKey, items);
         renderTrendingList(items, type);
     } catch (error) {
         console.error('Error loading trending:', error);
@@ -1980,6 +2363,13 @@ function renderTrendingList(items, type) {
                 title = item.title || item.judul;
                 info = `${item.episode || item.status || 'Ongoing'} • Anime`;
                 id = item.urlId || item.slug || item.id;
+                break;
+            case 'donghua':
+                // API returns thumbnail field for donghua ongoing
+                image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
+                title = item.title || item.judul;
+                info = `${item.episode || item.status || 'Ongoing'} • Donghua`;
+                id = item.slug || item.id;
                 break;
             case 'komik':
                 image = getProxiedImageUrl(item.thumbnail || item.cover || item.image || '');
@@ -2647,7 +3037,7 @@ function loadNativeBanner(containerId) {
     container.dataset.loaded = 'true';
 }
 
-// Load ads on page navigation (drama, anime, komik pages) - use 728x90 banner
+// Load ads on page navigation (drama, anime, komik, donghua pages) - use same approach as loadBanner728
 function loadPageAds(pageId) {
     const containerId = `ad-${pageId}`;
     const container = document.getElementById(containerId);
@@ -2657,21 +3047,32 @@ function loadPageAds(pageId) {
     // Clear container
     container.innerHTML = '';
     
-    // Use unique timestamp to force reload
-    const timestamp = Date.now();
+    // Create wrapper for ad
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.justifyContent = 'center';
+    wrapper.style.width = '100%';
     
-    // Create iframe directly for banner ad
-    const iframe = document.createElement('iframe');
-    iframe.src = `https://www.highperformanceformat.com/watchnew?key=3ec1b7522b43835f8df9ce8d75f60c87&pbk=${timestamp}`;
-    iframe.width = '728';
-    iframe.height = '90';
-    iframe.frameBorder = '0';
-    iframe.scrolling = 'no';
-    iframe.style.maxWidth = '100%';
-    iframe.style.display = 'block';
-    iframe.style.margin = '0 auto';
+    // Add atOptions config script
+    const configScript = document.createElement('script');
+    configScript.textContent = `
+        atOptions = {
+            'key' : '3ec1b7522b43835f8df9ce8d75f60c87',
+            'format' : 'iframe',
+            'height' : 90,
+            'width' : 728,
+            'params' : {}
+        };
+    `;
+    wrapper.appendChild(configScript);
     
-    container.appendChild(iframe);
+    // Create and load the invoke script
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://www.highperformanceformat.com/3ec1b7522b43835f8df9ce8d75f60c87/invoke.js';
+    wrapper.appendChild(script);
+    
+    container.appendChild(wrapper);
     container.dataset.loaded = 'true';
 }
 // ============ Anime Genre & Filter Functions ============

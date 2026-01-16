@@ -219,6 +219,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (pathStr === 'komik' || pathStr.startsWith('komik/')) {
             const actionStr = (action as string) || pathStr.replace('komik/', '') || '';
             return await handleKomikNew(actionStr, req, res);
+        } else if (pathStr === 'donghua' || pathStr.startsWith('donghua/')) {
+            const actionStr = (action as string) || pathStr.replace('donghua/', '') || '';
+            return await handleDonghua(actionStr, req, res);
         } else if (pathStr.startsWith('auth/')) {
             return await handleAuth(pathStr.replace('auth/', ''), req, res);
         } else if (pathStr.startsWith('admin/')) {
@@ -1750,6 +1753,203 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
     } catch (error: any) {
         console.error('[Komik Scraper Error]:', error.message);
         return res.status(500).json({ status: false, error: 'Failed to fetch komik data', details: error.message });
+    }
+}
+
+// ==================== DONGHUA HANDLERS ====================
+const AnichinScraper = require('@zhadev/anichin').default;
+const donghuaScraper = new AnichinScraper({
+    timeout: 30000,
+    maxRetries: 3,
+    retryDelay: 1000
+});
+
+async function handleDonghua(action: string, req: VercelRequest, res: VercelResponse) {
+    try {
+        // GET /api/donghua/home - Get trending/featured donghua
+        if (action === 'home' || !action) {
+            const page = parseInt(req.query.page as string) || 1;
+            const result = await donghuaScraper.home(page);
+            
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch donghua home',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: result.data.home,
+                page,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/ongoing - Get ongoing donghua series
+        if (action === 'ongoing') {
+            const page = parseInt(req.query.page as string) || 1;
+            const result = await donghuaScraper.ongoing(page);
+            
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch ongoing donghua',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: result.data.lists || [],
+                page,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/completed - Get completed donghua series
+        if (action === 'completed') {
+            const page = parseInt(req.query.page as string) || 1;
+            const result = await donghuaScraper.completed(page);
+            
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch completed donghua',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: result.data.lists || [],
+                page,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/search?q=keyword - Search donghua
+        if (action === 'search') {
+            const query = req.query.q as string;
+            const page = parseInt(req.query.page as string) || 1;
+            
+            if (!query) {
+                return res.status(400).json({ success: false, error: 'Query parameter is required' });
+            }
+            
+            const result = await donghuaScraper.search(query, page);
+            
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to search donghua',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                query,
+                data: result.data.search.items || [],
+                page,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/schedule?day=monday - Get donghua schedule
+        if (action === 'schedule') {
+            const day = req.query.day as string;
+            const result = await donghuaScraper.schedule(day);
+            
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch schedule',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: result.data.schedule,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/detail/:slug - Get donghua detail by slug
+        if (action === 'detail') {
+            const slug = req.query.slug as string;
+            
+            if (!slug) {
+                return res.status(400).json({ success: false, error: 'Slug parameter is required' });
+            }
+            
+            const result = await donghuaScraper.series(slug);
+            
+            if (!result.success) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Donghua not found',
+                    message: result.message
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: result.data.detail,
+                source: 'anichin'
+            });
+        }
+        
+        // GET /api/donghua/watch?slug=xxx&episode=1 - Watch donghua episode
+        if (action === 'watch') {
+            const slug = req.query.slug as string;
+            const episode = req.query.episode as string;
+            
+            if (!slug || !episode) {
+                return res.status(400).json({ success: false, error: 'Slug and episode parameters are required' });
+            }
+            
+            const result = await donghuaScraper.watch(slug, episode);
+            
+            if (!result.success) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Episode not found',
+                    message: result.message
+                });
+            }
+            
+            // Decode base64 server URLs to actual iframe URLs
+            const watch = result.data.watch;
+            if (watch.servers && watch.servers.length > 0) {
+                watch.servers = watch.servers.map((server: any) => {
+                    try {
+                        // Decode base64 URL
+                        const decodedUrl = Buffer.from(server.server_url, 'base64').toString('utf-8');
+                        return {
+                            ...server,
+                            server_url: decodedUrl,
+                            server_url_encoded: server.server_url
+                        };
+                    } catch {
+                        return server;
+                    }
+                });
+            }
+            
+            return res.json({
+                success: true,
+                data: watch,
+                source: 'anichin'
+            });
+        }
+        
+        return res.status(404).json({ success: false, error: 'Unknown donghua action' });
+    } catch (error: any) {
+        console.error('[Donghua] Error:', error.message);
+        return res.status(500).json({ success: false, error: 'Server error', message: error.message });
     }
 }
 
