@@ -2369,12 +2369,26 @@ function toggleFavorite(type, id, title, image) {
     if (existingIndex !== -1) {
         favorites.splice(existingIndex, 1);
         showToast('Dihapus dari favorit', 'info');
+        localStorage.setItem('dado_favorites', JSON.stringify(favorites));
     } else {
         favorites.unshift({ type, id, title, image, timestamp: Date.now() });
         showToast('Ditambahkan ke favorit', 'success');
+        localStorage.setItem('dado_favorites', JSON.stringify(favorites));
+        
+        // For anime, fetch Jikan cover in background
+        if (type === 'anime' && title) {
+            getJikanCover(title).then(jikanCover => {
+                if (jikanCover) {
+                    const storedFavorites = JSON.parse(localStorage.getItem('dado_favorites') || '[]');
+                    const idx = storedFavorites.findIndex(f => f.id === id && f.type === 'anime');
+                    if (idx !== -1) {
+                        storedFavorites[idx].image = jikanCover;
+                        localStorage.setItem('dado_favorites', JSON.stringify(storedFavorites));
+                    }
+                }
+            }).catch(() => {});
+        }
     }
-    
-    localStorage.setItem('dado_favorites', JSON.stringify(favorites));
     
     // Update UI if on detail page
     const favBtn = $('.detail-btn-secondary');
@@ -2403,20 +2417,63 @@ function loadFavorites() {
         return;
     }
     
-    grid.innerHTML = favorites.map(item => `
-        <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
-            <div class="card-image">
-                <img src="${item.image || PLACEHOLDER_SMALL}" alt="${item.title}" onerror="this.src=PLACEHOLDER_SMALL">
-                <div class="card-overlay">
-                    <div class="card-play">
-                        <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
+    grid.innerHTML = favorites.map((item, index) => {
+        const imgUrl = item.image ? getProxiedImageUrl(item.image) : PLACEHOLDER_SMALL;
+        return `
+            <div class="card" onclick="openDetail('${item.type}', '${item.id}')" data-fav-index="${index}" data-fav-type="${item.type}">
+                <div class="card-image">
+                    <img src="${imgUrl}" alt="${item.title}" onerror="this.src='${PLACEHOLDER_SMALL}'">
+                    <div class="card-overlay">
+                        <div class="card-play">
+                            <i class="fas fa-${item.type === 'komik' ? 'book-reader' : 'play'}"></i>
+                        </div>
                     </div>
+                    <span class="card-badge">${item.type}</span>
                 </div>
-                <span class="card-badge">${item.type}</span>
+                <h3 class="card-title">${item.title || 'Unknown'}</h3>
             </div>
-            <h3 class="card-title">${item.title || 'Unknown'}</h3>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    // Fetch Jikan covers for anime items
+    fetchJikanCoversForFavorites(favorites);
+}
+
+// Fetch Jikan covers for favorite anime items
+async function fetchJikanCoversForFavorites(favorites) {
+    const animeItems = favorites.filter(item => item.type === 'anime');
+    
+    const promises = animeItems.map(async (item) => {
+        const title = item.title;
+        if (!title) return;
+        
+        // Find the index in original favorites array
+        const originalIndex = favorites.findIndex(f => f.id === item.id && f.type === 'anime');
+        
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                const card = document.querySelector(`.card[data-fav-index="${originalIndex}"][data-fav-type="anime"]`);
+                if (card) {
+                    const img = card.querySelector('.card-image img');
+                    if (img) {
+                        img.src = jikanCover;
+                    }
+                }
+                
+                // Also update localStorage with the Jikan cover
+                const storedFavorites = JSON.parse(localStorage.getItem('dado_favorites') || '[]');
+                if (storedFavorites[originalIndex] && storedFavorites[originalIndex].type === 'anime') {
+                    storedFavorites[originalIndex].image = jikanCover;
+                    localStorage.setItem('dado_favorites', JSON.stringify(storedFavorites));
+                }
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    });
+    
+    await Promise.all(promises);
 }
 
 // ============ Continue Watching ============
