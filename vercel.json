@@ -20,7 +20,10 @@
     { "source": "/history", "destination": "/index.html" },
     { "source": "/favorit", "destination": "/index.html" },
     { "source": "/favorites", "destination": "/index.html" },
-    { "source": "/detail/:type/:id", "destination": "/index.html" }
+    { "source": "/detail/:type/:id", "destination": "/index.html" },
+    { "source": "/watch/:type/:id/:episode", "destination": "/index.html" },
+    { "source": "/read/:id/:chapter", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

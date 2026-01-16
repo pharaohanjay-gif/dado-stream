@@ -1990,7 +1990,7 @@ function renderTrendingList(items, type) {
         }
         
         return `
-            <div class="trending-item" onclick="openDetail('${type}', '${id}')">
+            <div class="trending-item" onclick="openDetail('${type}', '${id}')" data-title="${title}" data-type="${type}" data-index="${index}">
                 <span class="trending-rank">${index + 1}</span>
                 <img class="trending-img" src="${image}" alt="${title}" onerror="this.src=PLACEHOLDER_SMALL">
                 <div class="trending-info">
@@ -2000,6 +2000,36 @@ function renderTrendingList(items, type) {
             </div>
         `;
     }).join('');
+    
+    // Fetch Jikan covers for anime items
+    if (type === 'anime') {
+        fetchJikanCoversForTrending(items);
+    }
+}
+
+// Fetch Jikan covers for trending anime items
+async function fetchJikanCoversForTrending(items) {
+    const promises = items.map(async (item, index) => {
+        const title = item.title || item.judul;
+        if (!title) return;
+        
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                const trendingItem = document.querySelector(`.trending-item[data-index="${index}"][data-type="anime"]`);
+                if (trendingItem) {
+                    const img = trendingItem.querySelector('.trending-img');
+                    if (img) {
+                        img.src = jikanCover;
+                    }
+                }
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    });
+    
+    await Promise.all(promises);
 }
 
 // ============ History ============
@@ -2007,7 +2037,7 @@ function initHistory() {
     // Initialize from localStorage
 }
 
-function saveToHistory(type, id, title, episode, image) {
+async function saveToHistory(type, id, title, episode, image) {
     const history = JSON.parse(localStorage.getItem('dado_history') || '[]');
     
     // Remove existing entry if any
@@ -2016,13 +2046,26 @@ function saveToHistory(type, id, title, episode, image) {
         history.splice(existingIndex, 1);
     }
     
+    // For anime, try to get Jikan cover if no image provided
+    let finalImage = image || '';
+    if (type === 'anime' && title && !finalImage) {
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                finalImage = jikanCover;
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    }
+    
     // Add to beginning with image
     history.unshift({
         type,
         id,
         title,
         episode,
-        image: image || '',
+        image: finalImage,
         timestamp: Date.now()
     });
     
@@ -2055,10 +2098,12 @@ function loadHistory() {
         return;
     }
     
-    grid.innerHTML = history.map(item => {
+    grid.innerHTML = history.map((item, index) => {
         const imgUrl = item.image ? getProxiedImageUrl(item.image) : PLACEHOLDER_SMALL;
+        // Escape special characters in title for onclick
+        const escapedTitle = (item.title || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
         return `
-            <div class="card" onclick="openDetail('${item.type}', '${item.id}')">
+            <div class="card" onclick="openDetail('${item.type}', '${item.id}')" data-history-index="${index}" data-history-type="${item.type}" data-history-title="${escapedTitle}">
                 <div class="card-image">
                     <img src="${imgUrl}" alt="${item.title}" onerror="this.src='${PLACEHOLDER_SMALL}'">
                     <div class="card-overlay">
@@ -2075,6 +2120,47 @@ function loadHistory() {
             </div>
         `;
     }).join('');
+    
+    // Fetch Jikan covers for anime items in history
+    fetchJikanCoversForHistory(history);
+}
+
+// Fetch Jikan covers for history anime items
+async function fetchJikanCoversForHistory(history) {
+    const animeItems = history.filter(item => item.type === 'anime');
+    
+    const promises = animeItems.map(async (item) => {
+        const title = item.title;
+        if (!title) return;
+        
+        // Find the index in original history array
+        const originalIndex = history.findIndex(h => h.id === item.id && h.type === 'anime');
+        
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                const card = document.querySelector(`.card[data-history-index="${originalIndex}"][data-history-type="anime"]`);
+                if (card) {
+                    const img = card.querySelector('.card-image img');
+                    if (img) {
+                        img.src = jikanCover;
+                    }
+                }
+                
+                // Also update localStorage with the Jikan cover
+                const storedHistory = JSON.parse(localStorage.getItem('dado_history') || '[]');
+                if (storedHistory[originalIndex] && storedHistory[originalIndex].type === 'anime') {
+                    storedHistory[originalIndex].image = jikanCover;
+                    localStorage.setItem('dado_history', JSON.stringify(storedHistory));
+                }
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    });
+    
+    await Promise.all(promises);
+}
 }
 
 function clearHistory() {
