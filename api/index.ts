@@ -1102,6 +1102,68 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             return res.json({ status: true, data: items });
         }
 
+        // Genre list endpoint
+        if (action === 'genres') {
+            // Return a predefined list of common anime genres
+            const genres = [
+                { id: 'action', name: 'Action', slug: 'action' },
+                { id: 'adventure', name: 'Adventure', slug: 'adventure' },
+                { id: 'comedy', name: 'Comedy', slug: 'comedy' },
+                { id: 'drama', name: 'Drama', slug: 'drama' },
+                { id: 'ecchi', name: 'Ecchi', slug: 'ecchi' },
+                { id: 'fantasy', name: 'Fantasy', slug: 'fantasy' },
+                { id: 'harem', name: 'Harem', slug: 'harem' },
+                { id: 'horror', name: 'Horror', slug: 'horror' },
+                { id: 'isekai', name: 'Isekai', slug: 'isekai' },
+                { id: 'mecha', name: 'Mecha', slug: 'mecha' },
+                { id: 'music', name: 'Music', slug: 'music' },
+                { id: 'mystery', name: 'Mystery', slug: 'mystery' },
+                { id: 'psychological', name: 'Psychological', slug: 'psychological' },
+                { id: 'romance', name: 'Romance', slug: 'romance' },
+                { id: 'school', name: 'School', slug: 'school' },
+                { id: 'sci-fi', name: 'Sci-Fi', slug: 'sci-fi' },
+                { id: 'shounen', name: 'Shounen', slug: 'shounen' },
+                { id: 'slice-of-life', name: 'Slice of Life', slug: 'slice-of-life' },
+                { id: 'sports', name: 'Sports', slug: 'sports' },
+                { id: 'supernatural', name: 'Supernatural', slug: 'supernatural' },
+                { id: 'thriller', name: 'Thriller', slug: 'thriller' }
+            ];
+            return res.json({ status: true, data: genres });
+        }
+
+        // Genre filter endpoint - search by genre keyword
+        if (action === 'genre') {
+            const genre = req.query.genre || req.query.g;
+            const page = req.query.page || '1';
+            
+            if (!genre) return res.status(400).json({ status: false, error: 'Genre parameter required' });
+            
+            try {
+                // Use search API with genre as keyword
+                const response = await axios.get(`${ANIME_API}/search`, {
+                    ...config,
+                    params: { q: genre }
+                });
+                
+                const animeList = response.data?.data?.animeList || [];
+                const items = animeList.map((item: any) => ({
+                    urlId: item.animeId,
+                    id: item.animeId,
+                    title: item.title,
+                    judul: item.title,
+                    image: item.poster,
+                    thumbnail_url: item.poster,
+                    episode: item.episodes,
+                    type: 'Anime'
+                }));
+                
+                return res.json({ status: true, data: items, genre });
+            } catch (error: any) {
+                console.error('[Anime Genre Error]:', error.message);
+                return res.json({ status: true, data: [], genre });
+            }
+        }
+
         if (action === 'movie') {
             const page = req.query.page || '1';
             // Use search with "movie" keyword as fallback
@@ -1191,6 +1253,44 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
                     servers
                 }
             });
+        }
+
+        // Jikan API cover lookup - get high quality cover by anime title
+        if (action === 'jikan-cover') {
+            const { title } = req.query;
+            if (!title) return res.status(400).json({ status: false, error: 'Title required' });
+            
+            try {
+                const jikanResponse = await axios.get(`https://api.jikan.moe/v4/anime`, {
+                    params: { q: title, limit: 1 },
+                    timeout: 10000
+                });
+                
+                const animeData = jikanResponse.data?.data?.[0];
+                if (animeData) {
+                    return res.json({
+                        status: true,
+                        data: {
+                            mal_id: animeData.mal_id,
+                            title: animeData.title,
+                            title_english: animeData.title_english,
+                            title_japanese: animeData.title_japanese,
+                            image: animeData.images?.jpg?.large_image_url || animeData.images?.jpg?.image_url,
+                            image_small: animeData.images?.jpg?.small_image_url,
+                            image_webp: animeData.images?.webp?.large_image_url,
+                            synopsis: animeData.synopsis,
+                            score: animeData.score,
+                            episodes: animeData.episodes,
+                            status: animeData.status
+                        }
+                    });
+                }
+                
+                return res.json({ status: false, error: 'Anime not found on Jikan' });
+            } catch (jikanError: any) {
+                console.error('[Jikan API Error]:', jikanError.message);
+                return res.json({ status: false, error: 'Failed to fetch from Jikan API' });
+            }
         }
 
         return res.status(404).json({ status: false, error: 'Unknown anime action' });

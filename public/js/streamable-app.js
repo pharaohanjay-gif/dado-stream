@@ -7,6 +7,10 @@
 const API_BASE = '/api'; // Use internal API
 const IMAGE_PROXY = 'https://wsrv.nl/?url=';
 const INTERNAL_IMAGE_PROXY = '/api/proxy/image?url=';
+const JIKAN_API = 'https://api.jikan.moe/v4';
+
+// Jikan cover cache to avoid repeated API calls
+const jikanCoverCache = new Map();
 
 // Helper function to get the right proxy for an image URL
 function getProxiedImageUrl(imageUrl) {
@@ -26,6 +30,49 @@ function getProxiedImageUrl(imageUrl) {
         return INTERNAL_IMAGE_PROXY + encodeURIComponent(imageUrl);
     }
     return IMAGE_PROXY + encodeURIComponent(imageUrl);
+}
+
+// Get high-quality anime cover from Jikan API
+async function getJikanCover(title) {
+    if (!title) return null;
+    
+    // Check cache first
+    const cacheKey = title.toLowerCase().trim();
+    if (jikanCoverCache.has(cacheKey)) {
+        return jikanCoverCache.get(cacheKey);
+    }
+    
+    try {
+        // Clean title for better search (remove episode numbers, special characters)
+        const cleanTitle = title
+            .replace(/\s*(episode|ep\.?|eps?\.?)\s*\d+/gi, '')
+            .replace(/\s*season\s*\d+/gi, '')
+            .replace(/\s*\d+(st|nd|rd|th)\s*season/gi, '')
+            .replace(/[^\w\s]/g, ' ')
+            .trim();
+        
+        const response = await fetch(`${JIKAN_API}/anime?q=${encodeURIComponent(cleanTitle)}&limit=1`);
+        
+        if (!response.ok) {
+            throw new Error('Jikan API error');
+        }
+        
+        const data = await response.json();
+        const animeData = data?.data?.[0];
+        
+        if (animeData && animeData.images) {
+            const coverUrl = animeData.images.jpg?.large_image_url || animeData.images.jpg?.image_url;
+            jikanCoverCache.set(cacheKey, coverUrl);
+            return coverUrl;
+        }
+        
+        jikanCoverCache.set(cacheKey, null);
+        return null;
+    } catch (error) {
+        console.warn('[Jikan] Failed to get cover for:', title, error.message);
+        jikanCoverCache.set(cacheKey, null);
+        return null;
+    }
 }
 
 // Placeholder images (SVG data URLs - no network request needed)
@@ -78,6 +125,21 @@ const REVERSE_ROUTES = {
     'favorites': 'favorit'
 };
 
+// ============ Page Transition Helper ============
+function showPageTransition() {
+    const transition = document.getElementById('page-transition');
+    if (transition) {
+        transition.classList.add('active');
+    }
+}
+
+function hidePageTransition() {
+    const transition = document.getElementById('page-transition');
+    if (transition) {
+        transition.classList.remove('active');
+    }
+}
+
 // ============ Initialization ============
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -104,6 +166,7 @@ async function initApp() {
     initScrollListener();
     initFilters();
     initRouter();
+    initAds();
     
     // Hide splash screen
     setTimeout(() => {
@@ -132,15 +195,60 @@ function updateThemeIcon() {
 }
 
 // ============ Router ============
+// History stack to track navigation for proper back button handling
+const historyStack = [];
+
 function initRouter() {
     // Handle browser back/forward
     window.addEventListener('popstate', (event) => {
+        console.log('[Router] Popstate event:', event.state);
+        
         if (event.state && event.state.page) {
-            navigateTo(event.state.page, event.state.data, false);
+            // Restore page from history state without pushing new history
+            restorePage(event.state);
         } else {
+            // No state, try to restore from URL or go home
             handleRouteFromUrl();
         }
     });
+    
+    // Initialize first history state
+    const initialState = { page: 'home', data: null };
+    history.replaceState(initialState, '', window.location.pathname || '/beranda');
+}
+
+function restorePage(stateObj) {
+    const { page, data, type, id, episodeId, chapterId } = stateObj;
+    
+    // Update UI without pushing to history
+    $$('.sidebar-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === page);
+    });
+    $$('.mobile-nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === page);
+    });
+    
+    $$('.page').forEach(p => p.classList.remove('active'));
+    const targetPage = $(`#page-${page}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+    
+    state.currentPage = page;
+    
+    // Handle special pages that need data restoration
+    if (page === 'detail' && type && id) {
+        state.currentContent = { type, id };
+        loadDetail(type, id);
+    } else if (page === 'watch' && type && id && episodeId) {
+        state.currentContent = { type, id };
+        // Don't reload video, just show the page
+    } else if (page === 'read' && id && chapterId) {
+        state.currentContent = { type: 'komik', id };
+        // Don't reload chapter, just show the page
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function handleRouteFromUrl() {
@@ -162,13 +270,21 @@ function handleRouteFromUrl() {
     }
 }
 
-function updateUrl(page) {
+function updateUrl(page, extraData = {}) {
     const urlPath = REVERSE_ROUTES[page] || page;
     const newUrl = `/${urlPath}`;
     
+    // Build complete state object
+    const stateObj = { 
+        page: page,
+        ...extraData
+    };
+    
     // Only update if different from current
     if (window.location.pathname !== newUrl) {
-        window.history.pushState({ page: page }, '', newUrl);
+        window.history.pushState(stateObj, '', newUrl);
+        historyStack.push(stateObj);
+        console.log('[Router] Pushed state:', stateObj);
     }
 }
 
@@ -197,12 +313,15 @@ function navigateTo(page, data = null, updateHistory = true) {
     switch(page) {
         case 'drama':
             if (!$('#drama-grid').querySelector('.card')) loadDramaPage();
+            loadPageAds('drama');
             break;
         case 'anime':
             if (!$('#anime-grid').querySelector('.card')) loadAnimePage();
+            loadPageAds('anime');
             break;
         case 'komik':
             if (!$('#komik-grid').querySelector('.card')) loadKomikPage();
+            loadPageAds('komik');
             break;
         case 'trending':
             loadTrending('drama');
@@ -483,9 +602,17 @@ async function loadMoreDrama() {
     btn.innerHTML = '<i class="fas fa-plus"></i> Muat Lebih Banyak';
 }
 
+// Current anime genre state
+let currentAnimeGenre = 'all';
+let currentAnimeFilter = 'all';
+
 async function loadAnimePage() {
     const grid = $('#anime-grid');
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
+    
+    // Reset genre and filter state
+    currentAnimeGenre = 'all';
+    currentAnimeFilter = 'all';
     
     try {
         const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
@@ -579,6 +706,51 @@ function renderCards(selector, items, type, isGrid = false) {
         return;
     }
     container.innerHTML = items.map(item => createCard(item, type)).join('');
+    
+    // For anime, try to enhance covers with Jikan API (async, after initial render)
+    if (type === 'anime') {
+        enhanceAnimeCovers(selector, items);
+    }
+}
+
+// Enhance anime card covers with Jikan API
+async function enhanceAnimeCovers(selector, items) {
+    const container = $(selector);
+    const cards = container.querySelectorAll('.card');
+    
+    // Process in batches to avoid rate limiting (Jikan has 3 requests per second limit)
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const card = cards[i];
+        if (!card) continue;
+        
+        const title = item.title || item.judul;
+        const currentImage = item.image || item.poster || item.thumbnail_url || '';
+        
+        // Skip if already has a good image (not from thumbnail/low quality source)
+        if (currentImage && !currentImage.includes('thumbnail') && !currentImage.includes('small')) {
+            continue;
+        }
+        
+        // Try to get better cover from Jikan
+        try {
+            const jikanCover = await getJikanCover(title);
+            if (jikanCover) {
+                const img = card.querySelector('.card-image img');
+                if (img) {
+                    img.src = jikanCover;
+                    img.dataset.jikan = 'true';
+                }
+            }
+        } catch (e) {
+            // Silently fail, keep original image
+        }
+        
+        // Add delay to respect Jikan rate limit (3 requests per second)
+        if ((i + 1) % 3 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1100));
+        }
+    }
 }
 
 function createCard(item, type) {
@@ -593,7 +765,9 @@ function createCard(item, type) {
             id = item.bookId || item.id || item.urlId;
             break;
         case 'anime':
-            image = item.image || item.poster || item.thumbnail_url || '';
+            // For anime, check if we have a cached Jikan cover
+            const cachedCover = jikanCoverCache.get((item.title || item.judul || '').toLowerCase().trim());
+            image = cachedCover || item.image || item.poster || item.thumbnail_url || '';
             title = item.title || item.judul || 'Unknown';
             badge = item.type || 'Anime';
             info = item.episode || item.status || 'Ongoing';
@@ -611,9 +785,9 @@ function createCard(item, type) {
     const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_SMALL;
     
     return `
-        <div class="card" onclick="openDetail('${type}', '${id}')">
+        <div class="card" onclick="openDetail('${type}', '${id}')" data-title="${title.replace(/"/g, '&quot;')}">
             <div class="card-image">
-                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.src=PLACEHOLDER_SMALL">
+                <img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.onerror=null;tryJikanFallback(this,'${encodeURIComponent(title)}')">
                 <div class="card-overlay">
                     <div class="card-play">
                         <i class="fas fa-${type === 'komik' ? 'book-reader' : 'play'}"></i>
@@ -629,15 +803,43 @@ function createCard(item, type) {
     `;
 }
 
+// Fallback to Jikan cover if original image fails
+async function tryJikanFallback(img, encodedTitle) {
+    const title = decodeURIComponent(encodedTitle);
+    const card = img.closest('.card');
+    const badge = card?.querySelector('.card-badge')?.textContent || '';
+    
+    // Only try Jikan for anime cards
+    if (badge === 'Anime' || badge === 'TV' || badge === 'Movie' || badge === 'OVA' || badge === 'ONA') {
+        const jikanCover = await getJikanCover(title);
+        if (jikanCover) {
+            img.src = jikanCover;
+            return;
+        }
+    }
+    
+    // Use placeholder as last resort
+    img.src = PLACEHOLDER_SMALL;
+}
+
 // ============ Detail Page ============
 async function openDetail(type, id) {
     if (!id || id === 'undefined') {
         showToast('ID tidak valid', 'error');
         return;
     }
+    showPageTransition();
     state.currentContent = { type, id };
     navigateTo('detail');
-    loadDetail(type, id);
+    
+    // Push history state with detail info for proper back navigation
+    const stateObj = { page: 'detail', type, id };
+    history.pushState(stateObj, '', `/detail/${type}/${id}`);
+    historyStack.push(stateObj);
+    console.log('[Router] Pushed detail state:', stateObj);
+    
+    await loadDetail(type, id);
+    hidePageTransition();
 }
 
 async function loadDetail(type, id) {
@@ -692,6 +894,16 @@ async function fetchAnimeDetail(id) {
     const result = await response.json();
     const data = result.data || result;
     state.episodes = data.episodes || [];
+    
+    // Try to get better cover from Jikan
+    const title = data.title || data.english || data.japanese;
+    if (title) {
+        const jikanCover = await getJikanCover(title);
+        if (jikanCover) {
+            data.jikanPoster = jikanCover;
+        }
+    }
+    
     return data;
 }
 
@@ -721,7 +933,8 @@ function renderDetail(type, data) {
             status = data.status || 'Ongoing';
             break;
         case 'anime':
-            image = data.poster || data.image || data.thumbnail_url || '';
+            // Use Jikan cover if available, otherwise use original
+            image = data.jikanPoster || data.poster || data.image || data.thumbnail_url || '';
             // Title can be empty, use english/japanese as fallback
             title = data.title || data.english || data.japanese || data.judul || 'Unknown';
             // Synopsis can be an object with paragraphs array
@@ -757,6 +970,13 @@ function renderDetail(type, data) {
     }
     
     const imgUrl = image ? getProxiedImageUrl(image) : PLACEHOLDER_LARGE;
+    
+    // IMPORTANT: Update state.currentContent with title and image for history
+    state.currentContent = {
+        ...state.currentContent,
+        title: title,
+        image: image
+    };
     
     // Handle genres - can be string or array
     let genresList = [];
@@ -923,6 +1143,13 @@ async function playEpisode(type, episodeId, episodeNum) {
     state.currentEpisode = { id: episodeId, number: episodeNum };
     navigateTo('watch');
     
+    // Push history state with watch info for proper back navigation
+    const contentId = state.currentContent?.id;
+    const stateObj = { page: 'watch', type, id: contentId, episodeId, episodeNum };
+    history.pushState(stateObj, '', `/watch/${type}/${contentId}/${episodeId}`);
+    historyStack.push(stateObj);
+    console.log('[Router] Pushed watch state:', stateObj);
+    
     const container = $('#watch-container');
     container.innerHTML = `
         <div class="video-player-wrapper">
@@ -1057,11 +1284,15 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             <div class="server-section">
                 <h3 class="server-title"><i class="fas fa-server"></i> Pilih Kualitas</h3>
                 <div class="server-list">
-                    ${servers.map((server, i) => `
-                        <button class="server-btn ${i === 0 ? 'active' : ''}" onclick="changeServer('${server.url || server.file}', this, ${isDirectVideo})">
-                            ${server.name || server.quality || 'Server ' + (i + 1)}
-                        </button>
-                    `).join('')}
+                    ${servers.map((server, i) => {
+                        const serverUrl = server.url || server.file || '';
+                        const encodedUrl = encodeURIComponent(serverUrl);
+                        return `
+                            <button class="server-btn ${i === 0 ? 'active' : ''}" data-url="${encodedUrl}" data-direct="${isDirectVideo}" onclick="changeServerByData(this)">
+                                ${server.name || server.quality || 'Server ' + (i + 1)}
+                            </button>
+                        `;
+                    }).join('')}
                 </div>
             </div>
         ` : ''}
@@ -1130,6 +1361,30 @@ function changeServer(url, btn, isDirectVideo = false) {
     }
 }
 
+// New function to handle server change via data attributes (prevents URL parsing issues)
+function changeServerByData(btn) {
+    const url = decodeURIComponent(btn.dataset.url || '');
+    const isDirectVideo = btn.dataset.direct === 'true';
+    
+    $$('.server-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    const player = $('#video-player');
+    if (player && url) {
+        if (isDirectVideo || url.endsWith('.mp4') || url.includes('.mp4?') || url.includes('dramaboxdb.com')) {
+            // For direct video, update src attribute
+            player.src = url;
+            if (player.tagName === 'VIDEO') {
+                player.load();
+                player.play().catch(e => console.log('Autoplay blocked'));
+            }
+        } else {
+            // For iframe embeds
+            player.src = url;
+        }
+    }
+}
+
 // ============ Reader Page ============
 async function readKomik(id) {
     if (state.chapters && state.chapters.length > 0) {
@@ -1144,6 +1399,13 @@ async function readKomik(id) {
 async function readChapter(chapterId) {
     state.currentChapter = chapterId;
     navigateTo('read');
+    
+    // Push history state with read info for proper back navigation
+    const contentId = state.currentContent?.id;
+    const stateObj = { page: 'read', id: contentId, chapterId };
+    history.pushState(stateObj, '', `/read/${contentId}/${chapterId}`);
+    historyStack.push(stateObj);
+    console.log('[Router] Pushed read state:', stateObj);
     
     const container = $('#reader-container');
     container.innerHTML = `
@@ -1187,16 +1449,13 @@ function renderReader(data) {
     const hasNext = chIndex > 0;
     
     container.innerHTML = `
-        <div class="reader-header">
-            <button class="reader-control-btn" onclick="navigateTo('detail', state.currentContent)">
+        <div class="reader-floating-controls">
+            <button class="reader-floating-btn" onclick="openDetail('komik', state.currentContent?.id)" title="Kembali ke Detail">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h3 class="reader-title">${title}</h3>
-            <div class="reader-controls">
-                <button class="reader-control-btn" onclick="toggleFullscreen()">
-                    <i class="fas fa-expand"></i>
-                </button>
-            </div>
+            <button class="reader-floating-btn" onclick="toggleFullscreen()" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+            </button>
         </div>
         
         <div class="reader-pages">
@@ -1620,8 +1879,17 @@ function saveToHistory(type, id, title, episode, image) {
 }
 
 function loadHistory() {
-    const history = JSON.parse(localStorage.getItem('dado_history') || '[]');
+    let history = JSON.parse(localStorage.getItem('dado_history') || '[]');
     const grid = $('#history-grid');
+    
+    // Filter out broken entries (old data without title/image)
+    const validHistory = history.filter(item => item.title && item.title !== 'Unknown' && item.title !== 'undefined');
+    
+    // Save cleaned history back if there were broken entries
+    if (validHistory.length !== history.length) {
+        localStorage.setItem('dado_history', JSON.stringify(validHistory));
+        history = validHistory;
+    }
     
     if (history.length === 0) {
         grid.innerHTML = `
@@ -1646,7 +1914,7 @@ function loadHistory() {
                     </div>
                     <span class="card-badge">${item.type}</span>
                 </div>
-                <h3 class="card-title">${item.title || 'Unknown'}</h3>
+                <h3 class="card-title">${item.title}</h3>
                 <div class="card-info">
                     <span>${item.type === 'komik' ? 'Chapter' : 'Episode'} ${item.episode || '?'}</span>
                 </div>
@@ -1988,4 +2256,254 @@ if ('serviceWorker' in navigator) {
             console.log('ServiceWorker registration failed:', err);
         });
     });
+}
+
+// ============ Ads Management ============
+function initAds() {
+    // Load 728x90 Banner Ad on home (below hero)
+    loadBanner728('ad-banner-top');
+    
+    // Load Native Banner between drama & anime
+    loadNativeBanner('ad-home-1');
+    
+    // Load 728x90 Banner between anime & komik
+    loadBanner728('ad-home-2');
+}
+
+// Load 728x90 Banner Ad
+function loadBanner728(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || container.dataset.loaded === 'true') return;
+    
+    // Clear container first
+    container.innerHTML = '';
+    
+    // Create wrapper for ad
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.justifyContent = 'center';
+    wrapper.style.width = '100%';
+    
+    // Add atOptions config script
+    const configScript = document.createElement('script');
+    configScript.textContent = `
+        atOptions = {
+            'key' : '3ec1b7522b43835f8df9ce8d75f60c87',
+            'format' : 'iframe',
+            'height' : 90,
+            'width' : 728,
+            'params' : {}
+        };
+    `;
+    wrapper.appendChild(configScript);
+    
+    // Create and load the invoke script
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://www.highperformanceformat.com/3ec1b7522b43835f8df9ce8d75f60c87/invoke.js';
+    wrapper.appendChild(script);
+    
+    container.appendChild(wrapper);
+    container.dataset.loaded = 'true';
+}
+
+// Load Native Banner
+function loadNativeBanner(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || container.dataset.loaded === 'true') return;
+    
+    const nativeBannerScript = 'https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js';
+    const nativeBannerContainerId = 'container-ebbbe73e25be8893e3d2fec6992015fa';
+    
+    // Check if this specific container already has the native banner div
+    if (container.querySelector(`#${nativeBannerContainerId}`)) {
+        return;
+    }
+    
+    const containerDiv = document.createElement('div');
+    containerDiv.id = nativeBannerContainerId;
+    container.appendChild(containerDiv);
+    
+    // Only add script once
+    if (!document.querySelector(`script[src="${nativeBannerScript}"]`)) {
+        const script = document.createElement('script');
+        script.async = true;
+        script.setAttribute('data-cfasync', 'false');
+        script.src = nativeBannerScript;
+        document.head.appendChild(script);
+    }
+    
+    container.dataset.loaded = 'true';
+}
+
+// Load ads on page navigation (drama, anime, komik pages) - use 728x90 banner
+function loadPageAds(pageId) {
+    const containerId = `ad-${pageId}`;
+    const container = document.getElementById(containerId);
+    
+    if (!container || container.dataset.loaded === 'true') return;
+    
+    // Clear container
+    container.innerHTML = '';
+    
+    // Use unique timestamp to force reload
+    const timestamp = Date.now();
+    
+    // Create iframe directly for banner ad
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.highperformanceformat.com/watchnew?key=3ec1b7522b43835f8df9ce8d75f60c87&pbk=${timestamp}`;
+    iframe.width = '728';
+    iframe.height = '90';
+    iframe.frameBorder = '0';
+    iframe.scrolling = 'no';
+    iframe.style.maxWidth = '100%';
+    iframe.style.display = 'block';
+    iframe.style.margin = '0 auto';
+    
+    container.appendChild(iframe);
+    container.dataset.loaded = 'true';
+}
+// ============ Anime Genre & Filter Functions ============
+
+// Toggle anime submenu in sidebar
+function toggleAnimeSubmenu(event) {
+    event.stopPropagation();
+    const submenu = document.getElementById('anime-submenu');
+    const button = event.currentTarget;
+    
+    if (submenu) {
+        submenu.classList.toggle('open');
+        button.classList.toggle('open');
+    }
+}
+
+// Load anime by genre
+async function loadAnimeGenre(genre) {
+    currentAnimeGenre = genre;
+    
+    // Navigate to anime page first
+    navigateTo('anime');
+    
+    // Update active state of genre buttons
+    document.querySelectorAll('.genre-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.genre === genre);
+    });
+    
+    const grid = $('#anime-grid');
+    grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
+    
+    try {
+        let response;
+        if (genre === 'all') {
+            response = await fetch(`${API_BASE}/anime?action=latest&page=1`);
+        } else {
+            response = await fetch(`${API_BASE}/anime?action=genre&genre=${encodeURIComponent(genre)}`);
+        }
+        
+        const result = await response.json();
+        const data = result.data || result;
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#anime-grid', data, 'anime', true);
+        } else {
+            grid.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada anime genre "${genre}" ditemukan</p></div>`;
+        }
+    } catch (error) {
+        console.error('Error loading anime by genre:', error);
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat anime</p></div>';
+    }
+}
+
+// Filter anime by status (ongoing, completed, movie)
+async function filterAnime(filter) {
+    currentAnimeFilter = filter;
+    
+    // Update active state of filter buttons
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    
+    const grid = $('#anime-grid');
+    grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
+    
+    try {
+        let action = 'latest';
+        if (filter === 'ongoing') action = 'ongoing';
+        else if (filter === 'completed') action = 'completed';
+        else if (filter === 'movie') action = 'movie';
+        
+        const response = await fetch(`${API_BASE}/anime?action=${action}&page=1`);
+        const result = await response.json();
+        const data = result.data || result;
+        
+        if (Array.isArray(data) && data.length > 0) {
+            renderCards('#anime-grid', data, 'anime', true);
+        } else {
+            grid.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada anime ${filter} ditemukan</p></div>`;
+        }
+    } catch (error) {
+        console.error('Error filtering anime:', error);
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat anime</p></div>';
+    }
+}
+
+// Show all genres modal
+function showAllGenres() {
+    const genres = [
+        { id: 'action', name: 'Action', icon: 'fist-raised' },
+        { id: 'adventure', name: 'Adventure', icon: 'compass' },
+        { id: 'comedy', name: 'Comedy', icon: 'laugh' },
+        { id: 'drama', name: 'Drama', icon: 'theater-masks' },
+        { id: 'ecchi', name: 'Ecchi', icon: 'fire' },
+        { id: 'fantasy', name: 'Fantasy', icon: 'hat-wizard' },
+        { id: 'harem', name: 'Harem', icon: 'heart' },
+        { id: 'horror', name: 'Horror', icon: 'skull' },
+        { id: 'isekai', name: 'Isekai', icon: 'door-open' },
+        { id: 'mecha', name: 'Mecha', icon: 'robot' },
+        { id: 'music', name: 'Music', icon: 'music' },
+        { id: 'mystery', name: 'Mystery', icon: 'search' },
+        { id: 'psychological', name: 'Psychological', icon: 'brain' },
+        { id: 'romance', name: 'Romance', icon: 'heart' },
+        { id: 'school', name: 'School', icon: 'school' },
+        { id: 'sci-fi', name: 'Sci-Fi', icon: 'rocket' },
+        { id: 'shounen', name: 'Shounen', icon: 'bolt' },
+        { id: 'slice-of-life', name: 'Slice of Life', icon: 'coffee' },
+        { id: 'sports', name: 'Sports', icon: 'futbol' },
+        { id: 'supernatural', name: 'Supernatural', icon: 'ghost' },
+        { id: 'thriller', name: 'Thriller', icon: 'exclamation-triangle' }
+    ];
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'genre-modal';
+    modal.innerHTML = `
+        <div class="genre-modal-content">
+            <div class="genre-modal-header">
+                <h3><i class="fas fa-tags"></i> Pilih Genre Anime</h3>
+                <button class="genre-modal-close" onclick="closeGenreModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="genre-modal-body">
+                ${genres.map(g => `
+                    <button class="genre-modal-item" onclick="loadAnimeGenre('${g.id}'); closeGenreModal();">
+                        <i class="fas fa-${g.icon}"></i>
+                        <span>${g.name}</span>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeGenreModal();
+    });
+}
+
+function closeGenreModal() {
+    const modal = document.querySelector('.genre-modal');
+    if (modal) modal.remove();
 }

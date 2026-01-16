@@ -19,13 +19,27 @@
     <!-- Splash Screen -->
     <div id="splash-screen" class="splash-screen">
         <div class="splash-content">
-            <div class="splash-logo">
-                <i class="fas fa-play-circle"></i>
+            <div class="splash-logo-container">
+                <div class="splash-ring"></div>
+                <div class="splash-ring splash-ring-2"></div>
+                <img src="/dado.png" alt="DADO" class="splash-logo-img">
             </div>
             <h1 class="splash-title">DADO STREAM</h1>
+            <p class="splash-subtitle">Drama • Anime • Komik</p>
             <div class="splash-loader">
                 <div class="loader-bar"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Page Transition Overlay -->
+    <div id="page-transition" class="page-transition">
+        <div class="transition-content">
+            <div class="transition-logo-wrapper">
+                <div class="transition-spinner"></div>
+                <img src="/dado.png" alt="Loading" class="transition-logo">
+            </div>
+            <span class="transition-text">Memuat...</span>
         </div>
     </div>
 
@@ -36,7 +50,7 @@
             <div class="nav-container">
                 <div class="nav-brand" onclick="navigateTo('home')">
                     <img src="/dado.png" alt="DADO" class="nav-logo" style="height: 40px; margin-right: 8px;">
-                    <span>DADO</span>
+                    <span>DADO STREAM</span>
                 </div>
                 
                 <div class="nav-search">
@@ -73,10 +87,44 @@
                         <i class="fas fa-film"></i>
                         <span>Drama China</span>
                     </button>
-                    <button class="sidebar-item" data-page="anime" onclick="navigateTo('anime')">
+                    <button class="sidebar-item has-submenu" data-page="anime" onclick="toggleAnimeSubmenu(event)">
                         <i class="fas fa-dragon"></i>
                         <span>Anime</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </button>
+                    <!-- Anime Genre Submenu -->
+                    <div class="sidebar-submenu" id="anime-submenu">
+                        <button class="submenu-item" onclick="navigateTo('anime')">
+                            <i class="fas fa-list"></i> Semua Anime
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('action')">
+                            <i class="fas fa-fist-raised"></i> Action
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('romance')">
+                            <i class="fas fa-heart"></i> Romance
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('comedy')">
+                            <i class="fas fa-laugh"></i> Comedy
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('fantasy')">
+                            <i class="fas fa-hat-wizard"></i> Fantasy
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('isekai')">
+                            <i class="fas fa-portal-enter"></i> Isekai
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('adventure')">
+                            <i class="fas fa-compass"></i> Adventure
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('school')">
+                            <i class="fas fa-school"></i> School
+                        </button>
+                        <button class="submenu-item" onclick="loadAnimeGenre('supernatural')">
+                            <i class="fas fa-ghost"></i> Supernatural
+                        </button>
+                        <button class="submenu-item" onclick="showAllGenres()">
+                            <i class="fas fa-ellipsis-h"></i> Lebih Banyak...
+                        </button>
+                    </div>
                     <button class="sidebar-item" data-page="komik" onclick="navigateTo('komik')">
                         <i class="fas fa-book-open"></i>
                         <span>Komik</span>
@@ -160,6 +208,9 @@
                     </button>
                 </div>
 
+                <!-- Banner Ad 728x90 - Below Hero -->
+                <div class="ad-banner-728" id="ad-banner-top"></div>
+
                 <!-- Continue Watching -->
                 <section class="content-section" id="continue-watching-section" style="display: none;">
                     <div class="section-header">
@@ -187,11 +238,8 @@
                     </div>
                 </section>
 
-                <!-- Native Banner Ad - Between Drama & Anime -->
-                <div class="ad-banner-container">
-                    <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
-                    <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
-                </div>
+                <!-- Ad Placeholder - Between Drama & Anime -->
+                <div class="ad-banner-container" id="ad-home-1"></div>
 
                 <!-- Anime Section -->
                 <section class="content-section">
@@ -212,11 +260,8 @@
                     </div>
                 </section>
 
-                <!-- Native Banner Ad - Between Anime & Komik -->
-                <div class="ad-banner-container">
-                    <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
-                    <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
-                </div>
+                <!-- Ad Banner - Between Anime & Komik -->
+                <div class="ad-banner-728" id="ad-home-2"></div>
 
                 <!-- Komik Section -->
                 <section class="content-section">
@@ -251,11 +296,8 @@
                     <button class="filter-btn" data-filter="comedy">Comedy</button>
                 </div>
                 
-                <!-- Native Banner Ad - Drama Page -->
-                <div class="ad-banner-container ad-page">
-                    <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
-                    <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
-                </div>
+                <!-- Ad Banner - Drama Page -->
+                <div class="ad-banner-728" id="ad-drama"></div>
                 
                 <div class="content-grid" id="drama-grid">
                     <div class="skeleton-container grid">
@@ -280,18 +322,41 @@
                     <h1><i class="fas fa-dragon"></i> Anime</h1>
                     <p>Nonton anime subtitle Indonesia terbaru</p>
                 </div>
+                <!-- Status Filter -->
                 <div class="filter-bar">
-                    <button class="filter-btn active" data-filter="all">Semua</button>
-                    <button class="filter-btn" data-filter="ongoing">Ongoing</button>
-                    <button class="filter-btn" data-filter="completed">Completed</button>
-                    <button class="filter-btn" data-filter="movie">Movie</button>
+                    <button class="filter-btn active" data-filter="all" onclick="filterAnime('all')">Semua</button>
+                    <button class="filter-btn" data-filter="ongoing" onclick="filterAnime('ongoing')">Ongoing</button>
+                    <button class="filter-btn" data-filter="completed" onclick="filterAnime('completed')">Completed</button>
+                    <button class="filter-btn" data-filter="movie" onclick="filterAnime('movie')">Movie</button>
+                </div>
+                <!-- Genre Filter -->
+                <div class="genre-filter-bar" id="anime-genre-bar">
+                    <span class="genre-label"><i class="fas fa-tags"></i> Genre:</span>
+                    <div class="genre-scroll">
+                        <button class="genre-btn active" data-genre="all" onclick="loadAnimeGenre('all')">Semua</button>
+                        <button class="genre-btn" data-genre="action" onclick="loadAnimeGenre('action')">Action</button>
+                        <button class="genre-btn" data-genre="adventure" onclick="loadAnimeGenre('adventure')">Adventure</button>
+                        <button class="genre-btn" data-genre="comedy" onclick="loadAnimeGenre('comedy')">Comedy</button>
+                        <button class="genre-btn" data-genre="drama" onclick="loadAnimeGenre('drama')">Drama</button>
+                        <button class="genre-btn" data-genre="fantasy" onclick="loadAnimeGenre('fantasy')">Fantasy</button>
+                        <button class="genre-btn" data-genre="harem" onclick="loadAnimeGenre('harem')">Harem</button>
+                        <button class="genre-btn" data-genre="horror" onclick="loadAnimeGenre('horror')">Horror</button>
+                        <button class="genre-btn" data-genre="isekai" onclick="loadAnimeGenre('isekai')">Isekai</button>
+                        <button class="genre-btn" data-genre="mecha" onclick="loadAnimeGenre('mecha')">Mecha</button>
+                        <button class="genre-btn" data-genre="mystery" onclick="loadAnimeGenre('mystery')">Mystery</button>
+                        <button class="genre-btn" data-genre="romance" onclick="loadAnimeGenre('romance')">Romance</button>
+                        <button class="genre-btn" data-genre="school" onclick="loadAnimeGenre('school')">School</button>
+                        <button class="genre-btn" data-genre="sci-fi" onclick="loadAnimeGenre('sci-fi')">Sci-Fi</button>
+                        <button class="genre-btn" data-genre="shounen" onclick="loadAnimeGenre('shounen')">Shounen</button>
+                        <button class="genre-btn" data-genre="slice-of-life" onclick="loadAnimeGenre('slice-of-life')">Slice of Life</button>
+                        <button class="genre-btn" data-genre="sports" onclick="loadAnimeGenre('sports')">Sports</button>
+                        <button class="genre-btn" data-genre="supernatural" onclick="loadAnimeGenre('supernatural')">Supernatural</button>
+                        <button class="genre-btn" data-genre="thriller" onclick="loadAnimeGenre('thriller')">Thriller</button>
+                    </div>
                 </div>
                 
-                <!-- Native Banner Ad - Anime Page -->
-                <div class="ad-banner-container ad-page">
-                    <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
-                    <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
-                </div>
+                <!-- Ad Banner - Anime Page -->
+                <div class="ad-banner-728" id="ad-anime"></div>
                 
                 <div class="content-grid" id="anime-grid">
                     <div class="skeleton-container grid">
@@ -323,11 +388,8 @@
                     <button class="filter-btn" data-filter="manhua">Manhua</button>
                 </div>
                 
-                <!-- Native Banner Ad - Komik Page -->
-                <div class="ad-banner-container ad-page">
-                    <script async="async" data-cfasync="false" src="https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js"></script>
-                    <div id="container-ebbbe73e25be8893e3d2fec6992015fa"></div>
-                </div>
+                <!-- Ad Banner - Komik Page -->
+                <div class="ad-banner-728" id="ad-komik"></div>
                 
                 <div class="content-grid" id="komik-grid">
                     <div class="skeleton-container grid">
