@@ -2418,7 +2418,22 @@ function loadFavorites() {
     }
     
     grid.innerHTML = favorites.map((item, index) => {
-        const imgUrl = item.image ? getProxiedImageUrl(item.image) : PLACEHOLDER_SMALL;
+        // For drama and komik, use image directly or with appropriate proxy
+        // For anime, we'll update with Jikan cover later
+        let imgUrl = PLACEHOLDER_SMALL;
+        if (item.image) {
+            if (item.type === 'drama') {
+                // Drama images from DramaBox usually work directly
+                imgUrl = item.image;
+            } else if (item.type === 'komik') {
+                // Komik images need proxy
+                imgUrl = getProxiedImageUrl(item.image);
+            } else {
+                // Anime - use placeholder first, will be replaced by Jikan
+                imgUrl = item.image.startsWith('http') ? item.image : PLACEHOLDER_SMALL;
+            }
+        }
+        
         return `
             <div class="card" onclick="openDetail('${item.type}', '${item.id}')" data-fav-index="${index}" data-fav-type="${item.type}">
                 <div class="card-image">
