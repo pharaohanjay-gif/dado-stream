@@ -1250,17 +1250,33 @@ async function playEpisode(type, episodeId, episodeNum) {
             }
         }
         
-        if (videoUrl) {
+        // Validate video URL
+        const isValidUrl = videoUrl && 
+            typeof videoUrl === 'string' &&
+            !videoUrl.includes('No iframe') && 
+            !videoUrl.includes('not found') &&
+            !videoUrl.includes('undefined') &&
+            (videoUrl.startsWith('http') || videoUrl.startsWith('//'));
+        
+        if (isValidUrl) {
             renderWatchPage(type, videoUrl, episodeNum, servers);
             saveToHistory(type, state.currentContent.id, state.currentContent.title, episodeNum, state.currentContent.image);
         } else {
+            console.error('Invalid video URL:', videoUrl);
             container.innerHTML = `
                 <div class="empty-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Video tidak tersedia</p>
-                    <button class="detail-btn detail-btn-primary" onclick="navigateTo('detail', state.currentContent)">
-                        Kembali ke Detail
-                    </button>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Video Tidak Tersedia</h3>
+                    <p>Maaf, episode ini sedang tidak tersedia.</p>
+                    <p class="text-muted">Server mungkin sedang maintenance atau video belum di-upload.</p>
+                    <div class="empty-state-actions">
+                        <button class="detail-btn detail-btn-primary" onclick="openDetail('${type}', '${state.currentContent.id}')">
+                            <i class="fas fa-list"></i> Pilih Episode Lain
+                        </button>
+                        <button class="detail-btn detail-btn-secondary" onclick="navigateTo('${type}')">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -1269,7 +1285,16 @@ async function playEpisode(type, episodeId, episodeNum) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-circle"></i>
-                <p>Gagal memuat video</p>
+                <h3>Gagal Memuat Video</h3>
+                <p>Terjadi kesalahan saat memuat video.</p>
+                <div class="empty-state-actions">
+                    <button class="detail-btn detail-btn-primary" onclick="playEpisode('${type}', '${episodeId}', ${episodeNum})">
+                        <i class="fas fa-redo"></i> Coba Lagi
+                    </button>
+                    <button class="detail-btn detail-btn-secondary" onclick="openDetail('${type}', '${state.currentContent.id}')">
+                        <i class="fas fa-list"></i> Pilih Episode Lain
+                    </button>
+                </div>
             </div>
         `;
     }

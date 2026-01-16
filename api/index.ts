@@ -1296,39 +1296,92 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             const { episodeId } = req.query;
             if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
             
-            // Correct endpoint format: /episode/{episodeId} not /watch/{episodeId}
-            const response = await axios.get(`${ANIME_API}/episode/${episodeId}`, config);
-            const data = response.data?.data || response.data;
-            
-            // Extract video URL from defaultStreamingUrl or server list
-            let videoUrl = data?.defaultStreamingUrl;
-            let servers: any[] = [];
-            
-            // Extract server list
-            if (data?.server?.qualities) {
-                data.server.qualities.forEach((q: any) => {
-                    if (q.serverList && q.serverList.length > 0) {
-                        q.serverList.forEach((s: any) => {
-                            servers.push({
-                                name: s.title,
-                                quality: q.title,
-                                serverId: s.serverId,
-                                href: s.href
+            try {
+                // Correct endpoint format: /episode/{episodeId} not /watch/{episodeId}
+                const response = await axios.get(`${ANIME_API}/episode/${episodeId}`, config);
+                const data = response.data?.data || response.data;
+                
+                // Extract video URL from defaultStreamingUrl or server list
+                let videoUrl = data?.defaultStreamingUrl;
+                let servers: any[] = [];
+                
+                // Extract server list
+                if (data?.server?.qualities) {
+                    data.server.qualities.forEach((q: any) => {
+                        if (q.serverList && q.serverList.length > 0) {
+                            q.serverList.forEach((s: any) => {
+                                servers.push({
+                                    name: s.title,
+                                    quality: q.title,
+                                    serverId: s.serverId,
+                                    href: s.href
+                                });
                             });
-                        });
+                        }
+                    });
+                }
+                
+                // Check if defaultStreamingUrl is valid
+                const isValidUrl = videoUrl && 
+                    !videoUrl.includes('No iframe') && 
+                    !videoUrl.includes('not found') &&
+                    (videoUrl.startsWith('http') || videoUrl.startsWith('//'));
+                
+                // If default URL is not valid, try to get from first server
+                if (!isValidUrl && servers.length > 0) {
+                    console.log('[Anime Video] Default URL invalid, trying first server...');
+                    try {
+                        const firstServer = servers[0];
+                        const serverResponse = await axios.get(`${ANIME_API}/server/${firstServer.serverId}`, config);
+                        const serverData = serverResponse.data?.data || serverResponse.data;
+                        const serverUrl = serverData?.url || serverData?.video || serverData?.stream;
+                        
+                        if (serverUrl && serverUrl.startsWith('http')) {
+                            videoUrl = serverUrl;
+                            console.log('[Anime Video] Got URL from first server:', videoUrl?.substring(0, 50));
+                        }
+                    } catch (serverErr) {
+                        console.error('[Anime Video] Failed to get from first server');
+                    }
+                }
+                
+                // If still no valid URL, try more servers
+                if ((!videoUrl || !videoUrl.startsWith('http')) && servers.length > 1) {
+                    for (let i = 1; i < Math.min(servers.length, 5); i++) {
+                        try {
+                            const server = servers[i];
+                            const serverResponse = await axios.get(`${ANIME_API}/server/${server.serverId}`, config);
+                            const serverData = serverResponse.data?.data || serverResponse.data;
+                            const serverUrl = serverData?.url || serverData?.video || serverData?.stream;
+                            
+                            if (serverUrl && serverUrl.startsWith('http')) {
+                                videoUrl = serverUrl;
+                                console.log('[Anime Video] Got URL from server', i, ':', videoUrl?.substring(0, 50));
+                                break;
+                            }
+                        } catch {
+                            continue;
+                        }
+                    }
+                }
+                
+                return res.json({ 
+                    status: true, 
+                    data: {
+                        ...data,
+                        video: videoUrl,
+                        url: videoUrl,
+                        servers
                     }
                 });
+            } catch (error: any) {
+                console.error('[Anime getvideo Error]:', error.message);
+                return res.status(500).json({ 
+                    status: false, 
+                    error: 'Failed to get video',
+                    message: error.message 
+                });
             }
-            
-            return res.json({ 
-                status: true, 
-                data: {
-                    ...data,
-                    video: videoUrl,
-                    url: videoUrl,
-                    servers
-                }
-            });
         }
 
         // Get video from specific server
