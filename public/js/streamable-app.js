@@ -32,7 +32,22 @@ function setCachedData(key, data) {
     dataCache.set(key, { data, timestamp: Date.now() });
 }
 
-// Optimized fetch with caching
+// Fetch with timeout
+async function fetchWithTimeout(url, timeout = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
+// Optimized fetch with caching and timeout
 async function cachedFetch(url, cacheKey = null) {
     const key = cacheKey || url;
     const cached = getCachedData(key);
@@ -40,7 +55,7 @@ async function cachedFetch(url, cacheKey = null) {
         return cached;
     }
     
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     const data = await response.json();
     setCachedData(key, data);
     return data;
@@ -386,27 +401,36 @@ function navigateTo(page, data = null, updateHistory = true) {
             updateUrl(page);
         }
         
-        // Load page data if needed (with preloading)
+        // Load page data if needed - check for actual content cards, not skeleton
         switch(page) {
             case 'drama':
-                if (!$('#drama-grid').querySelector('.card')) loadDramaPage();
+                // Check if grid has actual content (not just skeleton)
+                const dramaGrid = $('#drama-grid');
+                if (!dramaGrid.querySelector('.card:not(.skeleton-card)')) {
+                    loadDramaPage();
+                }
                 loadPageAds('drama');
-                // Preload next pages
-                preloadData('drama', 2);
                 break;
             case 'anime':
-                if (!$('#anime-grid').querySelector('.card')) loadAnimePage();
+                const animeGrid = $('#anime-grid');
+                if (!animeGrid.querySelector('.card:not(.skeleton-card)')) {
+                    loadAnimePage();
+                }
                 loadPageAds('anime');
-                preloadData('anime', 2);
                 break;
             case 'donghua':
-                if (!$('#donghua-grid').querySelector('.card')) loadDonghuaPage();
+                const donghuaGrid = $('#donghua-grid');
+                if (!donghuaGrid.querySelector('.card:not(.skeleton-card)')) {
+                    loadDonghuaPage();
+                }
                 loadPageAds('donghua');
                 break;
             case 'komik':
-                if (!$('#komik-grid').querySelector('.card')) loadKomikPage();
+                const komikGrid = $('#komik-grid');
+                if (!komikGrid.querySelector('.card:not(.skeleton-card)')) {
+                    loadKomikPage();
+                }
                 loadPageAds('komik');
-                preloadData('komik', 2);
                 break;
             case 'trending':
                 loadTrending('drama');
@@ -670,7 +694,7 @@ async function loadDonghuaPage() {
     state.donghuaFilter = 'all';
     
     try {
-        const response = await fetch(`${API_BASE}/donghua?action=ongoing&page=1`);
+        const response = await fetchWithTimeout(`${API_BASE}/donghua?action=ongoing&page=1`, 20000);
         const result = await response.json();
         const data = result.data || [];
         
@@ -681,7 +705,7 @@ async function loadDonghuaPage() {
         }
     } catch (error) {
         console.error('Error loading donghua page:', error);
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat donghua</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat donghua. <button onclick="loadDonghuaPage()" class="retry-btn">Coba lagi</button></p></div>';
     }
 }
 
@@ -747,7 +771,7 @@ async function loadDramaPage() {
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
     
     try {
-        const response = await fetch(`${API_BASE}/drama?action=latest`);
+        const response = await fetchWithTimeout(`${API_BASE}/drama?action=latest`, 20000);
         const result = await response.json();
         const data = result.data || result;
         
@@ -758,7 +782,7 @@ async function loadDramaPage() {
         }
     } catch (error) {
         console.error('Error loading drama page:', error);
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat drama</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat drama. <button onclick="loadDramaPage()" class="retry-btn">Coba lagi</button></p></div>';
     }
 }
 
@@ -800,7 +824,7 @@ async function loadAnimePage() {
     currentAnimeFilter = 'all';
     
     try {
-        const response = await fetch(`${API_BASE}/anime?action=latest&page=${state.animePage}`);
+        const response = await fetchWithTimeout(`${API_BASE}/anime?action=latest&page=${state.animePage}`, 20000);
         const result = await response.json();
         const data = result.data || result;
         
@@ -812,7 +836,7 @@ async function loadAnimePage() {
         }
     } catch (error) {
         console.error('Error loading anime page:', error);
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat anime</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat anime. <button onclick="loadAnimePage()" class="retry-btn">Coba lagi</button></p></div>';
     }
 }
 
@@ -872,7 +896,7 @@ async function loadKomikPage() {
     grid.innerHTML = '<div class="skeleton-container grid">' + '<div class="skeleton-card"></div>'.repeat(12) + '</div>';
     
     try {
-        const response = await fetch(`${API_BASE}/komik?action=popular`);
+        const response = await fetchWithTimeout(`${API_BASE}/komik?action=popular`, 20000);
         const result = await response.json();
         const data = result.data || result;
         
@@ -883,7 +907,7 @@ async function loadKomikPage() {
         }
     } catch (error) {
         console.error('Error loading komik page:', error);
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat komik</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gagal memuat komik. <button onclick="loadKomikPage()" class="retry-btn">Coba lagi</button></p></div>';
     }
 }
 
