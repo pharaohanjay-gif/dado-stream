@@ -37,7 +37,6 @@ async function cachedFetch(url, cacheKey = null) {
     const key = cacheKey || url;
     const cached = getCachedData(key);
     if (cached) {
-        console.log('[Cache] Hit:', key);
         return cached;
     }
     
@@ -121,7 +120,6 @@ async function getJikanCover(title) {
             if (result.status && result.data && result.data.image) {
                 const coverUrl = result.data.image;
                 jikanCoverCache.set(cacheKey, coverUrl);
-                console.log('[Jikan] Got cover for:', title);
                 return coverUrl;
             }
             
@@ -928,20 +926,23 @@ function renderCards(selector, items, type, isGrid = false) {
     }
 }
 
-// Fetch Jikan covers for a list of anime items (parallel - backend handles rate limiting)
+// Fetch Jikan covers for a list of anime items (limited for performance)
 async function fetchJikanCoversForList(items, selector) {
     const container = $(selector);
     if (!container) return;
     
     const cards = container.querySelectorAll('.card');
     
-    // Process all items in parallel - backend handles rate limiting and caching
-    const promises = items.map(async (item, i) => {
+    // Only fetch for first 4 items immediately (visible above fold)
+    const visibleCount = Math.min(4, items.length);
+    
+    for (let i = 0; i < visibleCount; i++) {
         const card = cards[i];
-        if (!card) return;
+        const item = items[i];
+        if (!card || !item) continue;
         
         const title = item.title || item.judul;
-        if (!title) return;
+        if (!title) continue;
         
         try {
             const jikanCover = await getJikanCover(title);
@@ -950,16 +951,12 @@ async function fetchJikanCoversForList(items, selector) {
                 if (img) {
                     img.src = jikanCover;
                     img.dataset.jikan = 'true';
-                    console.log('[Jikan] Updated cover for:', title);
                 }
             }
         } catch (e) {
-            // Silently fail, keep original image
+            // Silently fail
         }
-    });
-    
-    // Wait for all to complete
-    await Promise.all(promises);
+    }
 }
 
 function createCard(item, type) {
@@ -1019,14 +1016,19 @@ function createCard(item, type) {
     `;
 }
 
-// Prefetch detail data on hover for instant loading
+// Prefetch detail data on hover for instant loading (disabled to improve performance)
 let prefetchTimeout = null;
+let prefetchedIds = new Set(); // Track already prefetched items
 function prefetchDetail(type, id) {
-    // Debounce to avoid too many requests
+    // Skip if already prefetched or cached
+    const cacheKey = `detail_${type}_${id}`;
+    if (prefetchedIds.has(cacheKey) || getCachedData(cacheKey)) return;
+    
+    // Longer debounce to reduce unnecessary requests
     clearTimeout(prefetchTimeout);
     prefetchTimeout = setTimeout(async () => {
-        const cacheKey = `detail_${type}_${id}`;
-        if (getCachedData(cacheKey)) return; // Already cached
+        // Mark as prefetched to avoid duplicate requests
+        prefetchedIds.add(cacheKey);
         
         try {
             let url;
@@ -1035,24 +1037,26 @@ function prefetchDetail(type, id) {
                     url = `${API_BASE}/drama?action=detail&bookId=${id}`;
                     break;
                 case 'anime':
-                    url = `${API_BASE}/anime?action=detail&id=${id}`;
+                    url = `${API_BASE}/anime?action=detail&urlId=${id}`;
                     break;
                 case 'donghua':
                     url = `${API_BASE}/donghua?action=detail&slug=${id}`;
                     break;
                 case 'komik':
-                    url = `${API_BASE}/komik?action=detail&slug=${id}`;
+                    url = `${API_BASE}/komik?action=detail&manga_id=${id}`;
                     break;
             }
             if (url) {
-                fetch(url).then(r => r.json()).then(data => {
-                    console.log('[Prefetch] Loaded:', cacheKey);
-                });
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    setCachedData(cacheKey, data);
+                }
             }
         } catch (e) {
             // Silently fail prefetch
         }
-    }, 200);
+    }, 500);
 }
 
 // Fallback to Jikan cover if original image fails

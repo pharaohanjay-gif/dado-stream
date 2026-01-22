@@ -1270,8 +1270,9 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
         }
 
         if (action === 'detail') {
-            const { urlId } = req.query;
-            if (!urlId) return res.status(400).json({ status: false, error: 'urlId required' });
+            // Accept both urlId and id parameter for flexibility
+            const urlId = req.query.urlId || req.query.id;
+            if (!urlId) return res.status(400).json({ status: false, error: 'urlId or id required' });
             
             // Correct endpoint format: /anime/{animeId} not /detail/{animeId}
             const response = await axios.get(`${ANIME_API}/anime/${urlId}`, config);
