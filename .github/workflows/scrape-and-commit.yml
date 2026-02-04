@@ -1,0 +1,68 @@
+name: Scrape videos and commit
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      categories:
+        description: 'Space-separated category slugs to scrape (default: bokep-indo)'
+        required: false
+        default: 'bokep-indo'
+      deploy_to_vercel:
+        description: 'Set to true to trigger Vercel deploy after scraping (requires VERCEL_TOKEN secret)'
+        required: false
+        default: 'false'
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 yt-dlp playwright
+          python -m playwright install --with-deps
+
+      - name: Run scraper (categories)
+        env:
+          CATS: ${{ github.event.inputs.categories }}
+        run: |
+          CAT_ARG=""
+          if [ -n "$CATS" ]; then
+            # convert space-separated to multiple --categories args
+            for c in $CATS; do
+              CAT_ARG="$CAT_ARG --categories $c"
+            done
+          fi
+          python scripts/scrape_all.py --start-url https://mcdowellforcongress.com/ --out data/videos.json $CAT_ARG
+
+      - name: Commit data if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/videos.json
+          if ! git diff --cached --quiet -- data/videos.json; then
+            git commit -m "chore(scrape): update data/videos.json"
+            git push
+          else
+            echo "No changes to data/videos.json"
+          fi
+
+      - name: Optional: Deploy to Vercel
+        if: ${{ github.event.inputs.deploy_to_vercel == 'true' && secrets.VERCEL_TOKEN }}
+        run: |
+          npm i -g vercel@latest
+          vercel --prod --confirm --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
