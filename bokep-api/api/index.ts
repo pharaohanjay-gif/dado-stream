@@ -13,27 +13,28 @@ interface Video {
     createdAt?: string;
 }
 
-// Cache videos in memory with TTL (5 minutes)
+// Cache videos in memory with TTL (2 minutes for faster updates)
 let videosCache: Video[] | null = null;
 let cacheTimestamp: number = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-// GitHub raw URL for videos.json
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/pharaohanjay-gif/dado-stream/master/bokep-api/videos.json';
+// GitHub API URL for videos.json (no cache, always fresh)
+const GITHUB_API_URL = 'https://api.github.com/repos/pharaohanjay-gif/dado-stream/contents/bokep-api/videos.json';
 
 async function loadVideos(): Promise<Video[]> {
     const now = Date.now();
     
-    // Return cache if still valid
+    // Return cache if still valid (2 minutes for faster updates)
     if (videosCache && (now - cacheTimestamp) < CACHE_TTL) {
         return videosCache;
     }
     
     try {
-        // Fetch fresh data from GitHub
-        const response = await axios.get(GITHUB_RAW_URL, {
+        // Fetch fresh data from GitHub API (always fresh, no CDN cache)
+        const response = await axios.get(GITHUB_API_URL, {
             timeout: 10000,
             headers: {
+                'Accept': 'application/vnd.github.v3.raw',
                 'Cache-Control': 'no-cache'
             }
         });
@@ -93,11 +94,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         if (pathParam === 'stats') {
             const videos = await loadVideos();
+            
+            // Count videos added today
+            const today = new Date().toISOString().split('T')[0];
+            const todayVideos = videos.filter(v => {
+                const dateStr = String(v.createdAt || v.extracted_at || '');
+                return dateStr.startsWith(today);
+            }).length;
+            
+            // Get unique slugs to verify no duplicates
+            const slugs = videos.map(v => v.slug);
+            const uniqueSlugs = new Set(slugs);
+            const hasDuplicates = slugs.length !== uniqueSlugs.size;
+            
+            // Get newest video info
+            const newestVideo = videos[0];
+            
             return res.json({
                 total: videos.length,
+                uniqueCount: uniqueSlugs.size,
+                hasDuplicates,
+                duplicateCount: slugs.length - uniqueSlugs.size,
+                todayAdded: todayVideos,
+                newestVideo: newestVideo ? {
+                    title: newestVideo.title,
+                    slug: newestVideo.slug,
+                    addedAt: newestVideo.createdAt || newestVideo.extracted_at
+                } : null,
                 categories: [...new Set(videos.flatMap(v => v.categories || []))],
-                lastUpdate: videos[0]?.extracted_at || null,
-                source: 'mcdowellforcongress.com'
+                lastUpdate: newestVideo?.createdAt || newestVideo?.extracted_at || null,
+                source: 'mcdowellforcongress.com',
+                cronSchedule: '0 2 * * * (09:00 WIB daily)'
             });
         }
         

@@ -136,19 +136,22 @@ async function updateGitHub(newVideos: Video[]): Promise<{ success: boolean; tot
             console.log('No existing file, will create new');
         }
 
-        // Merge: new videos first, then existing (keep unique by slug)
+        // Merge: keep unique by slug, new videos at the beginning
         const existingMap = new Map(existingVideos.map(v => [v.slug, v]));
+        const existingSlugs = new Set(existingVideos.map(v => v.slug));
         let newCount = 0;
         
+        // Find truly new videos (not in existing)
+        const trulyNewVideos: Video[] = [];
         for (const video of newVideos) {
-            if (!existingMap.has(video.slug)) {
+            if (!existingSlugs.has(video.slug)) {
+                trulyNewVideos.push(video);
                 newCount++;
             }
-            existingMap.set(video.slug, video); // Update or add
         }
         
-        // Convert back to array, newest first
-        const mergedVideos = Array.from(existingMap.values());
+        // Merge: new videos FIRST, then existing (for chronological order)
+        const mergedVideos = [...trulyNewVideos, ...existingVideos];
         console.log(`Merged total: ${mergedVideos.length}, New videos: ${newCount}`);
 
         // Prepare content
