@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>DADO STREAM - Bioskop Indonesia</title>
+    <meta name="description" content="Platform streaming film Indonesia, Western TV, K-Drama, dan series terlengkap. Nikmati ribuan konten hiburan berkualitas tinggi.">
+    <meta name="theme-color" content="#FFD700">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Anti-Scraping & Security -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta name="referrer" content="no-referrer">
+    
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/dado-bioskop.png">
+    <link rel="apple-touch-icon" href="/dado-bioskop.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/bioskop.css">
+    
+    <!-- Anti-DevTools & Anti-Scraping Script -->
+    <script>
+    (function(){
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+        
+        // Disable keyboard shortcuts for DevTools
+        document.addEventListener('keydown', function(e){
+            if(e.key === 'F12' || 
+               (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+               (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Clear console periodically
+        setInterval(function(){ console.clear(); }, 1000);
+        
+        // Detect DevTools
+        var devtools = {open: false};
+        var threshold = 160;
+        setInterval(function(){
+            if(window.outerWidth - window.innerWidth > threshold || 
+               window.outerHeight - window.innerHeight > threshold){
+                if(!devtools.open){
+                    devtools.open = true;
+                    console.clear();
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
+    })();
+    </script>
+</head>
+<body>
+    <!-- Page Transition Overlay -->
+    <div id="page-transition" class="page-transition">
+        <div class="transition-content">
+            <div class="transition-logo-wrapper">
+                <div class="transition-spinner"></div>
+                <div class="transition-logo-text">🎬</div>
+            </div>
+            <span class="transition-text">Memuat...</span>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-brand" onclick="navigateTo('home')">
+                    <span class="nav-logo-emoji">🎬</span>
+                    <span>DADO STREAM</span>
+                    <span class="bioskop-badge">BIOSKOP</span>
+                </div>
+                
+                <div class="nav-search">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Cari film, series, drama..." autocomplete="off">
+                        <button class="search-clear hidden" id="search-clear">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="search-results hidden" id="search-results"></div>
+                </div>
+                
+                <div class="nav-menu">
+                    <button class="nav-btn" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon" id="theme-icon"></i>
+                    </button>
+                    <button class="nav-btn mobile-menu-btn" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-menu">
+                    <button class="sidebar-item active" data-page="home" onclick="navigateTo('home')">
+                        <i class="fas fa-home"></i>
+                        <span>Beranda</span>
+                    </button>
+                    <button class="sidebar-item" data-page="film-indonesia" onclick="navigateTo('film-indonesia')">
+                        <i class="fas fa-film"></i>
+                        <span>Film Indonesia</span>
+                    </button>
+                    <button class="sidebar-item" data-page="western-tv" onclick="navigateTo('western-tv')">
+                        <i class="fas fa-globe-americas"></i>
+                        <span>Western TV</span>
+                    </button>
+                    <button class="sidebar-item" data-page="indo-dub" onclick="navigateTo('indo-dub')">
+                        <i class="fas fa-volume-up"></i>
+                        <span>Indo Dub</span>
+                    </button>
+                    <button class="sidebar-item" data-page="adult-comedy" onclick="openAdultVerification()">
+                        <i class="fas fa-fire-alt"></i>
+                        <span>Film Dewasa Cuyyy</span>
+                        <span class="age-badge">18+</span>
+                    </button>
+                </div>
+                
+                <div class="sidebar-divider"></div>
+                
+                <div class="sidebar-menu">
+                    <button class="sidebar-item" data-page="history" onclick="navigateTo('history')">
+                        <i class="fas fa-history"></i>
+                        <span>Riwayat</span>
+                    </button>
+                    <button class="sidebar-item" data-page="favorites" onclick="navigateTo('favorites')">
+                        <i class="fas fa-heart"></i>
+                        <span>Favorit</span>
+                    </button>
+                </div>
+                
+                <div class="sidebar-divider"></div>
+                
+                <div class="sidebar-section-title">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Situs Lainnya</span>
+                </div>
+                
+                <div class="sidebar-menu external-links">
+                    <a href="https://memenesia.web.id/anime" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-dragon"></i>
+                        <span>Nonton Anime</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://memenesia.web.id/drama" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-yin-yang"></i>
+                        <span>Drama China</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://memenesia.web.id/komik" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-book-open"></i>
+                        <span>Baca Komik</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://memenesia.web.id/donghua" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-broadcast-tower"></i>
+                        <span>Donghua</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Search Bar -->
+        <div class="mobile-search-overlay hidden" id="mobile-search-overlay">
+            <div class="mobile-search-container">
+                <div class="mobile-search-header">
+                    <button class="mobile-search-close" onclick="closeMobileSearch()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="mobile-search-input-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="mobile-search-input" placeholder="Cari film, series, drama..." autocomplete="off">
+                    </div>
+                </div>
+                <div class="mobile-search-results" id="mobile-search-results"></div>
+            </div>
+        </div>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-nav">
+            <button class="mobile-nav-item active" data-page="home" onclick="navigateTo('home')">
+                <i class="fas fa-home"></i>
+                <span>Beranda</span>
+            </button>
+            <button class="mobile-nav-item" data-page="film-indonesia" onclick="navigateTo('film-indonesia')">
+                <i class="fas fa-film"></i>
+                <span>Film Indo</span>
+            </button>
+            <button class="mobile-nav-item" data-page="western-tv" onclick="navigateTo('western-tv')">
+                <i class="fas fa-globe-americas"></i>
+                <span>Western</span>
+            </button>
+            <button class="mobile-nav-item" data-page="indo-dub" onclick="navigateTo('indo-dub')">
+                <i class="fas fa-volume-up"></i>
+                <span>Indo Dub</span>
+            </button>
+            <button class="mobile-nav-item" data-page="adult-comedy" onclick="openAdultVerification()">
+                <i class="fas fa-fire-alt"></i>
+                <span>18+</span>
+            </button>
+            <a href="https://memenesia.web.id" target="_blank" class="mobile-nav-item external-link">
+                <i class="fas fa-dragon"></i>
+                <span>Anime</span>
+            </a>
+            <button class="mobile-nav-item" onclick="openMobileSearch()">
+                <i class="fas fa-search"></i>
+                <span>Cari</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Home Page -->
+            <section id="page-home" class="page active">
+                <!-- Hero Banner -->
+                <div class="hero-banner" id="hero-banner">
+                    <div class="hero-slider" id="hero-slider">
+                        <!-- Dynamic banners will be loaded here -->
+                    </div>
+                    <div class="hero-indicators" id="hero-indicators"></div>
+                    <button class="hero-nav hero-prev" onclick="prevBanner()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="hero-nav hero-next" onclick="nextBanner()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Bokep Viral & Trending - Featured Card -->
+                <section class="content-section algojo-section">
+                    <div class="section-header trending-header">
+                        <h2><i class="fas fa-fire-alt"></i> 🔥 BOKEP VIRAL & TRENDING</h2>
+                        <span class="live-badge"><i class="fas fa-circle"></i> AUTO UPDATE</span>
+                    </div>
+                    <div class="algojo-card" id="featured-film">
+                        <div class="skeleton-card large"></div>
+                    </div>
+                </section>
+
+                <!-- Ad Banner 1 - After Viral Section -->
+                <div id="ad-home-1" class="ad-container"></div>
+
+                <!-- Continue Watching -->
+                <section class="content-section" id="continue-watching-section" style="display: none;">
+                    <div class="section-header">
+                        <h2><i class="fas fa-play"></i> Lanjutkan Menonton</h2>
+                    </div>
+                    <div class="content-scroll" id="continue-watching"></div>
+                </section>
+
+                <!-- Film Indonesia Section -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-film"></i> Film Indonesia Populer</h2>
+                        <button class="see-all-btn" onclick="navigateTo('film-indonesia')">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="content-scroll" id="home-film-indonesia">
+                        <div class="skeleton-container">
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Film Dewasa Section (18+) - 2nd Position -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-fire-alt" style="color:#ff4444"></i> Film Dewasa <span class="age-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</span></h2>
+                        <button class="see-all-btn" onclick="navigateTo('adult-comedy')" style="color:#ff4444">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="content-scroll" id="home-adult-comedy">
+                        <div class="skeleton-container">
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ad Banner 2 - After Film Dewasa -->
+                <div id="ad-home-2" class="ad-container"></div>
+
+                <!-- Indo Dub Section -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-volume-up"></i> Dubbing Indonesia</h2>
+                        <button class="see-all-btn" onclick="navigateTo('indo-dub')">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="content-scroll" id="home-indo-dub">
+                        <div class="skeleton-container">
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Western TV Section - Moved to Bottom -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-globe-americas"></i> Western TV</h2>
+                        <button class="see-all-btn" onclick="navigateTo('western-tv')">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="content-scroll" id="home-western-tv">
+                        <div class="skeleton-container">
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                            <div class="skeleton-card"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ad Banner 3 - Before Footer -->
+                <div id="ad-home-3" class="ad-container"></div>
+
+            </section>
+
+            <!-- Film Indonesia Page -->
+            <section id="page-film-indonesia" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-flag"></i> Film Indonesia</h1>
+                    <p>Koleksi film Indonesia terlengkap dengan kualitas HD</p>
+                </div>
+                <!-- Ad Top Film Indonesia -->
+                <div id="ad-film-indonesia-top" class="ad-container"></div>
+                <div class="content-grid" id="film-indonesia-grid">
+                    <div class="skeleton-container grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="load-more-film-indonesia" onclick="loadMoreContent('indonesian-movies')">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+                <!-- Ad Bottom Film Indonesia -->
+                <div id="ad-film-indonesia-bottom" class="ad-container"></div>
+            </section>
+
+            <!-- Western TV Page -->
+            <section id="page-western-tv" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-globe-americas"></i> Western TV</h1>
+                    <p>Serial TV Barat dari Netflix, HBO, Disney+, dan lainnya</p>
+                </div>
+                <!-- Ad Top Western TV -->
+                <div id="ad-western-top" class="ad-container"></div>
+                <div class="content-grid" id="western-tv-grid">
+                    <div class="skeleton-container grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="load-more-western-tv" onclick="loadMoreContent('western-tv')">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+            </section>
+
+            <!-- Indo Dub Page -->
+            <section id="page-indo-dub" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-volume-up"></i> Indo Dub</h1>
+                    <p>Konten dengan dubbing bahasa Indonesia</p>
+                </div>
+                <!-- Ad Top Sub Indo -->
+                <div id="ad-subindo-top" class="ad-container"></div>
+                <div class="content-grid" id="indo-dub-grid">
+                    <div class="skeleton-container grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="load-more-indo-dub" onclick="loadMoreContent('indo-dub')">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+            </section>
+
+            <!-- Adult Comedy Page -->
+            <section id="page-adult-comedy" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-fire-alt"></i> Film Dewasa</h1>
+                    <p>Konten khusus untuk penonton dewasa (18+)</p>
+                </div>
+                <!-- Ad Top Adult -->
+                <div id="ad-adult-top" class="ad-container"></div>
+                <div class="content-grid" id="adult-comedy-grid">
+                    <div class="skeleton-container grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="load-more-adult-comedy" onclick="loadMoreAdultContent()">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+                <!-- Ad Bottom Adult -->
+                <div id="ad-adult-bottom" class="ad-container"></div>
+            </section>
+
+            <!-- History Page -->
+            <section id="page-history" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-history"></i> Riwayat</h1>
+                    <p>Konten yang terakhir kamu tonton</p>
+                    <button class="clear-history-btn" onclick="clearHistory()">
+                        <i class="fas fa-trash"></i> Hapus Semua
+                    </button>
+                </div>
+                <div class="content-grid" id="history-grid">
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <p>Belum ada riwayat</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Favorites Page -->
+            <section id="page-favorites" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-heart"></i> Favorit</h1>
+                    <p>Konten yang kamu sukai</p>
+                </div>
+                <div class="content-grid" id="favorites-grid">
+                    <div class="empty-state">
+                        <i class="fas fa-heart"></i>
+                        <p>Belum ada favorit</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detail Page -->
+            <section id="page-detail" class="page">
+                <div class="detail-container" id="detail-container">
+                    <!-- Dynamic detail content -->
+                </div>
+            </section>
+
+            <!-- Watch Page -->
+            <section id="page-watch" class="page">
+                <div class="watch-container" id="watch-container">
+                    <!-- Video player and episode list -->
+                </div>
+            </section>
+
+            <!-- Search Results Page -->
+            <section id="page-search" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-search"></i> Hasil Pencarian</h1>
+                    <p id="search-query-display"></p>
+                </div>
+                <div class="content-grid" id="search-grid">
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <p>Ketik kata kunci untuk mencari</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Age Verification Modal REMOVED - Direct Access Enabled -->
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top hidden" id="back-to-top" onclick="scrollToTop()">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script src="/js/bioskop-app.js"></script>
+    <script src="/js/sponsor.js"></script>
+    <script>
+        // Initialize ads after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window._sp && window._sp.init) {
+                window._sp.init();
+            }
+        });
+    </script>
+</body>
+</html>

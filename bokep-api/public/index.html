@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Bokep Dadok - Dokumentasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff4444;
+            --primary-dark: #cc0000;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --bg-code: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #888;
+            --border: #333;
+            --success: #00d26a;
+            --warning: #ffcc00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-card), #1e1e1e);
+            border-bottom: 1px solid var(--border);
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .logo-text h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-text span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: var(--bg-code);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-item .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        /* Main Content */
+        main {
+            padding: 50px 0;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        /* Endpoint Cards */
+        .endpoint-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .endpoint-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 68, 68, 0.1);
+        }
+        
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .method-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .method-get {
+            background: #00d26a33;
+            color: #00d26a;
+        }
+        
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+        
+        .endpoint-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .endpoint-body {
+            padding: 20px;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .params-table th,
+        .params-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .params-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        
+        .param-name {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+        }
+        
+        .param-required {
+            background: var(--primary);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        .param-optional {
+            background: var(--border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        /* Code Blocks */
+        .code-block {
+            background: var(--bg-code);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #222;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .code-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: var(--border);
+            color: var(--text-main);
+        }
+        
+        pre {
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .json-key {
+            color: #f97583;
+        }
+        
+        .json-string {
+            color: #9ecbff;
+        }
+        
+        .json-number {
+            color: #79b8ff;
+        }
+        
+        .json-boolean {
+            color: #ffcc00;
+        }
+        
+        /* Try It Section */
+        .try-it {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .try-it h3 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .try-it h3 i {
+            color: var(--success);
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .input-group input,
+        .input-group select {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 15px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .response-container {
+            background: var(--bg-code);
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .response-container.active {
+            display: block;
+        }
+        
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #222;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: #00d26a33;
+            color: #00d26a;
+        }
+        
+        .status-error {
+            background: #ff444433;
+            color: #ff4444;
+        }
+        
+        #response-body {
+            max-height: 400px;
+            overflow: auto;
+        }
+        
+        /* Results Grid */
+        .results-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .result-card {
+            background: var(--bg-code);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(255, 68, 68, 0.2);
+        }
+        
+        .result-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .result-info {
+            padding: 10px;
+        }
+        
+        .result-info h4 {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            line-height: 1.3;
+            color: var(--text-main);
+        }
+        
+        .result-slug {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 30px 0;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-text h1 {
+                font-size: 1.5rem;
+            }
+            
+            .stats-bar {
+                gap: 15px;
+            }
+            
+            .stat-item {
+                padding: 10px 20px;
+            }
+            
+            .endpoint-header {
+                flex-wrap: wrap;
+            }
+            
+            .endpoint-desc {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            pre {
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff33;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading .spinner {
+            display: block;
+        }
+        
+        .loading .btn-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>API Bokep Dadok</h1>
+                    <span>REST API untuk konten dewasa Indonesia</span>
+                </div>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="value">v1.0</div>
+                    <div class="label">Version</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value">
+                        <i class="fas fa-circle" style="color: var(--success); font-size: 0.8rem;"></i> Online
+                    </div>
+                    <div class="label">Status</div>
+                </div>
+            </div>
+            
+            <div class="example-site" style="margin-top: 25px;">
+                <p style="color: var(--text-muted); margin-bottom: 10px;">Contoh implementasi:</p>
+                <a href="https://dado-stream-bioskop.vercel.app" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-code); padding: 12px 20px; border-radius: 10px; border: 1px solid var(--border); color: var(--text-main); text-decoration: none; transition: all 0.3s;">
+                    <i class="fas fa-external-link-alt" style="color: var(--primary);"></i>
+                    <span>dado-stream-bioskop.vercel.app</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container">
+        <!-- Base URL -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-link"></i> Base URL</h2>
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">Production</span>
+                    <button class="copy-btn" onclick="copyToClipboard('https://bokep-api.vercel.app/api')">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <pre>https://bokep-api.vercel.app/api</pre>
+            </div>
+        </section>
+        
+        <!-- Endpoints -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-route"></i> Endpoints</h2>
+            
+            <!-- List Videos -->
+            <div class="endpoint-card">
+                <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/videos</span>
+                    <span class="endpoint-desc">Mendapatkan daftar semua video</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="endpoint-body" style="display: none;">
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">page</span><span class="param-optional">optional</span></td>
+                                <td>integer</td>
+                                <td>Nomor halaman (default: 1)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">limit</span><span class="param-optional">optional</span></td>
+                                <td>integer</td>
+                                <td>Jumlah hasil per halaman (default: 30, max: 200)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">q</span><span class="param-optional">optional</span></td>
+                                <td>string</td>
+                                <td>Kata kunci untuk pencarian</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">category</span><span class="param-optional">optional</span></td>
+                                <td>string</td>
+                                <td>Filter berdasarkan kategori</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-title">Response Example</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this.closest('.code-block').querySelector('pre').textContent)">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <pre>{
+  <span class="json-key">"status"</span>: <span class="json-boolean">true</span>,
+  <span class="json-key">"total"</span>: <span class="json-number">1209</span>,
+  <span class="json-key">"page"</span>: <span class="json-number">1</span>,
+  <span class="json-key">"limit"</span>: <span class="json-number">30</span>,
+  <span class="json-key">"totalPages"</span>: <span class="json-number">41</span>,
+  <span class="json-key">"results"</span>: [
+    {
+      <span class="json-key">"id"</span>: <span class="json-string">"..."</span>,
+      <span class="json-key">"title"</span>: <span class="json-string">"Bokep Indo - ..."</span>,
+      <span class="json-key">"slug"</span>: <span class="json-string">"bokep-indo-..."</span>,
+      <span class="json-key">"poster"</span>: <span class="json-string">"https://..."</span>,
+      <span class="json-key">"categories"</span>: [<span class="json-string">"Bokep Indo"</span>, <span class="json-string">"..."</span>],
+      <span class="json-key">"sources_count"</span>: <span class="json-number">3</span>
+    }
+  ]
+}</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Get Video Detail -->
+            <div class="endpoint-card">
+                <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/videos/:slug</span>
+                    <span class="endpoint-desc">Mendapatkan detail video termasuk source streaming</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="endpoint-body" style="display: none;">
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">slug</span><span class="param-required">required</span></td>
+                                <td>string</td>
+                                <td>Slug unik video</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-title">Response Example</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this.closest('.code-block').querySelector('pre').textContent)">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <pre>{
+  <span class="json-key">"status"</span>: <span class="json-boolean">true</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"id"</span>: <span class="json-string">"mcdowellforcongress-com"</span>,
+    <span class="json-key">"title"</span>: <span class="json-string">"Bokep Indo - ..."</span>,
+    <span class="json-key">"slug"</span>: <span class="json-string">"bokep-indo-..."</span>,
+    <span class="json-key">"poster"</span>: <span class="json-string">"https://..."</span>,
+    <span class="json-key">"categories"</span>: [<span class="json-string">"Bokep Indo"</span>],
+    <span class="json-key">"sources"</span>: [
+      {
+        <span class="json-key">"url"</span>: <span class="json-string">"https://..."</span>,
+        <span class="json-key">"quality"</span>: <span class="json-string">"720p"</span>
+      }
+    ]
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="endpoint-card">
+                <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/videos?q={keyword}</span>
+                    <span class="endpoint-desc">Mencari video berdasarkan judul</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="endpoint-body" style="display: none;">
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">q</span><span class="param-required">required</span></td>
+                                <td>string</td>
+                                <td>Kata kunci pencarian (min. 2 karakter)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">limit</span><span class="param-optional">optional</span></td>
+                                <td>integer</td>
+                                <td>Maksimum hasil (default: 30)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-title">Example Request</span>
+                        </div>
+                        <pre>GET /api/videos?q=indo&limit=10</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="endpoint-card">
+                <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/stats</span>
+                    <span class="endpoint-desc">Mendapatkan statistik API</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="endpoint-body" style="display: none;">
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-title">Response Example</span>
+                        </div>
+                        <pre>{
+  <span class="json-key">"total"</span>: <span class="json-number">1209</span>,
+  <span class="json-key">"categories"</span>: [<span class="json-string">"Bokep Indo"</span>, <span class="json-string">"Big Tits"</span>, ...],
+  <span class="json-key">"lastUpdate"</span>: <span class="json-string">"2025-02-01T..."</span>,
+  <span class="json-key">"source"</span>: <span class="json-string">"mcdowellforcongress.com"</span>
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Try It -->
+        <section class="section">
+            <div class="try-it">
+                <h3><i class="fas fa-play-circle"></i> Coba API</h3>
+                
+                <div class="input-group">
+                    <input type="text" id="search-input" placeholder="Cari video (contoh: becca, agtca, indo...)" style="flex: 2;">
+                    <input type="number" id="limit-input" placeholder="Limit (10)" min="1" max="100" value="10">
+                    <button class="btn" id="try-btn" onclick="tryAPI()">
+                        <span class="btn-text"><i class="fas fa-search"></i> Cari</span>
+                        <div class="spinner"></div>
+                    </button>
+                </div>
+                
+                <!-- Results Grid -->
+                <div class="results-grid" id="results-grid"></div>
+                
+                <div class="response-container" id="response-container">
+                    <div class="response-header">
+                        <span class="code-title">JSON Response</span>
+                        <span class="status-badge" id="status-badge">200 OK</span>
+                    </div>
+                    <pre id="response-body"></pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Usage Example -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-code"></i> Contoh Penggunaan</h2>
+            
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-title">JavaScript (Fetch)</span>
+                    <button class="copy-btn" onclick="copyToClipboard(document.getElementById('js-example').textContent)">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <pre id="js-example">// Mendapatkan daftar video
+const response = await fetch('https://bokep-api.vercel.app/api/videos?limit=10');
+const data = await response.json();
+console.log(data.results);
+
+// Mencari video
+const searchResponse = await fetch('https://bokep-api.vercel.app/api/videos?q=indo&limit=5');
+const searchData = await searchResponse.json();
+console.log(searchData.results);
+
+// Mendapatkan detail video
+const slug = 'bokep-indo-example-slug';
+const detailResponse = await fetch(`https://bokep-api.vercel.app/api/videos/${slug}`);
+const detailData = await detailResponse.json();
+console.log(detailData.data.sources);</pre>
+            </div>
+            
+            <div class="code-block" style="margin-top: 20px;">
+                <div class="code-header">
+                    <span class="code-title">Python (Requests)</span>
+                    <button class="copy-btn" onclick="copyToClipboard(document.getElementById('py-example').textContent)">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <pre id="py-example">import requests
+
+# Base URL
+BASE_URL = "https://bokep-api.vercel.app/api"
+
+# Mendapatkan daftar video
+response = requests.get(f"{BASE_URL}/videos", params={"limit": 10})
+data = response.json()
+print(data["results"])
+
+# Mencari video
+search_response = requests.get(f"{BASE_URL}/videos", params={"q": "indo", "limit": 5})
+search_data = search_response.json()
+print(search_data["results"])
+
+# Mendapatkan detail video
+slug = "bokep-indo-example-slug"
+detail_response = requests.get(f"{BASE_URL}/videos/{slug}")
+detail_data = detail_response.json()
+print(detail_data["data"]["sources"])</pre>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>API Bokep Dadok &copy; 2025 | Dibuat dengan <i class="fas fa-heart" style="color: var(--primary);"></i></p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">
+                Powered by <a href="https://vercel.com" target="_blank">Vercel</a>
+            </p>
+        </div>
+    </footer>
+    
+    <script>
+        // Toggle endpoint body
+        function toggleEndpoint(header) {
+            const body = header.nextElementSibling;
+            const icon = header.querySelector('.fa-chevron-down');
+            
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                body.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show toast
+                const toast = document.createElement('div');
+                toast.textContent = 'Copied!';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: var(--success);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    animation: fadeIn 0.3s;
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            });
+        }
+        
+        // Handle endpoint select - removed since we simplified UI
+        
+        // Try API - now just searches
+        async function tryAPI() {
+            const btn = document.getElementById('try-btn');
+            const container = document.getElementById('response-container');
+            const responseBody = document.getElementById('response-body');
+            const statusBadge = document.getElementById('status-badge');
+            const resultsGrid = document.getElementById('results-grid');
+            
+            const searchQuery = document.getElementById('search-input').value.trim();
+            const limit = document.getElementById('limit-input').value || 10;
+            
+            let url = `/api/videos?limit=${limit}`;
+            if (searchQuery) {
+                url = `/api/videos?q=${encodeURIComponent(searchQuery)}&limit=${limit}`;
+            }
+            
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                container.classList.add('active');
+                statusBadge.textContent = `${response.status} ${response.statusText}`;
+                statusBadge.className = `status-badge ${response.ok ? 'status-success' : 'status-error'}`;
+                
+                // Show results as cards
+                if (data.status && data.results && data.results.length > 0) {
+                    resultsGrid.innerHTML = data.results.map(video => `
+                        <div class="result-card">
+                            <img src="${video.poster}" alt="${video.title}" onerror="this.src='https://via.placeholder.com/150x200?text=No+Image'">
+                            <div class="result-info">
+                                <h4>${(video.title || 'Untitled').replace('Bokep Indo – ', '').replace('Bokep Indo - ', '').substring(0, 50)}${video.title && video.title.length > 50 ? '...' : ''}</h4>
+                                <span class="result-slug">${video.slug}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    resultsGrid.style.display = 'grid';
+                } else {
+                    resultsGrid.innerHTML = '<div class="no-results">Tidak ada hasil ditemukan</div>';
+                    resultsGrid.style.display = 'block';
+                }
+                
+                // Also show JSON response
+                responseBody.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                container.classList.add('active');
+                statusBadge.textContent = 'Error';
+                statusBadge.className = 'status-badge status-error';
+                responseBody.textContent = JSON.stringify({ error: e.message }, null, 2);
+                resultsGrid.innerHTML = '';
+                resultsGrid.style.display = 'none';
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+        
+        // Allow Enter key to search
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                tryAPI();
+            }
+        });
+    </script>
+</body>
+</html>

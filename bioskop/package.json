@@ -1,0 +1,25 @@
+{
+  "name": "dado-stream-bioskop",
+  "version": "1.0.0",
+  "description": "DADO STREAM BIOSKOP - Streaming Film Indonesia, K-Drama, Western TV & More",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve public -p 3000",
+    "start": "npx serve public -p 3000",
+    "preview": "npx serve public -p 5173",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "streaming",
+    "bioskop",
+    "film-indonesia",
+    "kdrama",
+    "anime",
+    "dado-stream"
+  ],
+  "author": "DADO STREAM",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

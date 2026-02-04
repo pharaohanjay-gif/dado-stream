@@ -11,6 +11,7 @@
   },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api?path=:path*" },
+    { "source": "/2346304", "destination": "/2346304.txt" },
     { "source": "/beranda", "destination": "/index.html" },
     { "source": "/drama", "destination": "/index.html" },
     { "source": "/anime", "destination": "/index.html" },
@@ -26,6 +27,18 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/2346304",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" }
+      ]
+    },
+    {
+      "source": "/2346304.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" }
+      ]
+    },
     {
       "source": "/index.html",
       "headers": [

@@ -2139,10 +2139,55 @@ body {
 @media (max-width: 1024px) {
     .sidebar {
         transform: translateX(-100%);
+        width: 280px;
+        padding-top: calc(var(--navbar-height) + 10px);
+        z-index: 1000;
     }
     
     .sidebar.open {
         transform: translateX(0);
+    }
+    
+    .sidebar-content {
+        padding: 10px 15px;
+    }
+    
+    .sidebar-item {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-radius: 10px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .sidebar-item i {
+        width: 24px;
+        font-size: 16px;
+    }
+    
+    .sidebar-item span {
+        font-size: 14px;
+        display: block;
+    }
+    
+    .sidebar-section-title {
+        padding: 12px 16px;
+        font-size: 12px;
+    }
+    
+    .sidebar-divider {
+        margin: 12px 0;
+    }
+    
+    .sidebar-submenu {
+        padding-left: 20px;
+    }
+    
+    .submenu-item {
+        padding: 10px 16px;
+        font-size: 13px;
     }
     
     .main-content {
@@ -2151,6 +2196,22 @@ body {
     
     .detail-body {
         grid-template-columns: 1fr;
+    }
+    
+    /* Sidebar overlay */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
     }
 }
 
@@ -2572,6 +2633,163 @@ body {
     .ad-banner-728 iframe {
         transform: scale(0.44);
         transform-origin: center;
+    }
+}
+
+/* ============================================
+   Monetag Ad Card - Responsive Card Style
+   ============================================ */
+.ad-card-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 24px auto;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+.ad-card {
+    background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.ad-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.ad-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-dark) 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ad-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.ad-label i {
+    font-size: 10px;
+    opacity: 0.9;
+}
+
+.ad-card-content {
+    padding: 16px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card);
+}
+
+.ad-card-content > * {
+    max-width: 100%;
+}
+
+/* Tablet responsive */
+@media (max-width: 768px) {
+    .ad-card-container {
+        max-width: 100%;
+        margin: 20px auto;
+        padding: 0 12px;
+    }
+    
+    .ad-card {
+        border-radius: var(--radius-md);
+    }
+    
+    .ad-card-header {
+        padding: 6px 12px;
+    }
+    
+    .ad-label {
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
+    
+    .ad-card-content {
+        padding: 12px;
+        min-height: 100px;
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    .ad-card-container {
+        margin: 16px auto;
+        padding: 0 8px;
+    }
+    
+    .ad-card-header {
+        padding: 5px 10px;
+    }
+    
+    .ad-label {
+        font-size: 9px;
+        gap: 4px;
+    }
+    
+    .ad-card-content {
+        padding: 10px;
+        min-height: 80px;
+    }
+}
+
+/* Detail Page Ad Wrapper - Full Width Professional */
+.detail-ad-wrapper {
+    width: 100%;
+    margin: 24px 0;
+    padding: 0;
+}
+
+.detail-ad-wrapper .ad-card {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-lg);
+}
+
+.detail-ad-wrapper .ad-card-content {
+    min-height: 100px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.detail-ad-wrapper .ad-card-content > * {
+    max-width: 100%;
+}
+
+/* Ensure ad iframes and images are responsive */
+.detail-ad-wrapper .ad-card-content iframe,
+.detail-ad-wrapper .ad-card-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .detail-ad-wrapper {
+        margin: 16px 0;
+    }
+    
+    .detail-ad-wrapper .ad-card-content {
+        min-height: 80px;
+        padding: 12px;
     }
 }
 
@@ -3092,4 +3310,15 @@ body {
 @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* External Link in Bottom Nav */
+.mobile-nav-item.external-link {
+    text-decoration: none;
+    color: var(--text-secondary);
+}
+
+.mobile-nav-item.external-link:hover,
+.mobile-nav-item.external-link:focus {
+    color: var(--primary);
 }

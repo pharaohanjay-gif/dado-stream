@@ -2,6 +2,19 @@
 // DADO STREAM - Main Application JavaScript
 // ==========================================================================
 
+// PRODUCTION MODE - Disable all console output for security
+(function() {
+    const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+    if (isProduction) {
+        const noop = function() {};
+        console.log = noop;
+        console.debug = noop;
+        console.info = noop;
+        console.warn = noop;
+        // Keep console.error for critical issues only
+    }
+})();
+
 // Cache version - increment this to invalidate old cache
 const CACHE_VERSION = 'v3.5';
 
@@ -9,7 +22,6 @@ const CACHE_VERSION = 'v3.5';
 (function() {
   const storedVersion = localStorage.getItem('cache_version');
   if (storedVersion !== CACHE_VERSION) {
-    console.log('[CACHE] Version changed, clearing old cache');
     // Clear all API cache from localStorage
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('api_')) localStorage.removeItem(key);

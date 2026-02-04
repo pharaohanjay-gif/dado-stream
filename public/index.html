@@ -6,6 +6,15 @@
     <title>DADO STREAM - Drama China, Anime & Komik</title>
     <meta name="description" content="Platform streaming drama China, anime, dan baca komik terlengkap. Nikmati ribuan konten hiburan berkualitas tinggi.">
     <meta name="theme-color" content="#7d5fff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- Anti-Scraping & Security -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta name="referrer" content="no-referrer">
+    
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/dado.png">
     <link rel="apple-touch-icon" href="/dado.png">
@@ -14,26 +23,43 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/streamable.css">
+    
+    <!-- Anti-DevTools & Anti-Scraping Script -->
+    <script>
+    (function(){
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+        
+        // Disable keyboard shortcuts for DevTools
+        document.addEventListener('keydown', function(e){
+            if(e.key === 'F12' || 
+               (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+               (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Clear console periodically
+        setInterval(function(){ console.clear(); }, 1000);
+        
+        // Detect DevTools
+        var devtools = {open: false};
+        var threshold = 160;
+        setInterval(function(){
+            if(window.outerWidth - window.innerWidth > threshold || 
+               window.outerHeight - window.innerHeight > threshold){
+                if(!devtools.open){
+                    devtools.open = true;
+                    console.clear();
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
+    })();
+    </script>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-content">
-            <div class="splash-logo-container">
-                <div class="splash-ring"></div>
-                <div class="splash-ring splash-ring-2"></div>
-                <img src="/dado.png" alt="DADO" class="splash-logo-img">
-            </div>
-            <h1 class="splash-title">DADO STREAM</h1>
-            <p class="splash-subtitle">
-                Drama • Anime • Komik • <span class="new-category">Donghua (Anime China) <span class="new-badge">NEW</span></span>
-            </p>
-            <div class="splash-loader">
-                <div class="loader-bar"></div>
-            </div>
-        </div>
-    </div>
-
     <!-- Page Transition Overlay -->
     <div id="page-transition" class="page-transition">
         <div class="transition-content">
@@ -46,7 +72,7 @@
     </div>
 
     <!-- Main App -->
-    <div id="app" class="app hidden">
+    <div id="app" class="app">
         <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-container">
@@ -153,8 +179,46 @@
                         <span>Favorit</span>
                     </button>
                 </div>
+                
+                <div class="sidebar-divider"></div>
+                
+                <div class="sidebar-section-title">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>DADO STREAM Bioskop</span>
+                </div>
+                
+                <div class="sidebar-menu external-links">
+                    <a href="https://dado-stream-bioskop.vercel.app/" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Semua Film</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://dado-stream-bioskop.vercel.app/filmindonesia" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-flag"></i>
+                        <span>Film Indonesia</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://dado-stream-bioskop.vercel.app/westerntv" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-globe-americas"></i>
+                        <span>Western TV</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://dado-stream-bioskop.vercel.app/indodub" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-volume-up"></i>
+                        <span>Indo Dub</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                    <a href="https://dado-stream-bioskop.vercel.app/candadewasa" target="_blank" class="sidebar-item external">
+                        <i class="fas fa-laugh-squint"></i>
+                        <span>Canda Dewasa 18+</span>
+                        <i class="fas fa-external-link-alt external-icon"></i>
+                    </a>
+                </div>
             </div>
         </aside>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
 
         <!-- Mobile Search Bar (Hidden by default, shown when search icon clicked) -->
         <div class="mobile-search-overlay hidden" id="mobile-search-overlay">
@@ -190,10 +254,10 @@
                 <i class="fas fa-dragon"></i>
                 <span>Anime</span>
             </button>
-            <button class="mobile-nav-item" data-page="komik" onclick="navigateTo('komik')">
-                <i class="fas fa-book-open"></i>
-                <span>Komik</span>
-            </button>
+            <a href="https://dado-stream-bioskop.vercel.app" target="_blank" class="mobile-nav-item external-link">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Bioskop</span>
+            </a>
             <button class="mobile-nav-item" onclick="openMobileSearch()">
                 <i class="fas fa-search"></i>
                 <span>Cari</span>
@@ -270,9 +334,6 @@
                     </div>
                 </section>
 
-                <!-- Ad Banner - Between Anime & Donghua -->
-                <div class="ad-banner-728" id="ad-home-2"></div>
-
                 <!-- Donghua Section -->
                 <section class="content-section">
                     <div class="section-header">
@@ -292,8 +353,17 @@
                     </div>
                 </section>
 
-                <!-- Ad Banner - Between Donghua & Komik -->
-                <div class="ad-banner-728" id="ad-home-3"></div>
+                <!-- Monetag In-Page Push (Lucky tag) -->
+                <div class="ad-card-container" id="ad-monetag-home">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-home-content">
+                            <!-- Monetag Lucky Tag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Komik Section -->
                 <section class="content-section">
@@ -321,15 +391,25 @@
                     <h1><i class="fas fa-film"></i> Drama China</h1>
                     <p>Koleksi drama China terlengkap dengan subtitle Indonesia</p>
                 </div>
+                
+                <!-- Monetag Banner - Drama Page Top -->
+                <div class="ad-card-container" id="ad-monetag-drama-top">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-drama-top-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="filter-bar">
                     <button class="filter-btn active" data-filter="all">Semua</button>
                     <button class="filter-btn" data-filter="romance">Romance</button>
                     <button class="filter-btn" data-filter="action">Action</button>
                     <button class="filter-btn" data-filter="comedy">Comedy</button>
                 </div>
-                
-                <!-- Ad Banner - Drama Page -->
-                <div class="ad-banner-728" id="ad-drama"></div>
                 
                 <div class="content-grid" id="drama-grid">
                     <div class="skeleton-container grid">
@@ -341,6 +421,19 @@
                         <div class="skeleton-card"></div>
                     </div>
                 </div>
+                
+                <!-- Monetag Banner - Drama Page Bottom -->
+                <div class="ad-card-container" id="ad-monetag-drama-bottom">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">REKOMENDASI</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-drama-bottom-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="load-more-container">
                     <button class="load-more-btn" id="load-more-drama" onclick="loadMoreDrama()">
                         <i class="fas fa-plus"></i> Muat Lebih Banyak
@@ -354,6 +447,19 @@
                     <h1><i class="fas fa-dragon"></i> Anime</h1>
                     <p>Nonton anime subtitle Indonesia terbaru</p>
                 </div>
+                
+                <!-- Monetag Banner - Anime Page Top -->
+                <div class="ad-card-container" id="ad-monetag-anime-top">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-anime-top-content" style="min-height:90px;text-align:center;">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Status Filter -->
                 <div class="filter-bar">
                     <button class="filter-btn active" data-filter="all" onclick="filterAnime('all')">Semua</button>
@@ -387,9 +493,6 @@
                     </div>
                 </div>
                 
-                <!-- Ad Banner - Anime Page -->
-                <div class="ad-banner-728" id="ad-anime"></div>
-                
                 <div class="content-grid" id="anime-grid">
                     <div class="skeleton-container grid">
                         <div class="skeleton-card"></div>
@@ -400,6 +503,19 @@
                         <div class="skeleton-card"></div>
                     </div>
                 </div>
+                
+                <!-- Monetag Banner - Anime Page Bottom -->
+                <div class="ad-card-container" id="ad-monetag-anime-bottom">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">REKOMENDASI</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-anime-bottom-content" style="min-height:90px;text-align:center;">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="load-more-container">
                     <button class="load-more-btn" id="load-more-anime" onclick="loadMoreAnime()">
                         <i class="fas fa-plus"></i> Muat Lebih Banyak
@@ -413,15 +529,25 @@
                     <h1><i class="fas fa-book-open"></i> Komik</h1>
                     <p>Baca manga, manhwa, dan manhua terlengkap</p>
                 </div>
+                
+                <!-- Monetag Banner - Komik Page Top -->
+                <div class="ad-card-container" id="ad-monetag-komik-top">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-komik-top-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="filter-bar">
                     <button class="filter-btn active" data-filter="all">Semua</button>
                     <button class="filter-btn" data-filter="manga">Manga</button>
                     <button class="filter-btn" data-filter="manhwa">Manhwa</button>
                     <button class="filter-btn" data-filter="manhua">Manhua</button>
                 </div>
-                
-                <!-- Ad Banner - Komik Page -->
-                <div class="ad-banner-728" id="ad-komik"></div>
                 
                 <div class="content-grid" id="komik-grid">
                     <div class="skeleton-container grid">
@@ -433,6 +559,19 @@
                         <div class="skeleton-card"></div>
                     </div>
                 </div>
+                
+                <!-- Monetag Banner - Komik Page Bottom -->
+                <div class="ad-card-container" id="ad-monetag-komik-bottom">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">REKOMENDASI</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-komik-bottom-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="load-more-container">
                     <button class="load-more-btn" id="load-more-komik" onclick="loadMoreKomik()">
                         <i class="fas fa-plus"></i> Muat Lebih Banyak
@@ -446,15 +585,25 @@
                     <h1><i class="fas fa-tv"></i> Donghua</h1>
                     <p>Nonton anime China (donghua) subtitle Indonesia terbaru</p>
                 </div>
+                
+                <!-- Monetag Banner - Donghua Page Top -->
+                <div class="ad-card-container" id="ad-monetag-donghua-top">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-donghua-top-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Status Filter -->
                 <div class="filter-bar">
                     <button class="filter-btn active" data-filter="all" onclick="filterDonghua('all')">Semua</button>
                     <button class="filter-btn" data-filter="ongoing" onclick="filterDonghua('ongoing')">Ongoing</button>
                     <button class="filter-btn" data-filter="completed" onclick="filterDonghua('completed')">Completed</button>
                 </div>
-                
-                <!-- Ad Banner - Donghua Page -->
-                <div class="ad-banner-728" id="ad-donghua"></div>
                 
                 <div class="content-grid" id="donghua-grid">
                     <div class="skeleton-container grid">
@@ -466,6 +615,19 @@
                         <div class="skeleton-card"></div>
                     </div>
                 </div>
+                
+                <!-- Monetag Banner - Donghua Page Bottom -->
+                <div class="ad-card-container" id="ad-monetag-donghua-bottom">
+                    <div class="ad-card">
+                        <div class="ad-card-header">
+                            <span class="ad-label">REKOMENDASI</span>
+                        </div>
+                        <div class="ad-card-content" id="monetag-donghua-bottom-content">
+                            <!-- Monetag akan dimuat via global script -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="load-more-container">
                     <button class="load-more-btn" id="load-more-donghua" onclick="loadMoreDonghua()">
                         <i class="fas fa-plus"></i> Muat Lebih Banyak
@@ -549,6 +711,22 @@
     <button class="back-to-top hidden" id="back-to-top" onclick="scrollToTop()">
         <i class="fas fa-chevron-up"></i>
     </button>
+
+    <!-- Bidvertiser Verification Code -->
+    <!-- Bidvertiser2103468 -->
+
+    <!-- ========== ANTI-ADBLOCK SPONSOR SYSTEM ========== -->
+    <!-- Loads Monetag (4 zones) + Adsterra with adblock bypass -->
+    <script src="/js/sponsor.js"></script>
+
+    <!-- Expose reloadPageAds for SPA navigation -->
+    <script>
+    window.reloadPageAds = function() {
+        if (window._sp && window._sp.init) {
+            window._sp.init();
+        }
+    };
+    </script>
 
     <script src="/js/streamable-app.js"></script>
 </body>

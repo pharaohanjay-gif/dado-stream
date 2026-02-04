@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "crons": [
+    {
+      "path": "/api/cron-scrape",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/public/index.html" },
+    { "source": "/api/cron-scrape", "destination": "/api/cron-scrape" },
+    { "source": "/api/:path*", "destination": "/api?path=$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" }
+      ]
+    }
+  ]
+}

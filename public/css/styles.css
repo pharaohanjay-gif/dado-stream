@@ -1085,3 +1085,46 @@ img {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ============================================================================
+   EXTERNAL LINKS STYLES
+   ============================================================================ */
+.sidebar-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-section-title i {
+    font-size: 10px;
+}
+
+.sidebar-menu.external-links .sidebar-item.external {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    position: relative;
+}
+
+.sidebar-item.external .external-icon {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-item.external:hover .external-icon {
+    opacity: 1;
+}
+
+.sidebar-item.external:hover {
+    background: rgba(125, 95, 255, 0.1);
+    color: var(--primary);
+}

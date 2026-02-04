@@ -4,15 +4,75 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as cheerio from 'cheerio';
+import fs from 'fs';
+import path from 'path';
 
 // API endpoints
 const API_BASE = 'https://api.sansekai.my.id/api';
-const ANIME_API = 'https://www.sankavollerei.com/anime/samehadaku';
+const ANIME_API = 'https://api.sansekai.my.id/api/anime'; // NEW: Using Sansekai anime API with working video
 const KOMIK_BASE_URL = 'https://komikindo.ch';
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'dado-stream-secret-key-2024';
 const MONGODB_URI = process.env.MONGODB_URI || '';
+
+// ============ CACHING SYSTEM ============
+// In-memory cache for API responses (survives within single serverless instance)
+interface CacheEntry {
+    data: any;
+    timestamp: number;
+    ttl: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+const CACHE_TTL = {
+    LIST: 5 * 60 * 1000,      // 5 minutes for lists
+    DETAIL: 30 * 60 * 1000,   // 30 minutes for detail
+    VIDEO: 10 * 60 * 1000,    // 10 minutes for video URLs
+    EPISODES: 15 * 60 * 1000  // 15 minutes for episode lists
+};
+
+function getCached(key: string): any | null {
+    const entry = apiCache.get(key);
+    if (entry && (Date.now() - entry.timestamp) < entry.ttl) {
+        console.log(`[Cache] Hit: ${key}`);
+        return entry.data;
+    }
+    return null;
+}
+
+function setCache(key: string, data: any, ttl: number): void {
+    apiCache.set(key, { data, timestamp: Date.now(), ttl });
+    // Clean old entries if cache gets too big
+    if (apiCache.size > 500) {
+        const now = Date.now();
+        for (const [k, v] of apiCache) {
+            if (now - v.timestamp > v.ttl) {
+                apiCache.delete(k);
+            }
+        }
+    }
+}
+
+// ============ RETRY HELPER ============
+async function fetchWithRetry(url: string, config: any = {}, retries = 3, delay = 1000): Promise<any> {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await axios.get(url, {
+                timeout: 15000,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                ...config
+            });
+            return response;
+        } catch (error: any) {
+            console.log(`[Retry] Attempt ${i + 1}/${retries} failed for ${url}: ${error.message}`);
+            if (i < retries - 1) {
+                await new Promise(r => setTimeout(r, delay * (i + 1)));
+            } else {
+                throw error;
+            }
+        }
+    }
+}
 
 // Jikan API Cache (server-side to avoid rate limiting)
 interface JikanCacheEntry {
@@ -230,8 +290,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return await handleAnalytics(pathStr.replace('analytics/', ''), req, res);
         } else if (pathStr.startsWith('dramabox/')) {
             return await handleDramabox(pathStr.replace('dramabox/', ''), req, res);
+        } else if (pathStr === 'videos' || pathStr.startsWith('videos/')) {
+            const actionStr = (action as string) || pathStr.replace('videos/', '') || '';
+            return await handleVideos(actionStr, req, res);
+        } else if (pathStr === 'proxy') {
+            // Support /api?path=proxy&url=... convenience endpoint
+            return await handleProxyDirect(req, res);
         } else if (pathStr.startsWith('proxy/')) {
             return await handleProxy(pathStr.replace('proxy/', ''), req, res);
+        } else if (pathStr.startsWith('assets/') || pathStr.startsWith('lib/')) {
+            // Anti-adblock: Serve ad scripts as first-party assets
+            return await handleAdAssets(pathStr, req, res);
         }
 
         return res.status(404).json({ error: 'Not found', path: pathStr });
@@ -884,8 +953,6 @@ async function handleAnalytics(action: string, req: VercelRequest, res: VercelRe
 
 // Drama handler (using dramabox API)
 async function handleDrama(action: string, req: VercelRequest, res: VercelResponse) {
-    const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
-
     try {
         // Debug endpoint to verify deployment
         if (action === 'test') {
@@ -894,7 +961,15 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
         
         if (action === 'latest' || action === 'trending' || action === 'vip' || action === 'foryou' || !action) {
             const endpoint = action || 'latest';
-            const response = await axios.get(`${API_BASE}/dramabox/${endpoint}`, config);
+            
+            // Check cache first
+            const cacheKey = `drama_${endpoint}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${API_BASE}/dramabox/${endpoint}`);
             // Handle various response formats from dramabox API
             const results = response.data?.value || response.data?.data || (Array.isArray(response.data) ? response.data : []);
             
@@ -914,14 +989,23 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 type: 'Drama'
             }));
             
+            // Cache the result
+            setCache(cacheKey, items, CACHE_TTL.LIST);
+            
             return res.json({ status: true, data: items });
         }
 
         if (action === 'search') {
             const keyword = req.query.keyword || req.query.q || req.query.query;
             if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
-            const response = await axios.get(`${API_BASE}/dramabox/search`, {
-                ...config,
+            
+            const cacheKey = `drama_search_${keyword}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${API_BASE}/dramabox/search`, {
                 params: { query: keyword }
             });
             const results = response.data?.value || response.data?.data || (Array.isArray(response.data) ? response.data : []);
@@ -936,14 +1020,22 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 totalEpisode: item.chapterCount || item.total_episode || item.totalEpisode || 0,
                 type: 'Drama'
             }));
+            
+            setCache(cacheKey, items, CACHE_TTL.LIST);
             return res.json({ status: true, data: items });
         }
 
         if (action === 'detail') {
             const { bookId } = req.query;
             if (!bookId) return res.status(400).json({ status: false, error: 'bookId required' });
-            const response = await axios.get(`${API_BASE}/dramabox/detail`, {
-                ...config,
+            
+            const cacheKey = `drama_detail_${bookId}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${API_BASE}/dramabox/detail`, {
                 params: { bookId }
             });
             // API returns data directly at root level (not in .data)
@@ -964,17 +1056,27 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 rating: raw.rating || '8.5',
                 type: 'Drama'
             };
+            
+            setCache(cacheKey, result, CACHE_TTL.DETAIL);
             return res.json({ status: true, data: result });
         }
 
         if (action === 'allepisode') {
             const { bookId } = req.query;
             if (!bookId) return res.status(400).json({ status: false, error: 'bookId required' });
-            const response = await axios.get(`${API_BASE}/dramabox/allepisode`, {
-                ...config,
+            
+            const cacheKey = `drama_episodes_${bookId}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${API_BASE}/dramabox/allepisode`, {
                 params: { bookId }
             });
             const results = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            
+            setCache(cacheKey, results, CACHE_TTL.EPISODES);
             return res.json({ status: true, data: results });
         }
 
@@ -988,9 +1090,15 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                 return res.status(400).json({ status: false, error: 'bookId required for video' });
             }
             
+            // Check video cache
+            const cacheKey = `drama_video_${bookId}_${episodeId}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
             try {
-                const response = await axios.get(`${API_BASE}/dramabox/allepisode`, {
-                    ...config,
+                const response = await fetchWithRetry(`${API_BASE}/dramabox/allepisode`, {
                     params: { bookId }
                 });
                 const episodes = Array.isArray(response.data) ? response.data : (response.data?.data || []);
@@ -1034,17 +1142,19 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
                     return res.status(404).json({ status: false, error: 'Video URL not found' });
                 }
                 
-                return res.json({ 
-                    status: true, 
-                    data: {
-                        video: videoUrl,
-                        url: videoUrl,
-                        playUrl: videoUrl,
-                        servers: servers,
-                        episode: episode.chapterName,
-                        thumbnail: episode.chapterImg
-                    }
-                });
+                const result = {
+                    video: videoUrl,
+                    url: videoUrl,
+                    playUrl: videoUrl,
+                    servers: servers,
+                    episode: episode.chapterName,
+                    thumbnail: episode.chapterImg
+                };
+                
+                // Cache the video URL
+                setCache(cacheKey, result, CACHE_TTL.VIDEO);
+                
+                return res.json({ status: true, data: result });
             } catch (error: any) {
                 console.error('[Drama Video Error]:', error.message);
                 return res.status(500).json({ status: false, error: 'Failed to fetch video', details: error.message });
@@ -1058,132 +1168,186 @@ async function handleDrama(action: string, req: VercelRequest, res: VercelRespon
     }
 }
 
-// Anime handler (new format)
+// Anime handler (NEW - Using Sansekai API with working video streams)
 async function handleAnimeNew(action: string, req: VercelRequest, res: VercelResponse) {
-    const config = { timeout: 20000, headers: { 'User-Agent': 'Mozilla/5.0' } };
-
     try {
-        if (action === 'latest' || !action) {
+        // ONGOING anime - uses /anime/latest endpoint (latest updates = ongoing)
+        if (action === 'ongoing') {
+            const cacheKey = 'anime_ongoing';
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${ANIME_API}/latest`);
+            let animeList = response.data || [];
+            
+            // Parse if string
+            if (typeof animeList === 'string') {
+                try { animeList = JSON.parse(animeList); } catch(e) { animeList = []; }
+            }
+            
+            const items = animeList.map((item: any) => ({
+                urlId: item.url,
+                id: item.url,
+                title: item.judul,
+                judul: item.judul,
+                image: item.cover,
+                thumbnail_url: item.cover,
+                episode: item.lastch || 'Latest',
+                status: 'Ongoing',
+                type: 'Anime'
+            }));
+            
+            setCache(cacheKey, items, CACHE_TTL.LIST);
+            return res.json({ status: true, data: items });
+        }
+
+        // COMPLETED anime - uses /anime/recommended with status filter
+        if (action === 'completed') {
             const page = req.query.page || '1';
-            const response = await axios.get(`${ANIME_API}/recent`, {
-                ...config,
+            const cacheKey = `anime_completed_${page}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${ANIME_API}/recommended`, {
                 params: { page }
             });
+            let animeList = response.data || [];
             
-            const animeList = response.data?.data?.animeList || [];
+            // Parse if string
+            if (typeof animeList === 'string') {
+                try { animeList = JSON.parse(animeList); } catch(e) { animeList = []; }
+            }
+            
+            // Filter only completed anime
+            const completedList = animeList.filter((item: any) => 
+                item.status?.toLowerCase() === 'completed' || 
+                item.status?.toLowerCase() === 'complete' ||
+                item.status?.toLowerCase() === 'tamat'
+            );
+            
+            const items = completedList.map((item: any) => ({
+                urlId: item.url,
+                id: item.url || item.id,
+                title: item.judul,
+                judul: item.judul,
+                image: item.cover,
+                thumbnail_url: item.cover,
+                episode: item.total_episode ? `${item.total_episode} Ep` : '',
+                score: item.score,
+                status: 'Completed',
+                type: 'Anime'
+            }));
+            
+            setCache(cacheKey, items, CACHE_TTL.LIST);
+            return res.json({ status: true, data: items });
+        }
+
+        // Latest anime - uses /anime/latest endpoint
+        if (action === 'latest' || !action) {
+            const cacheKey = 'anime_latest';
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
+            const response = await fetchWithRetry(`${ANIME_API}/latest`);
+            let animeList = response.data || [];
+            
+            // Parse if string
+            if (typeof animeList === 'string') {
+                try { animeList = JSON.parse(animeList); } catch(e) { animeList = []; }
+            }
+            
             const items = animeList.map((item: any) => ({
-                urlId: item.animeId,
-                id: item.animeId,
-                title: item.title,
-                judul: item.title,
-                image: item.poster,
-                thumbnail_url: item.poster,
-                episode: item.episodes || 'Latest',
-                releaseDate: item.releasedOn,
+                urlId: item.url,
+                id: item.url,
+                title: item.judul,
+                judul: item.judul,
+                image: item.cover,
+                thumbnail_url: item.cover,
+                episode: item.lastch || 'Latest',
                 type: 'Anime'
             }));
             
             return res.json({ status: true, data: items });
         }
 
+        // Popular/Trending anime - uses /anime/recommended endpoint
         if (action === 'trending' || action === 'popular') {
             const page = req.query.page || '1';
-            const response = await axios.get(`${ANIME_API}/popular`, {
-                ...config,
+            const response = await fetchWithRetry(`${ANIME_API}/recommended`, {
                 params: { page }
             });
+            // API returns array directly
+            let animeList = response.data || [];
             
-            const animeList = response.data?.data?.animeList || [];
+            // Parse if string
+            if (typeof animeList === 'string') {
+                try { animeList = JSON.parse(animeList); } catch(e) { animeList = []; }
+            }
+            
+            // Ensure it's an array
+            if (!Array.isArray(animeList)) {
+                animeList = [];
+            }
+            
             const items = animeList.map((item: any) => ({
-                urlId: item.animeId,
-                id: item.animeId,
-                title: item.title,
-                judul: item.title,
-                image: item.poster,
-                thumbnail_url: item.poster,
-                episode: item.episodes,
+                urlId: item.url,
+                id: item.url || item.id,
+                title: item.judul,
+                judul: item.judul,
+                image: item.cover,
+                thumbnail_url: item.cover,
+                episode: item.total_episode ? `${item.total_episode} Ep` : '',
+                score: item.score,
+                status: item.status,
                 type: 'Anime'
             }));
             
             return res.json({ status: true, data: items });
         }
 
+        // Search anime - uses /anime/search endpoint
         if (action === 'search') {
             const keyword = req.query.keyword || req.query.q;
             if (!keyword) return res.status(400).json({ status: false, error: 'Keyword required' });
             
             try {
-                const response = await axios.get(`${ANIME_API}/search`, {
-                    ...config,
-                    params: { q: keyword }
+                const response = await fetchWithRetry(`${ANIME_API}/search`, {
+                    params: { query: keyword }
                 });
                 
-                const animeList = response.data?.data?.animeList || [];
+                // Response format: data[0].result[] array
+                const searchData = response.data?.data?.[0] || {};
+                const animeList = searchData.result || [];
+                
                 const items = animeList.map((item: any) => ({
-                    urlId: item.animeId,
-                    id: item.animeId,
-                    title: item.title,
-                    judul: item.title,
-                    image: item.poster,
-                    thumbnail_url: item.poster,
+                    urlId: item.url,
+                    id: item.url || item.id,
+                    title: item.judul,
+                    judul: item.judul,
+                    image: item.cover,
+                    thumbnail_url: item.cover,
+                    episode: item.total_episode ? `${item.total_episode} Ep` : '',
+                    score: item.score,
+                    status: item.status,
+                    genre: item.genre,
                     type: 'Anime'
                 }));
                 
                 return res.json({ status: true, data: items });
             } catch (searchError: any) {
                 console.error('[Anime Search Error]:', searchError.message);
-                return res.json({ status: true, data: [] }); // Return empty array instead of error
+                return res.json({ status: true, data: [] });
             }
-        }
-
-        // New endpoints for filtering
-        if (action === 'ongoing') {
-            const page = req.query.page || '1';
-            const response = await axios.get(`${ANIME_API}/ongoing`, {
-                ...config,
-                params: { page }
-            });
-            
-            const animeList = response.data?.data?.animeList || [];
-            const items = animeList.map((item: any) => ({
-                urlId: item.animeId,
-                id: item.animeId,
-                title: item.title,
-                judul: item.title,
-                image: item.poster,
-                thumbnail_url: item.poster,
-                episode: item.episodes,
-                type: 'Anime'
-            }));
-            
-            return res.json({ status: true, data: items });
-        }
-
-        if (action === 'completed') {
-            const page = req.query.page || '1';
-            const response = await axios.get(`${ANIME_API}/completed`, {
-                ...config,
-                params: { page }
-            });
-            
-            const animeList = response.data?.data?.animeList || [];
-            const items = animeList.map((item: any) => ({
-                urlId: item.animeId,
-                id: item.animeId,
-                title: item.title,
-                judul: item.title,
-                image: item.poster,
-                thumbnail_url: item.poster,
-                episode: item.episodes,
-                type: 'Anime'
-            }));
-            
-            return res.json({ status: true, data: items });
         }
 
         // Genre list endpoint
         if (action === 'genres') {
-            // Return a predefined list of common anime genres
             const genres = [
                 { id: 'action', name: 'Action', slug: 'action' },
                 { id: 'adventure', name: 'Adventure', slug: 'adventure' },
@@ -1210,29 +1374,27 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             return res.json({ status: true, data: genres });
         }
 
-        // Genre filter endpoint - search by genre keyword
+        // Genre filter - search by genre keyword
         if (action === 'genre') {
             const genre = req.query.genre || req.query.g;
-            const page = req.query.page || '1';
-            
             if (!genre) return res.status(400).json({ status: false, error: 'Genre parameter required' });
             
             try {
-                // Use search API with genre as keyword
-                const response = await axios.get(`${ANIME_API}/search`, {
-                    ...config,
-                    params: { q: genre }
+                const response = await fetchWithRetry(`${ANIME_API}/search`, {
+                    params: { query: genre }
                 });
                 
-                const animeList = response.data?.data?.animeList || [];
+                const searchData = response.data?.data?.[0] || {};
+                const animeList = searchData.result || [];
+                
                 const items = animeList.map((item: any) => ({
-                    urlId: item.animeId,
-                    id: item.animeId,
-                    title: item.title,
-                    judul: item.title,
-                    image: item.poster,
-                    thumbnail_url: item.poster,
-                    episode: item.episodes,
+                    urlId: item.url,
+                    id: item.url || item.id,
+                    title: item.judul,
+                    judul: item.judul,
+                    image: item.cover,
+                    thumbnail_url: item.cover,
+                    episode: item.total_episode ? `${item.total_episode} Ep` : '',
                     type: 'Anime'
                 }));
                 
@@ -1243,141 +1405,176 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             }
         }
 
+        // Movie list - uses search with "movie" keyword as fallback
         if (action === 'movie') {
-            const page = req.query.page || '1';
-            // Use search with "movie" keyword as fallback
             try {
-                const response = await axios.get(`${ANIME_API}/search`, {
-                    ...config,
-                    params: { q: 'movie' }
+                // Use search endpoint as movie API has parsing issues
+                const response = await fetchWithRetry(`${ANIME_API}/search`, {
+                    params: { query: 'movie' }
                 });
                 
-                const animeList = response.data?.data?.animeList || [];
-                const items = animeList.map((item: any) => ({
-                    urlId: item.animeId,
-                    id: item.animeId,
-                    title: item.title,
-                    judul: item.title,
-                    image: item.poster,
-                    thumbnail_url: item.poster,
-                    type: 'Anime'
+                const searchData = response.data?.data?.[0] || {};
+                const movieList = searchData.result || [];
+                
+                const items = movieList.map((item: any) => ({
+                    urlId: item.url,
+                    id: item.url || item.id,
+                    title: item.judul,
+                    judul: item.judul,
+                    image: item.cover,
+                    thumbnail_url: item.cover,
+                    episode: item.total_episode ? `${item.total_episode} Ep` : 'Movie',
+                    type: 'Anime',
+                    status: 'Movie'
                 }));
                 
                 return res.json({ status: true, data: items });
-            } catch {
+            } catch (e: any) {
+                console.error('[Anime Movie Error]:', e.message);
                 return res.json({ status: true, data: [] });
             }
         }
 
+        // Anime detail - uses /anime/detail?urlId=xxx endpoint
         if (action === 'detail') {
-            // Accept both urlId and id parameter for flexibility
             const urlId = req.query.urlId || req.query.id;
             if (!urlId) return res.status(400).json({ status: false, error: 'urlId or id required' });
             
-            // Correct endpoint format: /anime/{animeId} not /detail/{animeId}
-            const response = await axios.get(`${ANIME_API}/anime/${urlId}`, config);
-            const data = response.data?.data || response.data;
+            // Check cache first
+            const cacheKey = `anime_detail_${urlId}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
             
-            // Get episode list
-            const episodes = data?.episodeList || [];
-            
-            return res.json({ 
-                status: true, 
-                data: {
-                    ...data,
-                    urlId,
-                    episodes: episodes.map((ep: any) => ({
-                        id: ep.episodeId,
-                        episodeId: ep.episodeId,
-                        episode: ep.title || ep.episode,
-                        title: ep.title
-                    }))
-                }
+            const response = await fetchWithRetry(`${ANIME_API}/detail`, {
+                params: { urlId }
             });
+            
+            // Response format: data[0] contains anime info
+            const rawData = response.data?.data?.[0] || response.data;
+            
+            // Map chapters to episodes format for frontend
+            const episodes = (rawData.chapter || []).map((ch: any) => ({
+                id: ch.url,
+                episodeId: ch.url,
+                episode: ch.ch,
+                title: `Episode ${ch.ch}`,
+                date: ch.date
+            }));
+            
+            const result = {
+                id: rawData.id,
+                urlId: rawData.series_id || urlId,
+                title: rawData.judul,
+                judul: rawData.judul,
+                image: rawData.cover,
+                cover: rawData.cover,
+                thumbnail_url: rawData.cover,
+                type: rawData.type,
+                status: rawData.status,
+                rating: rawData.rating,
+                score: rawData.rating,
+                synopsis: rawData.sinopsis,
+                description: rawData.sinopsis,
+                genre: rawData.genre,
+                studio: rawData.author,
+                published: rawData.published,
+                episodes
+            };
+            
+            setCache(cacheKey, result, CACHE_TTL.DETAIL);
+            return res.json({ status: true, data: result });
         }
 
+        // Get video - uses /anime/getvideo?chapterUrlId=xxx endpoint
         if (action === 'getvideo') {
-            const { episodeId } = req.query;
+            const episodeId = req.query.episodeId || req.query.chapterUrlId;
             if (!episodeId) return res.status(400).json({ status: false, error: 'episodeId required' });
             
+            // Check cache first
+            const cacheKey = `anime_video_${episodeId}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached });
+            }
+            
             try {
-                // Correct endpoint format: /episode/{episodeId} not /watch/{episodeId}
-                const response = await axios.get(`${ANIME_API}/episode/${episodeId}`, config);
-                const data = response.data?.data || response.data;
+                const reso = req.query.reso || '720p';
+                // Use retry for reliability
+                const response = await fetchWithRetry(`${ANIME_API}/getvideo`, {
+                    params: { chapterUrlId: episodeId, reso }
+                });
                 
-                // Extract video URL from defaultStreamingUrl or server list
-                let videoUrl = data?.defaultStreamingUrl;
+                const videoData = response.data?.data?.[0] || response.data;
+                
+                // Extract stream URLs - API returns stream[] array with different resolutions
+                const streams = videoData.stream || [];
+                let videoUrl = '';
                 let servers: any[] = [];
                 
-                // Extract server list
-                if (data?.server?.qualities) {
-                    data.server.qualities.forEach((q: any) => {
-                        if (q.serverList && q.serverList.length > 0) {
-                            q.serverList.forEach((s: any) => {
-                                servers.push({
-                                    name: s.title,
-                                    quality: q.title,
-                                    serverId: s.serverId,
-                                    href: s.href
-                                });
-                            });
-                        }
-                    });
+                // Priority: Direct MP4 (most reliable) > Pixeldrain > HLS (often 404)
+                const mp4Stream = streams.find((s: any) => 
+                    s.link?.includes('.mp4') && 
+                    !s.link?.includes('pixeldrain') &&
+                    s.link?.includes('storage.animekita.org')
+                );
+                const pixeldrainStream = streams.find((s: any) => s.link?.includes('pixeldrain'));
+                const hlsStream = streams.find((s: any) => s.link?.includes('.m3u8'));
+                const anyMp4 = streams.find((s: any) => s.link?.includes('.mp4'));
+                
+                // Prioritize MP4 over HLS for reliability
+                if (mp4Stream) {
+                    videoUrl = mp4Stream.link;
+                } else if (anyMp4) {
+                    videoUrl = anyMp4.link;
+                } else if (pixeldrainStream) {
+                    videoUrl = pixeldrainStream.link;
+                } else if (hlsStream) {
+                    videoUrl = hlsStream.link;
+                } else if (streams.length > 0) {
+                    videoUrl = streams[0].link;
                 }
                 
-                // Check if defaultStreamingUrl is valid
-                const isValidUrl = videoUrl && 
-                    !videoUrl.includes('No iframe') && 
-                    !videoUrl.includes('not found') &&
-                    (videoUrl.startsWith('http') || videoUrl.startsWith('//'));
+                // Build servers list for quality selection (MP4 first)
+                const sortedStreams = [
+                    ...streams.filter((s: any) => s.link?.includes('.mp4') && !s.link?.includes('pixeldrain')),
+                    ...streams.filter((s: any) => s.link?.includes('pixeldrain')),
+                    ...streams.filter((s: any) => s.link?.includes('.m3u8'))
+                ];
                 
-                // If default URL is not valid, try to get from first server
-                if (!isValidUrl && servers.length > 0) {
-                    console.log('[Anime Video] Default URL invalid, trying first server...');
-                    try {
-                        const firstServer = servers[0];
-                        const serverResponse = await axios.get(`${ANIME_API}/server/${firstServer.serverId}`, config);
-                        const serverData = serverResponse.data?.data || serverResponse.data;
-                        const serverUrl = serverData?.url || serverData?.video || serverData?.stream;
-                        
-                        if (serverUrl && serverUrl.startsWith('http')) {
-                            videoUrl = serverUrl;
-                            console.log('[Anime Video] Got URL from first server:', videoUrl?.substring(0, 50));
-                        }
-                    } catch (serverErr) {
-                        console.error('[Anime Video] Failed to get from first server');
-                    }
+                servers = sortedStreams.map((s: any) => ({
+                    name: s.reso || 'Default',
+                    quality: s.reso,
+                    url: s.link,
+                    provider: s.provide,
+                    type: s.link?.includes('.m3u8') ? 'hls' : 'mp4'
+                }));
+                
+                // Determine video type for frontend player
+                let videoType = 'mp4';
+                if (videoUrl.includes('.m3u8')) {
+                    videoType = 'hls';
+                } else if (videoUrl.includes('pixeldrain')) {
+                    videoType = 'direct';
                 }
                 
-                // If still no valid URL, try more servers
-                if ((!videoUrl || !videoUrl.startsWith('http')) && servers.length > 1) {
-                    for (let i = 1; i < Math.min(servers.length, 5); i++) {
-                        try {
-                            const server = servers[i];
-                            const serverResponse = await axios.get(`${ANIME_API}/server/${server.serverId}`, config);
-                            const serverData = serverResponse.data?.data || serverResponse.data;
-                            const serverUrl = serverData?.url || serverData?.video || serverData?.stream;
-                            
-                            if (serverUrl && serverUrl.startsWith('http')) {
-                                videoUrl = serverUrl;
-                                console.log('[Anime Video] Got URL from server', i, ':', videoUrl?.substring(0, 50));
-                                break;
-                            }
-                        } catch {
-                            continue;
-                        }
-                    }
+                const result = {
+                    video: videoUrl,
+                    url: videoUrl,
+                    videoType,
+                    resolutions: videoData.reso || [],
+                    servers,
+                    likeCount: videoData.likeCount,
+                    dislikeCount: videoData.dislikeCount
+                };
+                
+                // Cache the result
+                if (videoUrl) {
+                    setCache(cacheKey, result, CACHE_TTL.VIDEO);
                 }
                 
-                return res.json({ 
-                    status: true, 
-                    data: {
-                        ...data,
-                        video: videoUrl,
-                        url: videoUrl,
-                        servers
-                    }
-                });
+                return res.json({ status: true, data: result });
             } catch (error: any) {
                 console.error('[Anime getvideo Error]:', error.message);
                 return res.status(500).json({ 
@@ -1388,22 +1585,29 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             }
         }
 
-        // Get video from specific server
+        // Get video from specific server/quality
         if (action === 'getserver') {
-            const { serverId } = req.query;
-            if (!serverId) return res.status(400).json({ status: false, error: 'serverId required' });
+            const { serverId, reso, chapterUrlId } = req.query;
+            if (!chapterUrlId) return res.status(400).json({ status: false, error: 'chapterUrlId required' });
             
             try {
-                const response = await axios.get(`${ANIME_API}/server/${serverId}`, config);
-                const data = response.data?.data || response.data;
-                const videoUrl = data?.url || data?.video || data?.stream;
+                const response = await fetchWithRetry(`${ANIME_API}/getvideo`, {
+                    params: { chapterUrlId, reso: reso || '720p' }
+                });
+                
+                const videoData = response.data?.data?.[0] || response.data;
+                const streams = videoData.stream || [];
+                
+                // Find requested quality or first available
+                const requestedStream = streams.find((s: any) => s.reso === reso) || streams[0];
+                const videoUrl = requestedStream?.link || '';
                 
                 return res.json({
                     status: true,
                     data: {
                         url: videoUrl,
                         video: videoUrl,
-                        raw: data
+                        quality: requestedStream?.reso
                     }
                 });
             } catch (err: any) {
@@ -1412,21 +1616,16 @@ async function handleAnimeNew(action: string, req: VercelRequest, res: VercelRes
             }
         }
 
-        // Jikan API cover lookup - get high quality cover by anime title (with caching)
+        // Jikan API cover lookup (keep existing functionality)
         if (action === 'jikan-cover') {
             const { title } = req.query;
             if (!title) return res.status(400).json({ status: false, error: 'Title required' });
             
             try {
                 const result = await getJikanCoverWithCache(title as string);
-                
                 if (result) {
-                    return res.json({
-                        status: true,
-                        data: result
-                    });
+                    return res.json({ status: true, data: result });
                 }
-                
                 return res.json({ status: false, error: 'Anime not found on Jikan' });
             } catch (jikanError: any) {
                 console.error('[Jikan API Error]:', jikanError.message);
@@ -1481,6 +1680,14 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
         // Latest/Popular komik
         if (action === 'popular' || action === 'latest' || !action) {
             const page = req.query.page || '1';
+            
+            // Check cache first
+            const cacheKey = `komik_popular_${page}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ status: true, data: cached, cached: true });
+            }
+            
             const url = `${KOMIK_BASE_URL}/komik-terbaru/page/${page}`;
             
             const response = await axios.get(url, config);
@@ -1563,9 +1770,12 @@ async function handleKomikNew(action: string, req: VercelRequest, res: VercelRes
                 ? parseInt($(pagination[pagination.length - 2]).text().trim()) || 1 
                 : 1;
             
+            const resultData = results.length > 0 ? results : komikPopuler;
+            setCache(cacheKey, resultData, CACHE_TTL.LIST);
+            
             return res.json({ 
                 status: true, 
-                data: results.length > 0 ? results : komikPopuler,
+                data: resultData,
                 komik_populer: komikPopuler,
                 total_halaman: totalPages
             });
@@ -1791,6 +2001,14 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
         // GET /api/donghua/ongoing - Get ongoing donghua series
         if (action === 'ongoing') {
             const page = parseInt(req.query.page as string) || 1;
+            
+            // Check cache first
+            const cacheKey = `donghua_ongoing_${page}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ success: true, data: cached, page, source: 'anichin', cached: true });
+            }
+            
             const result = await donghuaScraper.ongoing(page);
             
             if (!result.success) {
@@ -1801,9 +2019,12 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
                 });
             }
             
+            const data = result.data.lists || [];
+            setCache(cacheKey, data, CACHE_TTL.LIST);
+            
             return res.json({
                 success: true,
-                data: result.data.lists || [],
+                data,
                 page,
                 source: 'anichin'
             });
@@ -1886,6 +2107,13 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
                 return res.status(400).json({ success: false, error: 'Slug parameter is required' });
             }
             
+            // Check cache first
+            const cacheKey = `donghua_detail_${slug}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ success: true, data: cached, source: 'anichin', cached: true });
+            }
+            
             const result = await donghuaScraper.series(slug);
             
             if (!result.success) {
@@ -1896,9 +2124,12 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
                 });
             }
             
+            const detail = result.data.detail;
+            setCache(cacheKey, detail, CACHE_TTL.DETAIL);
+            
             return res.json({
                 success: true,
-                data: result.data.detail,
+                data: detail,
                 source: 'anichin'
             });
         }
@@ -1910,6 +2141,13 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
             
             if (!slug || !episode) {
                 return res.status(400).json({ success: false, error: 'Slug and episode parameters are required' });
+            }
+            
+            // Check cache first
+            const cacheKey = `donghua_watch_${slug}_${episode}`;
+            const cached = getCached(cacheKey);
+            if (cached) {
+                return res.json({ success: true, data: cached, source: 'anichin', cached: true });
             }
             
             const result = await donghuaScraper.watch(slug, episode);
@@ -1939,6 +2177,9 @@ async function handleDonghua(action: string, req: VercelRequest, res: VercelResp
                     }
                 });
             }
+            
+            // Cache the result
+            setCache(cacheKey, watch, CACHE_TTL.VIDEO);
             
             return res.json({
                 success: true,
@@ -2314,127 +2555,11 @@ async function handleAnime(action: string, req: VercelRequest, res: VercelRespon
     return res.status(404).json({ error: 'Unknown anime action' });
 }
 
-// Komik handlers
+// Legacy Komik handlers - Not used (using handleKomikNew instead)
+// Keeping stub for backwards compatibility if needed
 async function handleKomik(action: string, req: VercelRequest, res: VercelResponse) {
-    const config = { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } };
-
-    if (action === 'recommended' || action === 'popular') {
-        try {
-            const response = await axios.get(`${KOMIK_API}/popular`, {
-                ...config,
-                params: { provider: KOMIK_PROVIDER }
-            });
-            return res.json(response.data?.data || []);
-        } catch (error: any) {
-            console.error('[Komik Popular Error]:', error.message);
-            return res.status(500).json({ error: 'Failed to fetch popular komik' });
-        }
-    }
-
-    if (action === 'search') {
-        try {
-            const q = req.query.q || req.query.query || req.query.keyword;
-            if (!q) return res.status(400).json({ error: 'Query required' });
-            const response = await axios.get(`${KOMIK_API}/search`, {
-                ...config,
-                params: { keyword: q, provider: KOMIK_PROVIDER }
-            });
-            return res.json(response.data?.data || []);
-        } catch (error: any) {
-            console.error('[Komik Search Error]:', error.message);
-            return res.status(500).json({ error: 'Failed to search komik' });
-        }
-    }
-
-    if (action === 'detail') {
-        try {
-            const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
-            if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
-            
-            const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
-                ...config,
-                params: { provider: KOMIK_PROVIDER }
-            });
-            
-            const raw = response.data?.data;
-            if (!raw) {
-                return res.status(404).json({ error: 'Komik not found' });
-            }
-            
-            // Map to detail format like server.ts
-            const detail = {
-                title: raw.title,
-                judul: raw.title,
-                description: raw.description,
-                synopsis: raw.description,
-                status: raw.status,
-                author: raw.author,
-                rating: raw.rating,
-                cover: raw.thumbnail,
-                thumbnail: raw.thumbnail,
-                genres: (raw.genre || []).map((g: any) => typeof g === 'string' ? g : g.title)
-            };
-            
-            return res.json({ success: true, data: detail });
-        } catch (error: any) {
-            console.error('[Komik Detail Error]:', error.message);
-            return res.status(500).json({ error: 'Failed to fetch komik detail' });
-        }
-    }
-
-    if (action === 'chapterlist') {
-        try {
-            const mangaId = req.query.manga_id || req.query.mangaId || req.query.id;
-            if (!mangaId) return res.status(400).json({ error: 'manga_id required' });
-            
-            const response = await axios.get(`${KOMIK_API}/detail/${mangaId}`, {
-                ...config,
-                params: { provider: KOMIK_PROVIDER }
-            });
-            
-            const chapters = (response.data?.data?.chapter || []).map((ch: any) => ({
-                chapter_id: ch.href?.split('/').pop() || ch.id,
-                title: ch.title,
-                chapter_number: ch.number || ch.title,
-                date: ch.date
-            }));
-            
-            return res.json({ success: true, chapters });
-        } catch (error: any) {
-            console.error('[Komik Chapterlist Error]:', error.message);
-            return res.json({ success: false, chapters: [] });
-        }
-    }
-
-    if (action === 'getimage') {
-        try {
-            const chapterId = req.query.chapter_id || req.query.chapterId || req.query.id;
-            if (!chapterId) return res.status(400).json({ error: 'chapter_id required' });
-            
-            // Try /read/ endpoint first (like server.ts), then /chapter/
-            let response;
-            try {
-                response = await axios.get(`${KOMIK_API}/read/${chapterId}`, {
-                    ...config,
-                    params: { provider: KOMIK_PROVIDER }
-                });
-            } catch {
-                response = await axios.get(`${KOMIK_API}/chapter/${chapterId}`, {
-                    ...config,
-                    params: { provider: KOMIK_PROVIDER }
-                });
-            }
-            
-            // Handle different response formats
-            const panels = response.data?.data?.[0]?.panel || response.data?.data || [];
-            return res.json({ success: true, images: panels });
-        } catch (error: any) {
-            console.error('[Komik Getimage Error]:', error.message);
-            return res.status(500).json({ error: 'Failed to fetch chapter images' });
-        }
-    }
-
-    return res.status(404).json({ error: 'Unknown komik action' });
+    // Redirect to new handler
+    return await handleKomikNew(action, req, res);
 }
 
 // Proxy handler
@@ -2451,12 +2576,29 @@ async function handleProxy(action: string, req: VercelRequest, res: VercelRespon
             try {
                 referer = new URL(url).origin;
             } catch {
-                referer = 'https://shinigami.id';
+                referer = 'https://otakudesu.best';
             }
             
-            // Special handling for shinigami/shngm images
+            // Special handling for various domains
             if (url.includes('shngm.id') || url.includes('shinigami')) {
                 referer = 'https://shinigami.id';
+            } else if (url.includes('otakudesu')) {
+                referer = 'https://otakudesu.best';
+            } else if (url.includes('animekita')) {
+                referer = 'https://animekita.org';
+            } else if (url.includes('myanimelist')) {
+                referer = 'https://myanimelist.net';
+            } else if (url.includes('komikindo')) {
+                referer = 'https://komikindo.ch';
+            } else if (url.includes('wp.com')) {
+                // WordPress CDN - needs original site as referer
+                // Extract the original domain from the URL path
+                const wpMatch = url.match(/wp\.com\/([^\/]+)/);
+                if (wpMatch) {
+                    referer = 'https://' + wpMatch[1];
+                } else {
+                    referer = 'https://otakudesu.best';
+                }
             }
             
             const response = await axios.get(url, {
@@ -2471,7 +2613,7 @@ async function handleProxy(action: string, req: VercelRequest, res: VercelRespon
 
             const contentType = response.headers['content-type'] || 'image/jpeg';
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
             res.setHeader('Access-Control-Allow-Origin', '*');
             return res.send(Buffer.from(response.data));
         } catch (error: any) {
@@ -2535,5 +2677,229 @@ async function handleProxy(action: string, req: VercelRequest, res: VercelRespon
         }
     }
 
+    // direct proxy endpoint: /api?path=proxy&url=...
+    // Allows simple proxying of arbitrary http(s) resources (for players)
+    if (req.method === 'GET' && req.query && req.query.url && typeof req.query.url === 'string') {
+        const url = req.query.url as string;
+        if (!/^https?:\/\//i.test(url)) {
+            return res.status(400).json({ error: 'Invalid url' });
+        }
+        try {
+            const referer = new URL(url).origin;
+            const response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                timeout: 30000,
+                maxContentLength: 200 * 1024 * 1024,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': referer,
+                    'Range': req.headers.range || 'bytes=0-'
+                }
+            });
+            // Forward headers
+            const contentType = response.headers['content-type'] || 'application/octet-stream';
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
+            if (response.headers['accept-ranges']) res.setHeader('Accept-Ranges', response.headers['accept-ranges']);
+            return res.send(Buffer.from(response.data));
+        } catch (err: any) {
+            console.error('[Direct Proxy Error]:', err.message);
+            return res.status(502).json({ error: 'Upstream fetch failed', details: err.message });
+        }
+    }
+
     return res.status(404).json({ error: 'Unknown proxy action' });
+}
+
+// ==================== DIRECT PROXY HANDLER ====================
+// Support /api?path=proxy&url=... convenience endpoint
+async function handleProxyDirect(req: VercelRequest, res: VercelResponse) {
+    const { url } = req.query;
+    if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL required' });
+    }
+    
+    try {
+        // Determine referer from URL
+        let referer = '';
+        try {
+            referer = new URL(url).origin;
+        } catch {
+            referer = 'https://memenesia.web.id';
+        }
+        
+        const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': referer,
+                'Origin': referer,
+                'Accept': '*/*'
+            },
+            maxRedirects: 5
+        });
+        
+        const contentType = response.headers['content-type'] || 'application/octet-stream';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
+        return res.send(Buffer.from(response.data));
+    } catch (err: any) {
+        console.error('[Direct Proxy Error]:', err.message);
+        return res.status(502).json({ error: 'Upstream fetch failed', details: err.message });
+    }
+}
+
+// ==================== VIDEOS API HANDLER ====================
+// Video data cache (loaded once per cold start)
+let videosCache: any[] | null = null;
+let videosCacheTime = 0;
+const VIDEOS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadVideosData(): Promise<any[]> {
+    const now = Date.now();
+    if (videosCache && (now - videosCacheTime) < VIDEOS_CACHE_TTL) {
+        return videosCache;
+    }
+    
+    // Try loading from filesystem first (works in dev/local)
+    try {
+        const dataPath = path.join(process.cwd(), 'data', 'videos.json');
+        if (fs.existsSync(dataPath)) {
+            const raw = fs.readFileSync(dataPath, 'utf-8');
+            videosCache = JSON.parse(raw || '[]');
+            videosCacheTime = now;
+            console.log('[Videos] Loaded from filesystem:', videosCache?.length);
+            return videosCache || [];
+        }
+    } catch (e) {
+        console.log('[Videos] Filesystem load failed, trying public folder');
+    }
+    
+    // Try loading from public folder (works on Vercel)
+    try {
+        const publicPath = path.join(process.cwd(), 'public', 'data', 'videos.json');
+        if (fs.existsSync(publicPath)) {
+            const raw = fs.readFileSync(publicPath, 'utf-8');
+            videosCache = JSON.parse(raw || '[]');
+            videosCacheTime = now;
+            console.log('[Videos] Loaded from public folder:', videosCache?.length);
+            return videosCache || [];
+        }
+    } catch (e) {
+        console.log('[Videos] Public folder load failed');
+    }
+    
+    console.log('[Videos] No data file found');
+    return [];
+}
+
+async function handleVideos(action: string, req: VercelRequest, res: VercelResponse) {
+    const videos = await loadVideosData();
+
+    // GET list -> /api/videos or /api/videos?action=list
+    if (!action || action === 'list') {
+        if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+        const q = (req.query.q as string) || '';
+        const category = (req.query.category as string) || '';
+        const page = parseInt((req.query.page as string) || '1', 10) || 1;
+        const limit = Math.min(parseInt((req.query.limit as string) || '30', 10), 200);
+
+        let filtered = videos;
+        if (q) {
+            const ql = q.toLowerCase();
+            filtered = filtered.filter(v => (v.title || '').toLowerCase().includes(ql) || (v.description || '').toLowerCase().includes(ql));
+        }
+        if (category) {
+            const cl = category.toLowerCase();
+            filtered = filtered.filter(v => (v.categories || []).some((c: string) => c.toLowerCase().includes(cl)));
+        }
+
+        const total = filtered.length;
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        const pageItems = filtered.slice(start, end);
+
+        return res.json({ total, page, limit, results: pageItems });
+    }
+
+    // GET detail -> /api/videos/:id where action is id
+    if (req.method === 'GET') {
+        const vid = action;
+        const found = videos.find(v => v.id === vid || v.slug === vid);
+        if (!found) return res.status(404).json({ error: 'Not found' });
+        return res.json(found);
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ==================== ANTI-ADBLOCK: AD ASSETS PROXY ====================
+// Serve ad scripts as first-party content to bypass adblockers
+async function handleAdAssets(pathStr: string, req: VercelRequest, res: VercelResponse) {
+    // Map obfuscated paths to actual ad scripts
+    const adScriptMap: { [key: string]: { url: string; type: string } } = {
+        // Monetag scripts
+        'assets/core.js': { url: 'https://nap5k.com/tag.min.js', type: 'application/javascript' },
+        'assets/vg.js': { url: 'https://gizokraijaw.net/vignette.min.js', type: 'application/javascript' },
+        'lib/analytics.js': { url: 'https://nap5k.com/tag.min.js', type: 'application/javascript' },
+        
+        // Adsterra Native Banner (legacy)
+        'assets/native.js': { 
+            url: 'https://pl28403034.effectivegatecpm.com/ebbbe73e25be8893e3d2fec6992015fa/invoke.js', 
+            type: 'application/javascript' 
+        },
+        
+        // Adsterra Display Banner 468x60
+        'assets/banner1.js': { 
+            url: 'https://www.highperformanceformat.com/346f68ab1f24fb193dcebf3cbec5a2d9/invoke.js', 
+            type: 'application/javascript' 
+        },
+        
+        // Adsterra Display Banner 300x250
+        'assets/banner2.js': { 
+            url: 'https://www.highperformanceformat.com/25711230aa5051aa49e41d777b0b95e8/invoke.js', 
+            type: 'application/javascript' 
+        },
+        
+        // Alternative paths for redundancy
+        'lib/widget.js': { url: 'https://nap5k.com/tag.min.js', type: 'application/javascript' },
+        'lib/display.js': { url: 'https://gizokraijaw.net/vignette.min.js', type: 'application/javascript' },
+    };
+
+    const mapping = adScriptMap[pathStr];
+    
+    if (!mapping) {
+        return res.status(404).json({ error: 'Asset not found' });
+    }
+
+    try {
+        const response = await axios.get(mapping.url, {
+            timeout: 10000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+            },
+            responseType: 'text'
+        });
+
+        let scriptContent = response.data;
+        
+        // Set headers to look like a normal JS file
+        res.setHeader('Content-Type', mapping.type);
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        
+        return res.send(scriptContent);
+    } catch (error: any) {
+        console.error('[Ad Assets Proxy Error]:', error.message);
+        // Return empty script on error to prevent page breaks
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.send('/* asset loading */');
+    }
 }

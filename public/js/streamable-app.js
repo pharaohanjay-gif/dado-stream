@@ -88,12 +88,19 @@ function getProxiedImageUrl(imageUrl) {
     
     if (!imageUrl) return PLACEHOLDER_SMALL;
     
-    // Some domains need internal proxy (wsrv.nl can't access them)
+    // Some domains need internal proxy (wsrv.nl can't access them or they block external proxies)
     const needsInternalProxy = [
         'samehadaku', 
         'shinigami', 
         'shngm',
-        'komikindo'
+        'komikindo',
+        'otakudesu',      // blocks wsrv.nl
+        'animekita.org',   // may block external
+        'cdn.myanimelist', // sometimes blocks
+        'i0.wp.com',       // WordPress CDN
+        'i1.wp.com',
+        'i2.wp.com',
+        'i3.wp.com'
     ];
     
     const useInternal = needsInternalProxy.some(domain => imageUrl.toLowerCase().includes(domain));
@@ -105,52 +112,20 @@ function getProxiedImageUrl(imageUrl) {
 }
 
 // Get high-quality anime cover from Jikan API via backend proxy
+// OPTIMIZATION: DISABLED to improve performance - using API covers directly
 async function getJikanCover(title) {
+    // DISABLED: Jikan API calls slow down page loading significantly
+    // The Sansekai API already provides good cover images
+    return null;
+    
+    /* Original code preserved for reference:
     if (!title) return null;
-    
     const cacheKey = title.toLowerCase().trim();
-    
-    // Return from cache if available
     if (jikanCoverCache.has(cacheKey)) {
         return jikanCoverCache.get(cacheKey);
     }
-    
-    // If request is already pending for this title, wait for it
-    if (jikanPendingRequests.has(cacheKey)) {
-        return jikanPendingRequests.get(cacheKey);
-    }
-    
-    // Create promise for this request
-    const requestPromise = (async () => {
-        try {
-            // Use backend proxy to avoid CORS and rate limiting
-            const response = await fetch(`${API_BASE}/anime?action=jikan-cover&title=${encodeURIComponent(title)}`);
-            
-            if (!response.ok) {
-                throw new Error('Backend Jikan API error');
-            }
-            
-            const result = await response.json();
-            
-            if (result.status && result.data && result.data.image) {
-                const coverUrl = result.data.image;
-                jikanCoverCache.set(cacheKey, coverUrl);
-                return coverUrl;
-            }
-            
-            jikanCoverCache.set(cacheKey, null);
-            return null;
-        } catch (error) {
-            console.warn('[Jikan] Failed to get cover for:', title, error.message);
-            jikanCoverCache.set(cacheKey, null);
-            return null;
-        } finally {
-            jikanPendingRequests.delete(cacheKey);
-        }
-    })();
-    
-    jikanPendingRequests.set(cacheKey, requestPromise);
-    return requestPromise;
+    // ... rest of Jikan fetch logic ...
+    */
 }
 
 // Placeholder images (SVG data URLs - no network request needed)
@@ -232,33 +207,37 @@ async function initApp() {
     document.documentElement.setAttribute('data-theme', state.theme);
     updateThemeIcon();
     
-    // Load home data
-    await Promise.all([
-        loadHomeDrama(),
-        loadHomeAnime(),
-        loadHomeDonghua(),
-        loadHomeKomik(),
-        loadBanners()
-    ]);
+    // OPTIMIZATION: Load priority content first (banner + drama), then others
+    // This makes the page feel faster by showing content progressively
     
-    // Initialize features
+    // Phase 1: Load critical above-fold content first
+    await loadBanners();
+    await loadHomeDrama();
+    
+    // Initialize essential features early
     initSearch();
+    initRouter();
+    initScrollListener();
+    
+    // Show app immediately - no splash screen
+    $('#app').classList.remove('hidden');
+    handleRouteFromUrl();
+    
+    // Phase 2: Load remaining content in background (non-blocking)
+    loadHomeAnime();
+    loadHomeDonghua();
+    loadHomeKomik();
+    
+    // Phase 3: Initialize non-critical features
     initContinueWatching();
     initHistory();
     initFavorites();
-    initScrollListener();
     initFilters();
-    initRouter();
-    initAds();
     
-    // Hide splash screen
+    // Phase 4: Load ads LAST after all content is ready (lazy load)
     setTimeout(() => {
-        $('#splash-screen').classList.add('hidden');
-        $('#app').classList.remove('hidden');
-        
-        // Navigate based on URL path after splash
-        handleRouteFromUrl();
-    }, 1500);
+        initAds();
+    }, 3000);
     
     // Auto-rotate banner
     startBannerAutoPlay();
@@ -457,31 +436,67 @@ function navigateTo(page, data = null, updateHistory = true) {
         
         // Instant scroll to top for faster feel
         window.scrollTo({ top: 0, behavior: 'instant' });
+        
+        // Reload page ads after navigation
+        if (typeof window.reloadPageAds === 'function') {
+            setTimeout(window.reloadPageAds, 300);
+        }
     });
 }
 
 function toggleMobileMenu() {
-    $('#sidebar').classList.toggle('open');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+    if (overlay) {
+        overlay.classList.toggle('active');
+    }
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) {
+        sidebar.classList.remove('open');
+    }
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
 }
 
 // ============ Banner ============
 async function loadBanners() {
     try {
-        // Load trending anime for banners
-        const response = await fetch(`${API_BASE}/anime?action=popular`);
+        // Load anime from local API that can actually be watched
+        const response = await fetch(`${API_BASE}/anime?action=latest`);
         const result = await response.json();
-        const data = result.data || result;
+        let data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
-            const banners = data.slice(0, 5);
+            // Enhance with Jikan covers for better images
+            const banners = data.slice(0, 5).map(anime => {
+                const animeId = anime.urlId || anime.id || anime.animeId;
+                return {
+                    ...anime,
+                    animeId: animeId,
+                    urlId: animeId,
+                    title: anime.title || anime.judul || 'Anime',
+                    poster: anime.poster || anime.image || anime.thumbnail_url || anime.cover,
+                    synopsis: anime.synopsis || anime.description || 'Tonton sekarang di DADO STREAM',
+                    episodes: anime.totalEpisodes || anime.episodes || anime.episode || 'Ongoing',
+                    rating: anime.rating || anime.score || '8.5'
+                };
+            });
             renderAnimeBanners(banners);
-        } else {
-            renderFallbackBanner();
+            return;
         }
     } catch (error) {
         console.error('Error loading banners:', error);
-        renderFallbackBanner();
     }
+    
+    renderFallbackBanner();
 }
 
 function renderFallbackBanner() {
@@ -552,26 +567,39 @@ function renderAnimeBanners(banners) {
     const indicators = $('#hero-indicators');
     
     slider.innerHTML = banners.map((anime, index) => {
-        const image = anime.poster || anime.image || anime.thumbnail_url || '';
-        const imgUrl = image ? getProxiedImageUrl(image) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
-        const animeId = anime.animeId || anime.urlId || anime.id;
+        // Get best available image
+        const image = anime.poster || anime.image || anime.thumbnail_url || anime.jikanPoster || '';
+        const imgUrl = image ? (image.startsWith('http') ? image : getProxiedImageUrl(image)) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop';
+        
+        // Get anime ID - for Jikan data use title as slug
+        const animeId = anime.animeId || anime.urlId || anime.id || anime.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         const title = anime.title || anime.english || anime.japanese || 'Anime';
+        
+        // Get episode info
+        const episodeText = anime.episodes || anime.episode || 'Ongoing';
+        const rating = anime.rating || anime.score || '8.5';
+        
+        // Get synopsis (truncate if too long)
+        let synopsis = anime.synopsis || anime.description || 'Tonton sekarang di DADO STREAM';
+        if (synopsis.length > 150) {
+            synopsis = synopsis.substring(0, 150) + '...';
+        }
         
         return `
             <div class="hero-slide" onclick="openDetail('anime', '${animeId}')">
-                <img src="${imgUrl}" alt="${title}">
+                <img src="${imgUrl}" alt="${title}" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=400&fit=crop'">
                 <div class="hero-content">
-                    <span class="hero-badge">Anime Trending</span>
+                    <span class="hero-badge">ANIME TRENDING</span>
                     <h2 class="hero-title">${title}</h2>
-                    <p class="hero-desc">${anime.synopsis || anime.description || 'Tonton sekarang di DADO STREAM'}</p>
+                    <p class="hero-desc">${synopsis}</p>
                     <div class="hero-meta">
                         <div class="hero-meta-item">
                             <i class="fas fa-play-circle"></i>
-                            <span>${anime.episodes || anime.episode || 'Ongoing'}</span>
+                            <span>${episodeText}</span>
                         </div>
                         <div class="hero-meta-item">
                             <i class="fas fa-star"></i>
-                            <span>${anime.rating || anime.score || '8.5'}</span>
+                            <span>${rating}</span>
                         </div>
                     </div>
                     <div class="hero-actions">
@@ -634,9 +662,10 @@ async function loadHomeDrama() {
 
 async function loadHomeAnime() {
     try {
+        // Use local API for anime that can be watched
         const response = await fetch(`${API_BASE}/anime?action=latest`);
         const result = await response.json();
-        const data = result.data || result; // Handle both formats
+        let data = result.data || result;
         
         if (Array.isArray(data) && data.length > 0) {
             // renderCards will handle Jikan cover fetching automatically for anime
@@ -951,36 +980,11 @@ function renderCards(selector, items, type, isGrid = false) {
 }
 
 // Fetch Jikan covers for a list of anime items (limited for performance)
+// OPTIMIZATION: DISABLED - Jikan API calls are slow, using API covers instead
 async function fetchJikanCoversForList(items, selector) {
-    const container = $(selector);
-    if (!container) return;
-    
-    const cards = container.querySelectorAll('.card');
-    
-    // Only fetch for first 4 items immediately (visible above fold)
-    const visibleCount = Math.min(4, items.length);
-    
-    for (let i = 0; i < visibleCount; i++) {
-        const card = cards[i];
-        const item = items[i];
-        if (!card || !item) continue;
-        
-        const title = item.title || item.judul;
-        if (!title) continue;
-        
-        try {
-            const jikanCover = await getJikanCover(title);
-            if (jikanCover) {
-                const img = card.querySelector('.card-image img');
-                if (img) {
-                    img.src = jikanCover;
-                    img.dataset.jikan = 'true';
-                }
-            }
-        } catch (e) {
-            // Silently fail
-        }
-    }
+    // DISABLED: No longer fetching Jikan covers to improve performance
+    // The Sansekai anime API already provides quality cover images
+    return;
 }
 
 function createCard(item, type) {
@@ -1391,10 +1395,37 @@ function renderDetail(type, data) {
                     </h3>
                     ${type === 'komik' ? renderChapterList() : renderEpisodeList(type)}
                 </div>
+                
+                <!-- Ad Section after Episodes - Full Width -->
+                <div class="detail-ad-wrapper" style="margin: 20px 0; width: 100%;">
+                    <div class="ad-card" style="width: 100%;">
+                        <div class="ad-card-header" style="text-align: center; background: linear-gradient(135deg, #7d5fff 0%, #5b3cc4 100%); padding: 8px; border-radius: 8px 8px 0 0;">
+                            <span class="ad-label" style="color: white; font-weight: 600;">IKLAN</span>
+                        </div>
+                        <div class="ad-card-content" id="ad-detail-content" style="min-height:60px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 0 0 8px 8px; padding: 10px;">
+                            <!-- Ad will be loaded by initDetailPageAds -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
+    
+    // Initialize ads for detail page after DOM is updated
+    setTimeout(() => {
+        initDetailPageAds(type);
+    }, 500);
 }
+
+// Initialize ads for detail page (Anime/Drama/Donghua/Komik detail)
+function initDetailPageAds(type) {
+    // Use sponsor.js to load banner
+    if (window._loadDetailAd) {
+        window._loadDetailAd('ad-detail-content');
+    }
+}
+
+// Helper function removed - HilltopAds no longer used
 
 function renderEpisodeList(type) {
     if (!state.episodes || state.episodes.length === 0) {
@@ -1541,6 +1572,21 @@ async function playEpisode(type, episodeId, episodeNum) {
         </div>
     `;
     
+    // Helper: fetch with retry
+    async function fetchWithRetry(url, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) return await response.json();
+                throw new Error(`HTTP ${response.status}`);
+            } catch (err) {
+                console.warn(`[Video] Retry ${i + 1}/${retries}:`, err.message);
+                if (i < retries - 1) await new Promise(r => setTimeout(r, delay * (i + 1)));
+            }
+        }
+        throw new Error('Max retries exceeded');
+    }
+    
     try {
         let videoUrl, servers = [];
         
@@ -1550,15 +1596,15 @@ async function playEpisode(type, episodeId, episodeNum) {
             if (!bookId) {
                 throw new Error('Book ID not found');
             }
-            const response = await fetch(`${API_BASE}/drama?action=video&episodeId=${episodeId}&bookId=${bookId}`);
-            const data = await response.json();
+            // Use retry for reliability
+            const data = await fetchWithRetry(`${API_BASE}/drama?action=video&episodeId=${episodeId}&bookId=${bookId}`);
             if (data.status && data.data) {
                 videoUrl = data.data.video || data.data.url || data.data.stream || data.data.playUrl;
                 servers = data.data.servers || [];
             }
         } else if (type === 'anime') {
-            const response = await fetch(`${API_BASE}/anime?action=getvideo&episodeId=${episodeId}`);
-            const data = await response.json();
+            // Use retry for reliability
+            const data = await fetchWithRetry(`${API_BASE}/anime?action=getvideo&episodeId=${episodeId}`);
             if (data.status && data.data) {
                 // Get streaming URL from available sources
                 const sources = data.data.sources || data.data.stream || [];
@@ -1570,7 +1616,7 @@ async function playEpisode(type, episodeId, episodeNum) {
                 servers = data.data.servers || [];
             }
         } else if (type === 'donghua') {
-            // Donghua episode playback
+            // Donghua episode playback with retry
             const slug = state.currentContent?.id;
             if (!slug) {
                 throw new Error('Donghua slug not found');
@@ -1579,8 +1625,8 @@ async function playEpisode(type, episodeId, episodeNum) {
             const epNumber = parseInt(episodeId, 10) || 1;
             console.log('[Donghua] Fetching episode:', slug, 'ep:', epNumber);
             
-            const response = await fetch(`${API_BASE}/donghua?action=watch&slug=${slug}&episode=${epNumber}`);
-            const data = await response.json();
+            // Use retry for reliability
+            const data = await fetchWithRetry(`${API_BASE}/donghua?action=watch&slug=${slug}&episode=${epNumber}`);
             console.log('[Donghua] Watch response:', data.success, 'servers:', data.data?.servers?.length);
             
             if (data.success && data.data) {
@@ -1775,6 +1821,18 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             </div>
         </div>
         
+        <!-- Ad Banner - Watch Page (Full Width) -->
+        <div class="ad-card-container" id="ad-watch-banner" style="margin: 15px 0; width: 100%;">
+            <div class="ad-card" style="width: 100%;">
+                <div class="ad-card-header" style="text-align: center; background: linear-gradient(135deg, #7d5fff 0%, #5b3cc4 100%); padding: 8px; border-radius: 8px 8px 0 0;">
+                    <span class="ad-label" style="color: white; font-weight: 600;">IKLAN</span>
+                </div>
+                <div class="ad-card-content" id="watch-ad-content" style="min-height:60px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 0 0 8px 8px; padding: 10px;">
+                    <!-- Banner akan dimuat via sponsor.js -->
+                </div>
+            </div>
+        </div>
+        
         ${serverSectionHtml}
         
         <div class="detail-section">
@@ -1795,6 +1853,11 @@ function renderWatchPage(type, videoUrl, episodeNum, servers) {
             </div>
         </div>
     `;
+    
+    // Load watch page ad banner after render
+    if (window._loadWatchAd) {
+        window._loadWatchAd('watch-ad-content');
+    }
 }
 
 function playNextEpisode(type) {
@@ -2995,8 +3058,7 @@ function initAds() {
     // Load Native Banner between drama & anime
     loadNativeBanner('ad-home-1');
     
-    // Load 728x90 Banner between anime & komik
-    loadBanner728('ad-home-2');
+    // Monetag In-Page Push loaded via script tag (shows as notification, not in container)
 }
 
 // Load 728x90 Banner Ad
@@ -3065,43 +3127,11 @@ function loadNativeBanner(containerId) {
     container.dataset.loaded = 'true';
 }
 
-// Load ads on page navigation (drama, anime, komik, donghua pages) - use same approach as loadBanner728
+// Load ads on page navigation - Monetag is loaded globally, this is just a placeholder
 function loadPageAds(pageId) {
-    const containerId = `ad-${pageId}`;
-    const container = document.getElementById(containerId);
-    
-    if (!container || container.dataset.loaded === 'true') return;
-    
-    // Clear container
-    container.innerHTML = '';
-    
-    // Create wrapper for ad
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.justifyContent = 'center';
-    wrapper.style.width = '100%';
-    
-    // Add atOptions config script
-    const configScript = document.createElement('script');
-    configScript.textContent = `
-        atOptions = {
-            'key' : '3ec1b7522b43835f8df9ce8d75f60c87',
-            'format' : 'iframe',
-            'height' : 90,
-            'width' : 728,
-            'params' : {}
-        };
-    `;
-    wrapper.appendChild(configScript);
-    
-    // Create and load the invoke script
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'https://www.highperformanceformat.com/3ec1b7522b43835f8df9ce8d75f60c87/invoke.js';
-    wrapper.appendChild(script);
-    
-    container.appendChild(wrapper);
-    container.dataset.loaded = 'true';
+    // Monetag ads are loaded globally via index.html
+    // No need to load per-page anymore
+    console.log('[Monetag] Page changed to:', pageId, '- ads loaded globally');
 }
 // ============ Anime Genre & Filter Functions ============
 
