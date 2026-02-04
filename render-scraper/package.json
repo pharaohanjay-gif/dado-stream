@@ -1,0 +1,17 @@
+{
+  "name": "bokep-auto-scraper",
+  "version": "1.0.0",
+  "description": "Auto scraper for bokep videos - runs on Render.com cron",
+  "main": "scrape.js",
+  "scripts": {
+    "start": "node scrape.js",
+    "scrape": "node scrape.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
