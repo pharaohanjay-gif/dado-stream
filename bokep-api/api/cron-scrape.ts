@@ -210,31 +210,36 @@ async function updateGitHub(newVideos: Video[]): Promise<{ success: boolean; tot
 
     try {
         const apiBase = `https://api.github.com/repos/${CONFIG.githubRepo}/contents/${CONFIG.outputPath}`;
+        const rawUrl = `https://raw.githubusercontent.com/${CONFIG.githubRepo}/${CONFIG.githubBranch}/${CONFIG.outputPath}`;
         
-        // Get current file and its SHA
+        // Get current file SHA (small request)
         let sha: string | undefined;
         let existingVideos: Video[] = [];
         let fetchError = false;
         
         try {
-            const getResponse = await axios.get(apiBase, {
+            // First, get SHA from API (small response, just metadata)
+            const metaResponse = await axios.get(apiBase, {
                 headers: {
                     'Authorization': `token ${GITHUB_TOKEN}`,
                     'Accept': 'application/vnd.github.v3+json'
                 },
-                timeout: 30000  // 30 second timeout
+                timeout: 10000
             });
-            sha = getResponse.data.sha;
+            sha = metaResponse.data.sha;
+            console.log(`Got SHA: ${sha?.substring(0, 7)}...`);
             
-            // Decode existing content
-            const existingContent = Buffer.from(getResponse.data.content, 'base64').toString('utf-8');
-            existingVideos = JSON.parse(existingContent);
+            // Then fetch content from raw URL (no size limit)
+            const rawResponse = await axios.get(rawUrl, {
+                timeout: 30000,
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            existingVideos = rawResponse.data;
             console.log(`Existing videos: ${existingVideos.length}`);
         } catch (e: any) {
             if (e.response?.status === 404) {
                 console.log('No existing file, will create new');
             } else {
-                // Other errors (timeout, network, etc) - DO NOT OVERWRITE!
                 console.error('Error fetching existing videos:', e.message);
                 fetchError = true;
             }
