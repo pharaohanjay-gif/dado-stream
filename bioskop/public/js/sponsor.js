@@ -74,7 +74,7 @@
         container.appendChild(script);
     }
     
-    // Generic banner loader with iframe isolation
+    // Generic banner loader - direct injection (no iframe)
     function _loadBannerGeneric(containerId, key, width, height, scriptUrl) {
         var container = d.getElementById(containerId);
         if (!container || container.dataset.processed) return;
@@ -85,30 +85,23 @@
         wrapper.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;padding:10px 0;overflow:hidden;';
         container.appendChild(wrapper);
         
-        // Create iframe for isolation
-        var iframe = _ce('iframe', {
-            frameBorder: '0',
-            scrolling: 'no'
+        // Create ad container
+        var adDiv = _ce('div', {});
+        adDiv.style.cssText = 'max-width:' + width + 'px;min-height:' + height + 'px;overflow:hidden;';
+        wrapper.appendChild(adDiv);
+        
+        // Create atOptions script
+        var optScript = _ce('script', {});
+        optScript.textContent = 'atOptions={"key":"' + key + '","format":"iframe","height":' + height + ',"width":' + width + ',"params":{}};';
+        adDiv.appendChild(optScript);
+        
+        // Load Adsterra script
+        var adScript = _ce('script', {
+            async: true,
+            src: scriptUrl
         });
-        iframe.style.cssText = 'width:' + width + 'px;height:' + height + 'px;border:none;overflow:hidden;display:block;max-width:100%;';
-        wrapper.appendChild(iframe);
-        
-        // Write banner code into iframe
-        var adHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{display:flex;align-items:center;justify-content:center;min-height:' + height + 'px;background:transparent;overflow:hidden;}</style></head><body>';
-        adHtml += '<script>atOptions={"key":"' + key + '","format":"iframe","height":' + height + ',"width":' + width + ',"params":{}};<\/script>';
-        adHtml += '<script src="' + scriptUrl + '"><\/script>';
-        adHtml += '</body></html>';
-        
-        setTimeout(function() {
-            try {
-                var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDoc.open();
-                iframeDoc.write(adHtml);
-                iframeDoc.close();
-            } catch(e) {
-                _log('Banner iframe error:', e);
-            }
-        }, 100);
+        adScript.setAttribute('data-cfasync', 'false');
+        adDiv.appendChild(adScript);
     }
     
     // Responsive banner loader - adapts to screen size
@@ -169,11 +162,6 @@
     // Load all banners based on placement
     function _loadBanners() {
         // === HOME PAGE BANNERS ===
-        // Native Banner - top of home after hero
-        setTimeout(function() {
-            _loadNativeBanner('ad-native-home');
-        }, _rd(800, 1200));
-        
         // Banner 1: After Viral & Trending section - 468x60
         setTimeout(function() {
             _loadBanner468('ad-home-1');
