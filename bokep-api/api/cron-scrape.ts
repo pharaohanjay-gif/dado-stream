@@ -118,13 +118,15 @@ async function updateGitHub(newVideos: Video[]): Promise<{ success: boolean; tot
         // Get current file and its SHA
         let sha: string | undefined;
         let existingVideos: Video[] = [];
+        let fetchError = false;
         
         try {
             const getResponse = await axios.get(apiBase, {
                 headers: {
                     'Authorization': `token ${GITHUB_TOKEN}`,
                     'Accept': 'application/vnd.github.v3+json'
-                }
+                },
+                timeout: 30000  // 30 second timeout
             });
             sha = getResponse.data.sha;
             
@@ -132,12 +134,29 @@ async function updateGitHub(newVideos: Video[]): Promise<{ success: boolean; tot
             const existingContent = Buffer.from(getResponse.data.content, 'base64').toString('utf-8');
             existingVideos = JSON.parse(existingContent);
             console.log(`Existing videos: ${existingVideos.length}`);
-        } catch (e) {
-            console.log('No existing file, will create new');
+        } catch (e: any) {
+            if (e.response?.status === 404) {
+                console.log('No existing file, will create new');
+            } else {
+                // Other errors (timeout, network, etc) - DO NOT OVERWRITE!
+                console.error('Error fetching existing videos:', e.message);
+                fetchError = true;
+            }
+        }
+
+        // SAFETY: If we failed to fetch existing and there should be a file, abort!
+        if (fetchError) {
+            console.error('ABORT: Cannot fetch existing videos, refusing to overwrite');
+            return { success: false, totalVideos: 0, newCount: 0 };
+        }
+
+        // SAFETY: If we have new videos but existing is suspiciously empty, abort!
+        if (newVideos.length > 0 && existingVideos.length === 0 && sha) {
+            console.error('ABORT: Existing file has SHA but parsed as empty - possible error');
+            return { success: false, totalVideos: 0, newCount: 0 };
         }
 
         // Merge: keep unique by slug, new videos at the beginning
-        const existingMap = new Map(existingVideos.map(v => [v.slug, v]));
         const existingSlugs = new Set(existingVideos.map(v => v.slug));
         let newCount = 0;
         
