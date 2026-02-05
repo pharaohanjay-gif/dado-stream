@@ -10,7 +10,7 @@ const CONFIG = {
     githubRepo: 'pharaohanjay-gif/dado-stream',
     githubBranch: 'master',
     outputPath: 'bokep-api/videos.json',
-    notifyEmail: 'pharaohanjay.gif@gmail.com',  // Email untuk notifikasi
+    notifyEmail: 'pharaohanjay@gmail.com',  // Email untuk notifikasi
     websiteName: 'Dado Stream Bioskop'
 };
 
