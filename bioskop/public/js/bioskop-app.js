@@ -707,6 +707,9 @@ function navigateTo(page, addToStack = true) {
 }
 
 function goBack() {
+    // Show social bar when leaving video page
+    if (window._showSocialBar) window._showSocialBar();
+    
     // Remove current page from stack
     if (state.navigationStack.length > 1) {
         state.navigationStack.pop();
@@ -1039,6 +1042,9 @@ function renderAdultDetail(item) {
 
 // Play adult video - uses watch page like other categories
 async function playAdultVideo(slug, serverIndex = 0) {
+    // Hide social bar while watching video - don't disturb user
+    if (window._hideSocialBar) window._hideSocialBar();
+    
     showPageTransition();
     
     let item = window.currentAdultContent;
@@ -1682,6 +1688,9 @@ function playDirectUrl(playerUrl, subtitle) {
 }
 
 function renderPlayer(playerUrl, subtitle, isMovie = false) {
+    // Hide social bar while watching video - don't disturb user
+    if (window._hideSocialBar) window._hideSocialBar();
+    
     const container = document.getElementById('watch-container');
     if (!container) return;
     

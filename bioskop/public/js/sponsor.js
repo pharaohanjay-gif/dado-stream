@@ -255,6 +255,80 @@
     w._loadBanner320 = _loadBanner320;
     w._loadBanner728 = _loadBanner728;
     
+    // ========================================
+    // SOCIAL BAR - Smart Loading
+    // Tidak muncul saat menonton video
+    // ========================================
+    var _socialBarLoaded = false;
+    var _socialBarScript = 'https://pl28656221.effectivegatecpm.com/2f/f0/f1/2ff0f18fa562e341abbcbb0f53081267.js';
+    
+    function _loadSocialBar() {
+        if (_socialBarLoaded) return;
+        _socialBarLoaded = true;
+        
+        var script = _ce('script', {
+            async: true,
+            src: _socialBarScript
+        });
+        script.setAttribute('data-cfasync', 'false');
+        d.body.appendChild(script);
+        _log('Social Bar loaded');
+    }
+    
+    function _hideSocialBar() {
+        // Social Bar biasanya punya class yang bisa diidentifikasi
+        var socialBars = d.querySelectorAll('[class*="social"], [id*="social"], [class*="push"], [class*="notification-"]');
+        socialBars.forEach(function(el) {
+            if (el.style) el.style.display = 'none';
+        });
+        
+        // Hide any fixed bottom elements from Adsterra
+        var fixedElements = d.querySelectorAll('div[style*="position: fixed"][style*="bottom"]');
+        fixedElements.forEach(function(el) {
+            if (el.innerHTML && el.innerHTML.includes('effectivegatecpm')) {
+                el.style.display = 'none';
+            }
+        });
+    }
+    
+    function _showSocialBar() {
+        var socialBars = d.querySelectorAll('[class*="social"], [id*="social"], [class*="push"], [class*="notification-"]');
+        socialBars.forEach(function(el) {
+            if (el.style) el.style.display = '';
+        });
+        
+        var fixedElements = d.querySelectorAll('div[style*="position: fixed"][style*="bottom"]');
+        fixedElements.forEach(function(el) {
+            el.style.display = '';
+        });
+    }
+    
+    // Check if user is on watch/video page
+    function _isWatchingVideo() {
+        var hash = w.location.hash || '';
+        var isWatchPage = hash.includes('/watch/') || hash.includes('/adult/');
+        var hasVideoPlayer = d.querySelector('.video-player-container, .player-container, #video-player, video, iframe[src*="embed"]');
+        return isWatchPage || !!hasVideoPlayer;
+    }
+    
+    // Smart Social Bar control
+    function _controlSocialBar() {
+        if (_isWatchingVideo()) {
+            _hideSocialBar();
+        } else {
+            if (!_socialBarLoaded) {
+                _loadSocialBar();
+            } else {
+                _showSocialBar();
+            }
+        }
+    }
+    
+    // Expose for external control
+    w._hideSocialBar = _hideSocialBar;
+    w._showSocialBar = _showSocialBar;
+    w._controlSocialBar = _controlSocialBar;
+    
     // Main initialization
     function _init() {
         if (_c._loaded) return;
@@ -262,6 +336,16 @@
         
         // Load display banners
         _loadBanners();
+        
+        // Load Social Bar with delay (only if not watching video)
+        setTimeout(function() {
+            _controlSocialBar();
+        }, 2000);
+        
+        // Monitor hash changes for video navigation
+        w.addEventListener('hashchange', function() {
+            setTimeout(_controlSocialBar, 500);
+        });
     }
     
     // Start when ready
