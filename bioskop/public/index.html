@@ -112,13 +112,9 @@
                         <i class="fas fa-sun"></i>
                         <span>Filipina / Vivamax</span>
                     </button>
-                    <button class="sidebar-item" data-page="film-semi" onclick="navigateTo('film-semi')">
-                        <i class="fas fa-film"></i>
-                        <span>Film Semi</span>
-                    </button>
-                    <button class="sidebar-item" data-page="bokep-indo" onclick="navigateTo('bokep-indo')">
-                        <i class="fas fa-play-circle"></i>
-                        <span>Bokep Indo</span>
+                    <button class="sidebar-item" data-page="genre-indonesia" onclick="navigateTo('genre-indonesia')">
+                        <i class="fas fa-star"></i>
+                        <span>Genre Indonesia</span>
                     </button>
                 </div>
                 
@@ -174,9 +170,9 @@
                 <i class="fas fa-torii-gate"></i>
                 <span>JAV</span>
             </button>
-            <button class="mobile-nav-item" data-page="bokep-indo" onclick="navigateTo('bokep-indo')">
-                <i class="fas fa-play-circle"></i>
-                <span>Bokep</span>
+            <button class="mobile-nav-item" data-page="genre-indonesia" onclick="navigateTo('genre-indonesia')">
+                <i class="fas fa-star"></i>
+                <span>Genre Indo</span>
             </button>
             <button class="mobile-nav-item" onclick="openMobileSearch()">
                 <i class="fas fa-search"></i>
@@ -288,28 +284,15 @@
                     </div>
                 </section>
 
-                <!-- Film Semi Section -->
+                <!-- Genre Indonesia Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-film" style="color:#ff4444"></i> Film Semi</h2>
-                        <button class="see-all-btn" onclick="navigateTo('film-semi')" style="color:#ff4444">
+                        <h2><i class="fas fa-star" style="color:#ff4444"></i> Genre Indonesia</h2>
+                        <button class="see-all-btn" onclick="navigateTo('genre-indonesia')" style="color:#ff4444">
                             Lihat Semua <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
-                    <div class="content-scroll" id="home-film-semi">
-                        <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
-                    </div>
-                </section>
-
-                <!-- Bokep Indo Section -->
-                <section class="content-section">
-                    <div class="section-header">
-                        <h2><i class="fas fa-play-circle" style="color:#ff4444"></i> Bokep Indo</h2>
-                        <button class="see-all-btn" onclick="navigateTo('bokep-indo')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                    <div class="content-scroll" id="home-bokep-indo">
+                    <div class="content-scroll" id="home-genre-indonesia">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                     </div>
                 </section>
@@ -402,33 +385,17 @@
                 </div>
             </section>
 
-            <!-- Film Semi Page -->
-            <section id="page-film-semi" class="page">
+            <!-- Genre Indonesia Page -->
+            <section id="page-genre-indonesia" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-film"></i> Film Semi</h1>
-                    <p>Semua koleksi film semi lengkap</p>
+                    <h1><i class="fas fa-star"></i> Genre Indonesia</h1>
+                    <p>Koleksi film dewasa Indonesia terlengkap</p>
                 </div>
-                <div class="content-grid" id="film-semi-grid">
+                <div class="content-grid" id="genre-indonesia-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-film-semi" onclick="loadMoreCategory('film-semi')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
-                </div>
-            </section>
-
-            <!-- Bokep Indo Page -->
-            <section id="page-bokep-indo" class="page">
-                <div class="page-header">
-                    <h1><i class="fas fa-play-circle"></i> Bokep Indo</h1>
-                    <p>Video bokep Indonesia terbaru</p>
-                </div>
-                <div class="content-grid" id="bokep-indo-grid">
-                    <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
-                </div>
-                <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-bokep-indo" onclick="loadMoreBokepIndo()">
+                    <button class="load-more-btn" id="load-more-genre-indonesia" onclick="loadMoreCategory('genre-indonesia')">
                         <i class="fas fa-plus"></i> Muat Lebih Banyak
                     </button>
                 </div>

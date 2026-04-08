@@ -15,7 +15,6 @@
 
 // API Configuration
 const REBAHAN_API = '/api';
-const BOKEP_API = 'https://bokep-api.vercel.app/api';
 const REBAHAN_SITE = 'https://guidedumanifestant.org';
 
 // ==========================================================================
@@ -79,13 +78,12 @@ const CATEGORIES = {
     'jav': { api: 'film-bokep-jepang', label: 'JAV / Jepang' },
     'semi-korea': { api: 'semi-korea', label: 'Semi Korea' },
     'filipina': { api: 'semi-filipina', label: 'Filipina' },
-    'film-semi': { api: 'film-semi', label: 'Film Semi' }
+    'genre-indonesia': { api: 'semi-indonesia', label: 'Genre Indonesia' }
 };
 
 Object.keys(CATEGORIES).forEach(function(key) {
     categoryState[key] = { page: 1, hasMore: true, loaded: false };
 });
-categoryState['bokep-indo'] = { page: 1, hasMore: true, loaded: false };
 
 let filipinaCategory = 'semi-filipina';
 
@@ -218,8 +216,7 @@ async function loadHomeData() {
             loadHomeSection('film-bokep-jepang', 'home-jav').catch(function(e) { console.error('JAV error:', e); }),
             loadHomeSection('semi-korea', 'home-semi-korea').catch(function(e) { console.error('Korea error:', e); }),
             loadHomeSection('semi-filipina', 'home-filipina').catch(function(e) { console.error('Filipina error:', e); }),
-            loadHomeSection('film-semi', 'home-film-semi').catch(function(e) { console.error('Film Semi error:', e); }),
-            loadHomeBokepIndo().catch(function(e) { console.error('Bokep Indo error:', e); }),
+            loadHomeSection('semi-indonesia', 'home-genre-indonesia').catch(function(e) { console.error('Genre Indo error:', e); }),
             loadBanners().catch(function(e) { console.error('Banners error:', e); })
         ]);
         loadContinueWatching();
@@ -237,21 +234,7 @@ async function loadHomeSection(apiCategory, containerId) {
     }
 }
 
-async function loadHomeBokepIndo() {
-    const container = document.getElementById('home-bokep-indo');
-    if (!container) return;
-    try {
-        const response = await fetch(BOKEP_API + '/videos?limit=15');
-        const data = await response.json();
-        if (data.status && data.results && data.results.length > 0) {
-            container.innerHTML = data.results.map(function(item) { return createAdultContentCard(item); }).join('');
-        } else {
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Tidak ada konten tersedia</p>';
-        }
-    } catch (e) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Gagal memuat konten</p>';
-    }
-}
+// (Bokep Indo removed - API broken)
 
 // ==========================================================================
 // Banner
@@ -333,7 +316,7 @@ async function loadMultiFeatured() {
     const container = document.getElementById('featured-film');
     if (!container) return;
     try {
-        const rebahanData = await fetchAPI('rebahan-list', { category: 'film-semi', page: 1 });
+        const rebahanData = await fetchAPI('rebahan-list', { category: 'semi-indonesia', page: 1 });
         if (rebahanData && rebahanData.items && rebahanData.items.length > 0) {
             var labels = ['\ud83d\udd25 Viral', '\ud83d\udcc8 Trending', '\u2b50 Populer', '\u2728 Terbaru'];
             var icons = ['fa-fire', 'fa-chart-line', 'fa-star', 'fa-sparkles'];
@@ -437,7 +420,6 @@ async function loadPageData(page) {
     if (page === 'history') { loadHistory(); return; }
     if (page === 'favorites') { loadFavorites(); return; }
     if (page === 'home') return;
-    if (page === 'bokep-indo') { await loadBokepIndoPage(); return; }
     if (page === 'filipina') { await loadCategoryPage('filipina', filipinaCategory); return; }
     var cat = CATEGORIES[page];
     if (cat) { await loadCategoryPage(page, cat.api); return; }
@@ -506,54 +488,7 @@ function switchFilipina(cat, btnEl) {
 // Bokep Indo Page
 // ==========================================================================
 
-async function loadBokepIndoPage() {
-    var grid = document.getElementById('bokep-indo-grid');
-    if (!grid) return;
-    if (categoryState['bokep-indo'].loaded) return;
-
-    grid.innerHTML = '<div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
-
-    try {
-        var response = await fetch(BOKEP_API + '/videos?limit=30&page=1');
-        var data = await response.json();
-        if (data.status && data.results && data.results.length > 0) {
-            grid.innerHTML = data.results.map(function(item) { return createAdultContentCard(item); }).join('');
-            categoryState['bokep-indo'] = { page: 1, hasMore: data.results.length >= 30, loaded: true };
-        } else {
-            grid.innerHTML = '<div class="empty-state"><i class="fas fa-film"></i><p>Tidak ada konten tersedia</p></div>';
-        }
-    } catch (e) {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Gagal memuat konten</p></div>';
-    }
-}
-
-async function loadMoreBokepIndo() {
-    var cs = categoryState['bokep-indo'];
-    if (!cs || !cs.hasMore) return;
-
-    var btn = document.getElementById('load-more-bokep-indo');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...'; }
-
-    cs.page++;
-    try {
-        var response = await fetch(BOKEP_API + '/videos?limit=30&page=' + cs.page);
-        var data = await response.json();
-        var grid = document.getElementById('bokep-indo-grid');
-        if (data.status && data.results && data.results.length > 0) {
-            if (grid) grid.insertAdjacentHTML('beforeend', data.results.map(function(item) { return createAdultContentCard(item); }).join(''));
-            cs.hasMore = data.results.length >= 30;
-            if (btn && !cs.hasMore) btn.style.display = 'none';
-        } else {
-            cs.page--;
-            cs.hasMore = false;
-            if (btn) btn.style.display = 'none';
-        }
-    } catch (e) {
-        cs.page--;
-    }
-
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Muat Lebih Banyak'; }
-}
+// (Bokep Indo page functions removed)
 
 // ==========================================================================
 // Detail Pages - Rebahan
@@ -644,103 +579,17 @@ async function playRebahanVideo(postId, serverIndex) {
 }
 
 // ==========================================================================
-// Detail Pages - Bokep API
+// Detail Pages - Bokep API (legacy stubs for old history/favorites)
 // ==========================================================================
 
-async function showAdultDetail(slug) {
-    showPageTransition();
-    try {
-        var response = await fetch(BOKEP_API + '/videos/' + slug);
-        var data = await response.json();
-        if (data.status && data.data) {
-            window.currentAdultContent = data.data;
-            renderAdultDetail(data.data);
-            navigateTo('detail');
-        } else { showToast('Gagal memuat detail', 'error'); }
-    } catch (e) { showToast('Gagal memuat konten', 'error'); }
-    hidePageTransition();
+function showAdultDetail(slug) {
+    showToast('Konten ini sudah tidak tersedia', 'error');
 }
 
-function renderAdultDetail(item) {
-    var container = document.getElementById('detail-container');
-    if (!container) return;
-    var title = (item.title || 'Video').replace('Bokep Indo \u2013 ', '').replace('Bokep Indo - ', '');
-    var safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    var genres = (item.categories || []).slice(0, 5).map(function(c) { return '<span class="genre-tag">' + c + '</span>'; }).join('');
-    container.innerHTML =
-        '<button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Kembali</button>' +
-        '<div class="detail-header">' +
-        '<img src="' + (item.poster || '') + '" alt="' + title + '" class="detail-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
-        '<div class="detail-info">' +
-        '<h1 class="detail-title">' + title + '</h1>' +
-        '<div class="detail-meta">' +
-        '<div class="detail-meta-item" style="color:#ff4444;"><i class="fas fa-fire-alt"></i><span>18+</span></div>' +
-        '<div class="detail-meta-item"><i class="fas fa-play-circle"></i><span>Server Dado</span></div></div>' +
-        '<div class="detail-genres">' + genres + '</div>' +
-        '<p class="detail-description">' + (item.description || 'Konten dewasa 18+') + '</p>' +
-        '<div class="detail-actions">' +
-        '<button class="detail-btn primary" onclick="playAdultVideo(\'' + item.slug + '\', 0)"><i class="fas fa-play"></i> Tonton Sekarang</button>' +
-        '</div></div></div>' +
-        '<div class="episodes-section"><h2><i class="fas fa-play-circle"></i> Server Streaming</h2>' +
-        '<div class="episodes-list" style="display:flex;flex-wrap:wrap;gap:10px;">' +
-        '<button class="episode-btn" onclick="playAdultVideo(\'' + item.slug + '\', 0)" style="padding:12px 20px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:8px;color:white;cursor:pointer;font-weight:bold;">' +
-        '<i class="fas fa-play-circle"></i> Server Dado</button></div></div>' +
-        '<div class="episodes-section" style="margin-top:20px;"><h2><i class="fas fa-heart"></i> Simpan Video</h2>' +
-        '<div style="display:flex;gap:10px;">' +
-        '<button class="episode-btn" onclick="toggleAdultFavorite(\'' + item.slug + '\', \'' + safeTitle + '\', \'' + (item.poster || '') + '\')" ' +
-        'style="padding:12px 20px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);cursor:pointer;">' +
-        '<i class="fas fa-bookmark"></i> Favorit</button></div></div>' +
-        '<div id="ad-adult-detail" class="ad-container"></div>';
-    window.currentAdultContent = item;
-    if (window._loadDetailAd) window._loadDetailAd('ad-adult-detail');
-}
+function renderAdultDetail(item) {}
 
-async function playAdultVideo(slug, serverIndex) {
-    if (serverIndex === undefined) serverIndex = 0;
-    if (window._hideSocialBar) window._hideSocialBar();
-    showPageTransition();
-    var item = window.currentAdultContent;
-    if (!item || item.slug !== slug) {
-        try {
-            var response = await fetch(BOKEP_API + '/videos/' + slug);
-            var data = await response.json();
-            if (data.status && data.data) { item = data.data; window.currentAdultContent = item; }
-            else { hidePageTransition(); showToast('Video tidak ditemukan', 'error'); return; }
-        } catch (e) { hidePageTransition(); showToast('Gagal memuat video', 'error'); return; }
-    }
-    if (!item || !item.sources || !item.sources[serverIndex]) { hidePageTransition(); showToast('Video tidak tersedia', 'error'); return; }
-
-    var title = (item.title || 'Video').replace('Bokep Indo \u2013 ', '').replace('Bokep Indo - ', '');
-    window.currentAdultSources = item.sources;
-    window.currentAdultTitle = title;
-    window.currentAdultSlug = slug;
-
-    var imaxSource = null;
-    var imaxIndex = -1;
-    for (var si = 0; si < item.sources.length; si++) {
-        if (item.sources[si].url.includes('imaxstreams.com')) { imaxSource = item.sources[si]; imaxIndex = si; break; }
-    }
-    if (!imaxSource) { imaxSource = item.sources[0]; imaxIndex = 0; }
-    window.currentServerIndex = imaxIndex;
-
-    addToHistory({ title: title, poster: item.poster, detailPath: 'adult:' + slug, slug: slug, type: 'adult', isAdult: true });
-
-    var container = document.getElementById('watch-container');
-    if (!container) { hidePageTransition(); return; }
-    container.innerHTML =
-        '<button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Kembali</button>' +
-        '<div class="video-player-container adult-player" id="adult-player-wrapper">' +
-        '<div class="loading-video"><i class="fas fa-spinner fa-spin"></i><p>Memuat video...</p></div></div>' +
-        '<div class="video-info"><h2 class="video-title">' + title + '</h2>' +
-        '<div class="video-meta adult-meta"><span class="adult-badge"><i class="fas fa-fire"></i> Film Dewasa</span></div></div>' +
-        '<div id="ad-adult-watch" class="ad-container"></div>';
-    if (window._loadWatchAd) window._loadWatchAd('ad-adult-watch');
-
-    var wrapper = document.getElementById('adult-player-wrapper');
-    if (wrapper) useEmbedFallback(wrapper, imaxSource.url);
-
-    navigateTo('watch');
-    hidePageTransition();
+function playAdultVideo(slug, serverIndex) {
+    showToast('Konten ini sudah tidak tersedia', 'error');
 }
 
 function useEmbedFallback(wrapper, sourceUrl) {
@@ -771,17 +620,9 @@ async function performSearch(query, showPage) {
 
     var allResults = [];
     try {
-        var results = await Promise.all([
-            fetch(BOKEP_API + '/videos?q=' + encodeURIComponent(query) + '&limit=20').then(function(r) { return r.json(); }).catch(function() { return null; }),
-            fetchAPI('rebahan-search', { q: query })
-        ]);
-        var bokepResponse = results[0];
-        var rebahanData = results[1];
+        var rebahanData = await fetchAPI('rebahan-search', { q: query });
         if (rebahanData && rebahanData.items) {
             allResults = rebahanData.items.map(function(item) { item.isRebahan = true; item.type = 'rebahan'; return item; });
-        }
-        if (bokepResponse && bokepResponse.status && bokepResponse.results) {
-            allResults = allResults.concat(bokepResponse.results.map(function(item) { item.isAdult = true; item.type = 'adult'; return item; }));
         }
     } catch (e) { console.error('Search error:', e); }
 
@@ -790,8 +631,7 @@ async function performSearch(query, showPage) {
         if (grid) {
             if (allResults.length > 0) {
                 grid.innerHTML = allResults.map(function(item) {
-                    if (item.isRebahan || item.type === 'rebahan') return createRebahanCard(item);
-                    return createAdultContentCard(item);
+                    return createRebahanCard(item);
                 }).join('');
             } else {
                 grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada hasil ditemukan</p></div>';
@@ -809,13 +649,10 @@ function showSearchResults(items) {
         container.innerHTML = '<div class="search-no-results"><p>Tidak ada hasil ditemukan</p></div>';
     } else {
         container.innerHTML = items.slice(0, 8).map(function(item) {
-            var isRebahan = item.isRebahan || item.type === 'rebahan';
             var safePoster = encodeURIComponent(item.poster || '');
             var safeTitle = encodeURIComponent(item.title || '');
-            var onclick = isRebahan
-                ? "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')"
-                : "showAdultDetail('" + item.slug + "')";
-            var title = isRebahan ? item.title : (item.title || 'Video').replace('Bokep Indo \u2013 ', '').replace('Bokep Indo - ', '');
+            var onclick = "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')";
+            var title = item.title;
             var poster = item.poster || ADULT_POSTER_PLACEHOLDER;
             return '<div class="search-result-item" onclick="' + onclick + '">' +
                 '<img src="' + poster + '" alt="' + title + '" class="search-result-img" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
@@ -838,29 +675,18 @@ async function performMobileSearch(query) {
 
     var allResults = [];
     try {
-        var results = await Promise.all([
-            fetch(BOKEP_API + '/videos?q=' + encodeURIComponent(query) + '&limit=10').then(function(r) { return r.json(); }).catch(function() { return null; }),
-            fetchAPI('rebahan-search', { q: query })
-        ]);
-        var bokepResponse = results[0];
-        var rebahanData = results[1];
+        var rebahanData = await fetchAPI('rebahan-search', { q: query });
         if (rebahanData && rebahanData.items) {
             allResults = rebahanData.items.map(function(item) { item.isRebahan = true; item.type = 'rebahan'; return item; });
-        }
-        if (bokepResponse && bokepResponse.status && bokepResponse.results) {
-            allResults = allResults.concat(bokepResponse.results.map(function(item) { item.isAdult = true; item.type = 'adult'; return item; }));
         }
     } catch (e) { console.error('Mobile search error:', e); }
 
     if (allResults.length > 0) {
         container.innerHTML = allResults.slice(0, 10).map(function(item) {
-            var isRebahan = item.isRebahan || item.type === 'rebahan';
             var safePoster = encodeURIComponent(item.poster || '');
             var safeTitle = encodeURIComponent(item.title || '');
-            var onclick = isRebahan
-                ? "closeMobileSearch(); showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')"
-                : "closeMobileSearch(); showAdultDetail('" + item.slug + "')";
-            var title = isRebahan ? item.title : (item.title || 'Video').replace('Bokep Indo \u2013 ', '').replace('Bokep Indo - ', '');
+            var onclick = "closeMobileSearch(); showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')";
+            var title = item.title;
             return '<div class="search-result-item" onclick="' + onclick + '">' +
                 '<img src="' + (item.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="' + title + '" class="search-result-img" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
                 '<div class="search-result-info"><h4>' + title + '</h4><p>18+ \u2022 Film Dewasa</p>' +
@@ -1015,9 +841,7 @@ function handleUrlRouting() {
         '/jav': 'jav',
         '/semi-korea': 'semi-korea',
         '/filipina': 'filipina',
-        '/film-semi': 'film-semi',
-        '/bokep-indo': 'bokep-indo',
-        '/bokep': 'bokep-indo',
+        '/genre-indonesia': 'genre-indonesia',
         '/history': 'history',
         '/riwayat': 'history',
         '/favorites': 'favorites',
@@ -1035,8 +859,7 @@ function handleUrlRouting() {
             'jav': '/jav',
             'semi-korea': '/semi-korea',
             'filipina': '/filipina',
-            'film-semi': '/film-semi',
-            'bokep-indo': '/bokep-indo',
+            'genre-indonesia': '/genre-indonesia',
             'history': '/riwayat',
             'favorites': '/favorit'
         };
