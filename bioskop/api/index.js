@@ -91,6 +91,9 @@ function postData(url, body) {
     });
 }
 
+// Adult-only category slugs (used to filter trending)
+const ADULT_CATEGORIES = ['film-semi', 'film-bokep-jepang', 'semi-jepang', 'semi-indonesia', 'semi-korea', 'semi-filipina', 'vivamax', 'film-semi-jepang', 'film-jepang', 'kelas-bintang'];
+
 // Parse articles from Rebahan HTML
 function parseRebahanArticles(html) {
     const articles = [];
@@ -104,18 +107,23 @@ function parseRebahanArticles(html) {
         const imgMatch = content.match(/<img[^>]*src="([^"]+)"/);
         const yearMatch = content.match(/rel="tag">(\d{4})<\/a>/);
 
+        // Extract category slugs from article links
+        const catMatches = [...content.matchAll(/category\/([a-z0-9-]+)/g)];
+        const categories = [...new Set(catMatches.map(m => m[1]))];
+
         if (titleMatch) {
             const url = titleMatch[1];
             const slug = url.replace(REBAHAN_BASE, '').replace(/^\/|\/$/g, '');
             articles.push({
                 id: postId,
                 postId: postId,
-                title: titleMatch[2].replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").replace(/&#8220;/g, '"').replace(/&#8221;/g, '"'),
+                title: titleMatch[2].replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").replace(/&#8220;/g, '"').replace(/&#8221;/g, '"').replace(/&#038;/g, '&'),
                 poster: imgMatch ? imgMatch[1] : '',
                 url: url,
                 slug: slug,
                 year: yearMatch ? yearMatch[1] : '',
-                type: 'rebahan'
+                type: 'rebahan',
+                categories: categories
             });
         }
     }
@@ -221,7 +229,14 @@ module.exports = async function handler(req, res) {
                 : `${REBAHAN_BASE}${catPath}`;
 
             const html = await fetchHTML(url);
-            const articles = parseRebahanArticles(html);
+            let articles = parseRebahanArticles(html);
+
+            // Filter trending to adult-only content
+            if (category === 'trending') {
+                articles = articles.filter(item =>
+                    item.categories && item.categories.some(c => ADULT_CATEGORIES.includes(c))
+                );
+            }
 
             // Check max pages
             const pageNums = [...html.matchAll(/page\/(\d+)/g)].map(m => parseInt(m[1]));
