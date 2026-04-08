@@ -17,8 +17,9 @@
 })();
 
 // API Configuration
-const REBAHAN_API = 'https://zeldvorik.ru/apiv3/api.php';
+const REBAHAN_API = '/api';
 const BOKEP_API = 'https://bokep-api.vercel.app/api';
+const REBAHAN_SITE = 'https://guidedumanifestant.org';
 
 // ==========================================================================
 // Utility Functions for Adult Video Player
@@ -314,17 +315,32 @@ async function loadHomeData() {
     }
 }
 
-// Load adult content from Bokep API
+// Load adult content from Rebahan + Bokep API
 async function loadAdultContentSection(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
     try {
-        const response = await fetch(`${BOKEP_API}/videos?limit=10`);
-        const data = await response.json();
+        // Load from guidedumanifestant.org (Film Semi/JAV) via our API
+        const [rebahanData, bokepResponse] = await Promise.all([
+            fetchAPI('rebahan-list', { category: 'film-semi', page: 1 }).catch(() => null),
+            fetch(`${BOKEP_API}/videos?limit=10`).then(r => r.json()).catch(() => null)
+        ]);
         
-        if (data.status && data.results && data.results.length > 0) {
-            container.innerHTML = data.results.map(item => createAdultContentCard(item)).join('');
+        let cards = '';
+        
+        // Rebahan items first (prioritized)
+        if (rebahanData && rebahanData.items && rebahanData.items.length > 0) {
+            cards += rebahanData.items.slice(0, 6).map(item => createRebahanCard(item)).join('');
+        }
+        
+        // Then Bokep API items
+        if (bokepResponse && bokepResponse.status && bokepResponse.results && bokepResponse.results.length > 0) {
+            cards += bokepResponse.results.slice(0, 4).map(item => createAdultContentCard(item)).join('');
+        }
+        
+        if (cards) {
+            container.innerHTML = cards;
         } else {
             container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Tidak ada konten tersedia</p>';
         }
@@ -332,6 +348,27 @@ async function loadAdultContentSection(containerId) {
         console.error('Error loading adult content:', error);
         container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Gagal memuat konten</p>';
     }
+}
+
+// Create card for Rebahan content (Film Semi/JAV from guidedumanifestant.org)
+function createRebahanCard(item) {
+    const posterSrc = item.poster || ADULT_POSTER_PLACEHOLDER;
+    return `
+        <div class="content-card" onclick="showRebahanDetail('${item.postId}', '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.poster || '')}')">
+            <img src="${posterSrc}" alt="${item.title}" class="card-poster" loading="lazy" onerror="this.src='${ADULT_POSTER_PLACEHOLDER}'">
+            <div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>
+            <div class="card-overlay">
+                <div class="card-play-btn"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="card-info">
+                <h4 class="card-title">${item.title}</h4>
+                <div class="card-meta">
+                    <span><i class="fas fa-play-circle" style="color:#ff4444"></i> Multi Server</span>
+                    ${item.year ? `<span>${item.year}</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Default adult poster - stylish placeholder
@@ -469,7 +506,7 @@ function updateBanner() {
     });
 }
 
-// Load multi-category featured section (Film Indo, Bokep, Western, Sub Indo)
+// Load multi-category featured section (Film Semi, JAV from Rebahan)
 async function loadMultiFeatured() {
     const container = document.getElementById('featured-film');
     if (!container) {
@@ -477,18 +514,18 @@ async function loadMultiFeatured() {
         return;
     }
     
-    console.log('Loading bokep viral & trending...');
+    console.log('Loading featured content...');
     
     try {
-        // Fetch bokep videos - get more to show variety
-        const adultResponse = await fetch(`${BOKEP_API}/videos?limit=8`).then(r => r.json()).catch(() => null);
+        // Fetch from Rebahan via our API
+        const rebahanData = await fetchAPI('rebahan-list', { category: 'film-semi', page: 1 }).catch(() => null);
         
-        if (adultResponse?.results?.length > 0) {
-            const featuredItems = adultResponse.results.slice(0, 4).map((adult, index) => ({
-                title: (adult.title || 'Video').replace('Bokep Indo – ', '').replace('Bokep Indo - ', ''),
-                poster: adult.poster,
-                slug: adult.slug,
-                isAdult: true,
+        if (rebahanData && rebahanData.items && rebahanData.items.length > 0) {
+            const featuredItems = rebahanData.items.slice(0, 4).map((item, index) => ({
+                title: item.title,
+                poster: item.poster,
+                postId: item.postId,
+                isRebahan: true,
                 category: index === 0 ? '🔥 Viral' : (index === 1 ? '📈 Trending' : (index === 2 ? '⭐ Populer' : '✨ Terbaru')),
                 categoryIcon: index === 0 ? 'fa-fire' : (index === 1 ? 'fa-chart-line' : (index === 2 ? 'fa-star' : 'fa-sparkles')),
                 categoryColor: index === 0 ? '#ff4444' : (index === 1 ? '#ff6b35' : (index === 2 ? '#ffd700' : '#ff69b4'))
@@ -497,11 +534,11 @@ async function loadMultiFeatured() {
             container.innerHTML = `
                 <div class="multi-featured-grid">
                     ${featuredItems.map(item => {
-                        const onclick = `showAdultDetail('${item.slug}')`;
+                        const onclick = `showRebahanDetail('${item.postId}', '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.poster || '')}')`;
                         
                         return `
                             <div class="featured-card" onclick="${onclick}" style="border-left: 3px solid ${item.categoryColor};">
-                                <img src="${item.poster}" alt="${item.title}" class="featured-poster" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/></svg>'">
+                                <img src="${item.poster || ADULT_POSTER_PLACEHOLDER}" alt="${item.title}" class="featured-poster" onerror="this.src='${ADULT_POSTER_PLACEHOLDER}'">
                                 <div class="featured-info">
                                     <div class="featured-category" style="color: ${item.categoryColor};">
                                         <i class="fas ${item.categoryIcon}"></i> ${item.category}
@@ -509,7 +546,7 @@ async function loadMultiFeatured() {
                                     <h3 class="featured-title">${item.title}</h3>
                                     <div class="featured-meta">
                                         <span style="color: #ff4444;"><i class="fas fa-fire-alt"></i> 18+</span>
-                                        <span><i class="fas fa-tag"></i> Dewasa</span>
+                                        <span><i class="fas fa-server"></i> Multi Server</span>
                                     </div>
                                     <button class="featured-btn" style="background: ${item.categoryColor};" onclick="event.stopPropagation(); ${onclick}">
                                         <i class="fas fa-play"></i> Tonton
@@ -520,13 +557,53 @@ async function loadMultiFeatured() {
                     }).join('')}
                 </div>
             `;
-            console.log('Bokep viral & trending loaded:', featuredItems.length, 'items');
+            console.log('Featured rebahan loaded:', featuredItems.length, 'items');
         } else {
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Gagal memuat data viral & trending</p>';
+            // Fallback to Bokep API
+            const adultResponse = await fetch(`${BOKEP_API}/videos?limit=8`).then(r => r.json()).catch(() => null);
+            
+            if (adultResponse?.results?.length > 0) {
+                const featuredItems = adultResponse.results.slice(0, 4).map((adult, index) => ({
+                    title: (adult.title || 'Video').replace('Bokep Indo – ', '').replace('Bokep Indo - ', ''),
+                    poster: adult.poster,
+                    slug: adult.slug,
+                    isAdult: true,
+                    category: index === 0 ? '🔥 Viral' : (index === 1 ? '📈 Trending' : (index === 2 ? '⭐ Populer' : '✨ Terbaru')),
+                    categoryIcon: index === 0 ? 'fa-fire' : (index === 1 ? 'fa-chart-line' : (index === 2 ? 'fa-star' : 'fa-sparkles')),
+                    categoryColor: index === 0 ? '#ff4444' : (index === 1 ? '#ff6b35' : (index === 2 ? '#ffd700' : '#ff69b4'))
+                }));
+                
+                container.innerHTML = `
+                    <div class="multi-featured-grid">
+                        ${featuredItems.map(item => {
+                            const onclick = `showAdultDetail('${item.slug}')`;
+                            return `
+                                <div class="featured-card" onclick="${onclick}" style="border-left: 3px solid ${item.categoryColor};">
+                                    <img src="${item.poster}" alt="${item.title}" class="featured-poster" onerror="this.src='${ADULT_POSTER_PLACEHOLDER}'">
+                                    <div class="featured-info">
+                                        <div class="featured-category" style="color: ${item.categoryColor};">
+                                            <i class="fas ${item.categoryIcon}"></i> ${item.category}
+                                        </div>
+                                        <h3 class="featured-title">${item.title}</h3>
+                                        <div class="featured-meta">
+                                            <span style="color: #ff4444;"><i class="fas fa-fire-alt"></i> 18+</span>
+                                        </div>
+                                        <button class="featured-btn" style="background: ${item.categoryColor};" onclick="event.stopPropagation(); ${onclick}">
+                                            <i class="fas fa-play"></i> Tonton
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Gagal memuat data</p>';
+            }
         }
     } catch (error) {
-        console.error('Failed to load bokep viral & trending:', error);
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Gagal memuat data viral & trending</p>';
+        console.error('Failed to load featured:', error);
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Gagal memuat data</p>';
     }
 }
 
@@ -791,8 +868,10 @@ async function loadPageData(page) {
     }
 }
 
-// Load adult page from Bokep API
+// Load adult page from Rebahan + Bokep API
 let adultPage = 1;
+let rebahanPage = 1;
+let rebahanCategory = 'film-semi';
 async function loadAdultPage() {
     const grid = document.getElementById('adult-comedy-grid');
     if (!grid) return;
@@ -801,61 +880,104 @@ async function loadAdultPage() {
     if (grid.querySelector('.content-card')) return;
     
     grid.innerHTML = `
-        <div class="skeleton-container grid">
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
+        <div class="rebahan-category-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
+            <button class="rebahan-cat-btn active" onclick="switchRebahanCategory('film-semi', this)">Film Semi</button>
+            <button class="rebahan-cat-btn" onclick="switchRebahanCategory('film-bokep-jepang', this)">JAV</button>
+            <button class="rebahan-cat-btn" onclick="switchRebahanCategory('semi-jepang', this)">Semi Jepang</button>
+            <button class="rebahan-cat-btn" onclick="switchRebahanCategory('semi-korea', this)">Semi Korea</button>
+            <button class="rebahan-cat-btn" onclick="switchRebahanCategory('semi-indonesia', this)">Semi Indonesia</button>
+            <button class="rebahan-cat-btn" onclick="switchRebahanCategory('trending', this)">Trending</button>
+        </div>
+        <div id="rebahan-grid" class="grid"></div>
+        <div style="text-align:center;margin:20px 0;">
+            <button id="load-more-rebahan" class="load-more-btn" onclick="loadMoreRebahan()" style="padding:12px 30px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:8px;color:white;cursor:pointer;font-weight:bold;">
+                <i class="fas fa-plus"></i> Muat Lebih Banyak
+            </button>
         </div>
     `;
     
+    // Add category button styles
+    if (!document.getElementById('rebahan-cat-styles')) {
+        const s = document.createElement('style');
+        s.id = 'rebahan-cat-styles';
+        s.textContent = '.rebahan-cat-btn{padding:8px 16px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:20px;color:var(--text-color);cursor:pointer;transition:all .3s;font-size:.85rem}.rebahan-cat-btn.active{background:linear-gradient(135deg,#ff4444,#cc0000);border-color:#ff4444;color:white;font-weight:bold}.rebahan-cat-btn:hover:not(.active){background:var(--hover-bg)}';
+        document.head.appendChild(s);
+    }
+    
+    rebahanPage = 1;
+    rebahanCategory = 'film-semi';
+    await loadRebahanGrid();
+}
+
+async function switchRebahanCategory(cat, btn) {
+    // Update active button
+    document.querySelectorAll('.rebahan-cat-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    
+    rebahanCategory = cat;
+    rebahanPage = 1;
+    
+    const grid = document.getElementById('rebahan-grid');
+    if (grid) {
+        grid.innerHTML = '<div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
+    }
+    
+    await loadRebahanGrid();
+}
+
+async function loadRebahanGrid() {
+    const grid = document.getElementById('rebahan-grid');
+    if (!grid) return;
+    
     try {
-        const response = await fetch(`${BOKEP_API}/videos?page=1&limit=30`);
-        const data = await response.json();
+        const data = await fetchAPI('rebahan-list', { category: rebahanCategory, page: rebahanPage });
         
-        if (data.status && data.results && data.results.length > 0) {
-            grid.innerHTML = data.results.map(item => createAdultContentCard(item)).join('');
-            adultPage = 1;
+        if (data && data.items && data.items.length > 0) {
+            grid.innerHTML = data.items.map(item => createRebahanCard(item)).join('');
+            
+            const btn = document.getElementById('load-more-rebahan');
+            if (btn) btn.style.display = data.hasMore ? '' : 'none';
         } else {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-fire-alt"></i><p>Tidak ada konten tersedia</p></div>';
         }
     } catch (error) {
-        console.error('Error loading adult page:', error);
+        console.error('Error loading rebahan grid:', error);
         grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Gagal memuat konten</p></div>';
     }
 }
 
-// Load more adult content
-async function loadMoreAdultContent() {
-    const grid = document.getElementById('adult-comedy-grid');
-    const btn = document.getElementById('load-more-adult-comedy');
+async function loadMoreRebahan() {
+    const grid = document.getElementById('rebahan-grid');
+    const btn = document.getElementById('load-more-rebahan');
     if (!grid || !btn) return;
     
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
     
     try {
-        adultPage++;
-        const response = await fetch(`${BOKEP_API}/videos?page=${adultPage}&limit=30`);
-        const data = await response.json();
+        rebahanPage++;
+        const data = await fetchAPI('rebahan-list', { category: rebahanCategory, page: rebahanPage });
         
-        if (data.status && data.results && data.results.length > 0) {
-            const newCards = data.results.map(item => createAdultContentCard(item)).join('');
+        if (data && data.items && data.items.length > 0) {
+            const newCards = data.items.map(item => createRebahanCard(item)).join('');
             grid.insertAdjacentHTML('beforeend', newCards);
-        }
-        
-        if (adultPage >= data.totalPages) {
-            btn.style.display = 'none';
+            
+            if (!data.hasMore) btn.style.display = 'none';
+        } else {
+            rebahanPage--;
         }
     } catch (error) {
-        console.error('Error loading more adult content:', error);
-        adultPage--;
+        console.error('Error loading more rebahan:', error);
+        rebahanPage--;
     }
     
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-plus"></i> Muat Lebih Banyak';
+}
+
+// Load more adult content (legacy - redirects to rebahan)
+async function loadMoreAdultContent() {
+    await loadMoreRebahan();
 }
 
 async function loadMoreContent(action) {
@@ -1038,6 +1160,197 @@ function renderAdultDetail(item) {
     if (window._loadDetailAd) {
         window._loadDetailAd('ad-adult-detail');
     }
+}
+
+// ==========================================================================
+// Rebahan (guidedumanifestant.org) Functions
+// ==========================================================================
+
+// Show detail for Rebahan content
+async function showRebahanDetail(postId, encodedTitle, encodedPoster) {
+    showPageTransition();
+    
+    const title = decodeURIComponent(encodedTitle);
+    const poster = decodeURIComponent(encodedPoster);
+    
+    try {
+        // Fetch embed servers from our API
+        const data = await fetchAPI('rebahan-player', { post_id: postId });
+        
+        if (data && data.success && data.servers && data.servers.length > 0) {
+            window.currentRebahanData = {
+                postId: postId,
+                title: title,
+                poster: poster,
+                servers: data.servers
+            };
+            renderRebahanDetail(title, poster, data.servers, postId);
+            navigateTo('detail');
+        } else {
+            showToast('Gagal memuat server video', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading rebahan detail:', error);
+        showToast('Gagal memuat konten', 'error');
+    }
+    
+    hidePageTransition();
+}
+
+// Render Rebahan detail page with server list
+function renderRebahanDetail(title, poster, servers, postId) {
+    const container = document.getElementById('detail-container');
+    if (!container) return;
+    
+    const serverButtons = servers.map((srv, i) => `
+        <button class="episode-btn" onclick="playRebahanVideo('${postId}', ${i})" style="padding: 12px 20px; background: ${i === 0 ? 'linear-gradient(135deg, #ff4444, #cc0000)' : 'var(--card-bg)'}; border: ${i === 0 ? 'none' : '1px solid var(--border-color)'}; border-radius: 8px; color: ${i === 0 ? 'white' : 'var(--text-color)'}; cursor: pointer; transition: all 0.3s; font-weight: ${i === 0 ? 'bold' : 'normal'};">
+            <i class="fas fa-play-circle"></i> ${srv.name}
+        </button>
+    `).join('');
+    
+    container.innerHTML = `
+        <button class="back-btn" onclick="goBack()">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </button>
+        <div class="detail-header">
+            <img src="${poster || ADULT_POSTER_PLACEHOLDER}" alt="${title}" class="detail-poster" onerror="this.src='${ADULT_POSTER_PLACEHOLDER}'">
+            <div class="detail-info">
+                <h1 class="detail-title">${title}</h1>
+                <div class="detail-meta">
+                    <div class="detail-meta-item" style="color: #ff4444;">
+                        <i class="fas fa-fire-alt"></i>
+                        <span>18+</span>
+                    </div>
+                    <div class="detail-meta-item">
+                        <i class="fas fa-server"></i>
+                        <span>${servers.length} Server</span>
+                    </div>
+                </div>
+                <p class="detail-description">Film Semi / JAV - Tersedia ${servers.length} server streaming</p>
+                <div class="detail-actions">
+                    <button class="detail-btn primary" onclick="playRebahanVideo('${postId}', 0)">
+                        <i class="fas fa-play"></i> Tonton Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="episodes-section">
+            <h2><i class="fas fa-play-circle"></i> Server Streaming</h2>
+            <div class="episodes-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${serverButtons}
+            </div>
+        </div>
+        
+        <div class="episodes-section" style="margin-top: 20px;">
+            <h2><i class="fas fa-heart"></i> Simpan Video</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="episode-btn" onclick="toggleAdultFavorite('rebahan-${postId}', '${title.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${poster}')" style="padding: 12px 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); cursor: pointer;">
+                    <i class="fas fa-bookmark"></i> Favorit
+                </button>
+            </div>
+        </div>
+        
+        <div id="ad-rebahan-detail" class="ad-container"></div>
+    `;
+    
+    if (window._loadDetailAd) {
+        window._loadDetailAd('ad-rebahan-detail');
+    }
+}
+
+// Play Rebahan video with specific server
+async function playRebahanVideo(postId, serverIndex) {
+    if (window._hideSocialBar) window._hideSocialBar();
+    showPageTransition();
+    
+    let rbData = window.currentRebahanData;
+    
+    // If no cached data or different postId, fetch again
+    if (!rbData || rbData.postId !== postId) {
+        try {
+            const data = await fetchAPI('rebahan-player', { post_id: postId });
+            if (data && data.success && data.servers) {
+                rbData = {
+                    postId: postId,
+                    title: 'Video',
+                    poster: '',
+                    servers: data.servers
+                };
+                window.currentRebahanData = rbData;
+            } else {
+                hidePageTransition();
+                showToast('Server tidak tersedia', 'error');
+                return;
+            }
+        } catch (error) {
+            hidePageTransition();
+            showToast('Gagal memuat video', 'error');
+            return;
+        }
+    }
+    
+    if (!rbData.servers || !rbData.servers[serverIndex]) {
+        hidePageTransition();
+        showToast('Server tidak tersedia', 'error');
+        return;
+    }
+    
+    const server = rbData.servers[serverIndex];
+    const title = rbData.title;
+    
+    // Save to history
+    addToHistory({
+        title: title,
+        poster: rbData.poster,
+        detailPath: `rebahan:${postId}`,
+        postId: postId,
+        type: 'rebahan',
+        isAdult: true
+    });
+    
+    // Build server switch buttons
+    const serverBtns = rbData.servers.map((srv, i) => `
+        <button class="adult-server-btn ${i === serverIndex ? 'active' : ''}" onclick="playRebahanVideo('${postId}', ${i})">
+            <i class="fas fa-server"></i> ${srv.name}
+        </button>
+    `).join('');
+    
+    const container = document.getElementById('watch-container');
+    if (!container) { hidePageTransition(); return; }
+    
+    addAdultPlayerStyles();
+    
+    container.innerHTML = `
+        <button class="back-btn" onclick="goBack()">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </button>
+        
+        <div class="video-player-container adult-player" id="adult-player-wrapper">
+            <iframe src="${server.url}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; fullscreen"></iframe>
+        </div>
+        
+        <div class="adult-server-selector">
+            ${serverBtns}
+        </div>
+        
+        <div class="video-info">
+            <h2 class="video-title">${title}</h2>
+            <div class="video-meta adult-meta">
+                <span class="adult-badge"><i class="fas fa-fire"></i> Film Dewasa</span>
+                <span style="margin-left: 10px; color: var(--text-muted);">${server.name}</span>
+            </div>
+        </div>
+        
+        <div id="ad-rebahan-watch" class="ad-container"></div>
+    `;
+    
+    if (window._loadWatchAd) {
+        window._loadWatchAd('ad-rebahan-watch');
+    }
+    
+    navigateTo('watch');
+    hidePageTransition();
 }
 
 // Play adult video - uses watch page like other categories
@@ -1773,21 +2086,33 @@ async function performSearch(query, showPage = false) {
     // Search from main API
     const data = await fetchAPI('search', { q: query });
     
-    // Also search from Bokep API
+    // Also search from Bokep API and Rebahan
     let adultResults = [];
     try {
-        console.log('[Search] Fetching adult content for:', query);
-        const adultResponse = await fetch(`${BOKEP_API}/videos?q=${encodeURIComponent(query)}&limit=20`);
-        const adultData = await adultResponse.json();
-        console.log('[Search] Adult API response:', adultData);
-        if (adultData.status && adultData.results) {
-            adultResults = adultData.results.map(item => ({
+        const [adultResponse, rebahanData] = await Promise.all([
+            fetch(`${BOKEP_API}/videos?q=${encodeURIComponent(query)}&limit=20`).then(r => r.json()).catch(() => null),
+            fetchAPI('rebahan-search', { q: query }).catch(() => null)
+        ]);
+        
+        if (adultResponse && adultResponse.status && adultResponse.results) {
+            adultResults = adultResponse.results.map(item => ({
                 ...item,
                 isAdult: true,
                 type: 'adult',
                 detailPath: `adult:${item.slug}`
             }));
-            console.log('[Search] Adult results mapped:', adultResults.length, 'items');
+        }
+        
+        // Add rebahan results
+        if (rebahanData && rebahanData.items) {
+            const rebahanResults = rebahanData.items.map(item => ({
+                ...item,
+                isAdult: true,
+                isRebahan: true,
+                type: 'rebahan',
+                detailPath: `rebahan:${item.postId}`
+            }));
+            adultResults = [...rebahanResults, ...adultResults];
         }
     } catch (e) {
         console.error('[Search] Adult search error:', e);
@@ -1813,6 +2138,9 @@ async function performSearch(query, showPage = false) {
         if (grid) {
             if (allItems.length > 0) {
                 grid.innerHTML = allItems.map(item => {
+                    if (item.isRebahan || item.type === 'rebahan') {
+                        return createRebahanCard(item);
+                    }
                     if (item.isAdult || item.type === 'adult') {
                         return createAdultContentCard(item);
                     }
@@ -2011,9 +2339,17 @@ function loadContinueWatching() {
         container.innerHTML = state.history.slice(0, 10).map(item => {
             // Check if it's adult content
             const isAdult = item.isAdult || item.type === 'adult' || (item.detailPath && item.detailPath.startsWith('adult:'));
+            const isRebahan = item.type === 'rebahan' || (item.detailPath && item.detailPath.startsWith('rebahan:'));
             const slug = isAdult ? (item.slug || item.detailPath?.replace('adult:', '')) : null;
-            const onclick = isAdult ? `showAdultDetail('${slug}')` : `showDetail('${item.detailPath}')`;
-            
+            const postId = isRebahan ? (item.postId || item.detailPath?.replace('rebahan:', '')) : null;
+            let onclick;
+            if (isRebahan) {
+                onclick = `showRebahanDetail('${postId}', '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.poster || '')}')`;
+            } else if (isAdult) {
+                onclick = `showAdultDetail('${slug}')`;
+            } else {
+                onclick = `showDetail('${item.detailPath}')`;
+            }            
             return `
                 <div class="content-card" onclick="${onclick}">
                     <img src="${item.poster}" alt="${item.title}" class="card-poster" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/></svg>'">
@@ -2089,9 +2425,17 @@ function loadFavorites() {
         grid.innerHTML = state.favorites.map(item => {
             // Check if it's adult content
             const isAdult = item.isAdult || item.type === 'adult' || (item.detailPath && item.detailPath.startsWith('adult:'));
+            const isRebahan = item.type === 'rebahan' || (item.detailPath && item.detailPath.startsWith('rebahan:'));
             const slug = isAdult ? (item.slug || item.detailPath?.replace('adult:', '')) : null;
-            const onclick = isAdult ? `showAdultDetail('${slug}')` : `showDetail('${item.detailPath}')`;
-            
+            const postId = isRebahan ? (item.postId || item.detailPath?.replace('rebahan:', '')) : null;
+            let onclick;
+            if (isRebahan) {
+                onclick = `showRebahanDetail('${postId}', '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.poster || '')}')`;
+            } else if (isAdult) {
+                onclick = `showAdultDetail('${slug}')`;
+            } else {
+                onclick = `showDetail('${item.detailPath}')`;
+            }            
             return `
                 <div class="content-card" onclick="${onclick}">
                     <img src="${item.poster}" alt="${item.title}" class="card-poster" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/></svg>'">
@@ -2131,13 +2475,22 @@ function loadHistory() {
         grid.innerHTML = state.history.map(item => {
             // Check if it's adult content
             const isAdult = item.isAdult || item.type === 'adult' || (item.detailPath && item.detailPath.startsWith('adult:'));
+            const isRebahan = item.type === 'rebahan' || (item.detailPath && item.detailPath.startsWith('rebahan:'));
             const slug = isAdult ? (item.slug || item.detailPath?.replace('adult:', '')) : null;
-            const onclick = isAdult ? `showAdultDetail('${slug}')` : `showDetail('${item.detailPath}')`;
+            const postId = isRebahan ? (item.postId || item.detailPath?.replace('rebahan:', '')) : null;
+            let onclick;
+            if (isRebahan) {
+                onclick = `showRebahanDetail('${postId}', '${encodeURIComponent(item.title)}', '${encodeURIComponent(item.poster || '')}')`;
+            } else if (isAdult) {
+                onclick = `showAdultDetail('${slug}')`;
+            } else {
+                onclick = `showDetail('${item.detailPath}')`;
+            }
             
             return `
                 <div class="content-card" onclick="${onclick}">
                     <img src="${item.poster}" alt="${item.title}" class="card-poster" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/></svg>'">
-                    ${isAdult ? '<div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>' : ''}
+                    ${(isAdult || isRebahan) ? '<div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>' : ''}
                     <div class="card-overlay">
                         <div class="card-play-btn"><i class="fas fa-play"></i></div>
                     </div>

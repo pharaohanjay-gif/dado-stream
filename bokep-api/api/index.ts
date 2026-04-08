@@ -142,7 +142,12 @@ async function handleVideosList(req: VercelRequest, res: VercelResponse) {
     const page = parseInt((req.query.page as string) || '1', 10) || 1;
     const limit = Math.min(parseInt((req.query.limit as string) || '30', 10), 200);
     
-    let filtered = videos;
+    // Filter only videos with working embed sources (imaxstreams or kagefiles)
+    let filtered = videos.filter(v => 
+        v.sources && v.sources.some((s: any) => 
+            s.url.includes('imaxstreams.com') || s.url.includes('kagefiles.com')
+        )
+    );
     
     // Search filter
     if (q) {
@@ -189,20 +194,35 @@ async function handleVideoDetail(slug: string, res: VercelResponse) {
         return res.status(404).json({ error: 'Video not found', slug });
     }
     
-    // Filter sources to only include imaxstreams.com (Imax 1)
-    const sources = (video.sources || [])
-        .filter(src => src.url.includes('imaxstreams.com'))
-        .map((src) => ({
-            ...src,
-            name: 'Imax 1',
-            embed_url: src.url.replace('/download/', '/embed/')
-        }));
+    // Build working sources with embed URLs
+    const workingSources: any[] = [];
+    
+    for (const src of (video.sources || [])) {
+        const url = src.url || '';
+        if (url.includes('imaxstreams.com')) {
+            workingSources.push({
+                name: 'Server 1 (Imax)',
+                url: url,
+                embed_url: url.replace('/download/', '/embed/')
+            });
+        } else if (url.includes('kagefiles.com')) {
+            // Convert kagefiles to embed
+            const match = url.match(/kagefiles\.com\/([a-zA-Z0-9]+)/);
+            if (match) {
+                workingSources.push({
+                    name: 'Server 2 (Kage)',
+                    url: url,
+                    embed_url: `https://kagefiles.com/embed/${match[1]}`
+                });
+            }
+        }
+    }
     
     return res.json({
         status: true,
         data: {
             ...video,
-            sources: sources.length > 0 ? sources : video.sources,
+            sources: workingSources.length > 0 ? workingSources : video.sources,
             page_url: video.page_url
         }
     });
