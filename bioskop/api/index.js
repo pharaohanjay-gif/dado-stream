@@ -204,7 +204,7 @@ module.exports = async function handler(req, res) {
         // ==================== REBAHAN CATEGORY LIST ====================
         if (action === 'rebahan-list') {
             const category = req.query.category || 'film-semi';
-            const allowed = ['film-semi', 'film-bokep-jepang', 'semi-jepang', 'semi-indonesia', 'semi-korea', 'semi-filipina', 'trending'];
+            const allowed = ['film-semi', 'film-bokep-jepang', 'semi-jepang', 'semi-indonesia', 'semi-korea', 'semi-filipina', 'trending', 'vivamax', 'film-semi-jepang', 'film-jepang', 'kelas-bintang'];
             if (!allowed.includes(category)) {
                 return res.status(400).json({ success: false, error: 'Invalid category' });
             }
