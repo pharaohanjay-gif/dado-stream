@@ -111,7 +111,7 @@ function parseRebahanArticles(html) {
                 id: postId,
                 postId: postId,
                 title: titleMatch[2].replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").replace(/&#8220;/g, '"').replace(/&#8221;/g, '"'),
-                poster: imgMatch ? imgMatch[1].replace(/-\d+x\d+/, '') : '',
+                poster: imgMatch ? imgMatch[1] : '',
                 url: url,
                 slug: slug,
                 year: yearMatch ? yearMatch[1] : '',
@@ -143,15 +143,15 @@ async function getRebahanEmbeds(postId) {
     return servers;
 }
 
-// Get embed URL for a movie/TV show using vidsrc
+// Get embed URL for a movie/TV show using vidsrc.cc (vidsrc.xyz is dead)
 function getEmbedUrl(tmdbId, type = 'movie', season, episode) {
     if (type === 'tv' && season && episode) {
-        return `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`;
+        return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
     }
     if (type === 'tv') {
-        return `https://vidsrc.xyz/embed/tv/${tmdbId}/1/1`;
+        return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/1`;
     }
-    return `https://vidsrc.xyz/embed/movie/${tmdbId}`;
+    return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
 }
 
 // Transform TMDB movie data to our format

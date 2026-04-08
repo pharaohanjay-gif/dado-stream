@@ -409,7 +409,7 @@ function createAdultContentCard(item) {
             <div class="card-info">
                 <h4 class="card-title">${(item.title || 'Video').replace('Bokep Indo – ', '').replace('Bokep Indo - ', '')}</h4>
                 <div class="card-meta">
-                    <span><i class="fas fa-play-circle" style="color:#ff4444"></i> Dadok Server</span>
+                    <span><i class="fas fa-play-circle" style="color:#ff4444"></i> Server Dado</span>
                 </div>
             </div>
         </div>
@@ -1116,7 +1116,7 @@ function renderAdultDetail(item) {
                     </div>
                     <div class="detail-meta-item">
                         <i class="fas fa-play-circle"></i>
-                        <span>Dadok Server</span>
+                        <span>Server Dado</span>
                     </div>
                 </div>
                 <div class="detail-genres">
@@ -1135,7 +1135,7 @@ function renderAdultDetail(item) {
             <h2><i class="fas fa-play-circle"></i> Server Streaming</h2>
             <div class="episodes-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
                 <button class="episode-btn" onclick="playAdultVideo('${item.slug}', 0)" style="padding: 12px 20px; background: linear-gradient(135deg, #ff4444, #cc0000); border: none; border-radius: 8px; color: white; cursor: pointer; transition: all 0.3s; font-weight: bold;">
-                    <i class="fas fa-play-circle"></i> Dadok Server
+                    <i class="fas fa-play-circle"></i> Server Dado
                 </button>
             </div>
         </div>
@@ -1197,16 +1197,10 @@ async function showRebahanDetail(postId, encodedTitle, encodedPoster) {
     hidePageTransition();
 }
 
-// Render Rebahan detail page with server list
+// Render Rebahan detail page - auto play Server 1 (Server Dado)
 function renderRebahanDetail(title, poster, servers, postId) {
     const container = document.getElementById('detail-container');
     if (!container) return;
-    
-    const serverButtons = servers.map((srv, i) => `
-        <button class="episode-btn" onclick="playRebahanVideo('${postId}', ${i})" style="padding: 12px 20px; background: ${i === 0 ? 'linear-gradient(135deg, #ff4444, #cc0000)' : 'var(--card-bg)'}; border: ${i === 0 ? 'none' : '1px solid var(--border-color)'}; border-radius: 8px; color: ${i === 0 ? 'white' : 'var(--text-color)'}; cursor: pointer; transition: all 0.3s; font-weight: ${i === 0 ? 'bold' : 'normal'};">
-            <i class="fas fa-play-circle"></i> ${srv.name}
-        </button>
-    `).join('');
     
     container.innerHTML = `
         <button class="back-btn" onclick="goBack()">
@@ -1223,10 +1217,10 @@ function renderRebahanDetail(title, poster, servers, postId) {
                     </div>
                     <div class="detail-meta-item">
                         <i class="fas fa-server"></i>
-                        <span>${servers.length} Server</span>
+                        <span>Server Dado</span>
                     </div>
                 </div>
-                <p class="detail-description">Film Semi / JAV - Tersedia ${servers.length} server streaming</p>
+                <p class="detail-description">Film Semi / JAV - Server Dado</p>
                 <div class="detail-actions">
                     <button class="detail-btn primary" onclick="playRebahanVideo('${postId}', 0)">
                         <i class="fas fa-play"></i> Tonton Sekarang
@@ -1238,7 +1232,9 @@ function renderRebahanDetail(title, poster, servers, postId) {
         <div class="episodes-section">
             <h2><i class="fas fa-play-circle"></i> Server Streaming</h2>
             <div class="episodes-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
-                ${serverButtons}
+                <button class="episode-btn" onclick="playRebahanVideo('${postId}', 0)" style="padding: 12px 20px; background: linear-gradient(135deg, #ff4444, #cc0000); border: none; border-radius: 8px; color: white; cursor: pointer; transition: all 0.3s; font-weight: bold;">
+                    <i class="fas fa-play-circle"></i> Server Dado
+                </button>
             </div>
         </div>
         
@@ -1309,13 +1305,6 @@ async function playRebahanVideo(postId, serverIndex) {
         isAdult: true
     });
     
-    // Build server switch buttons
-    const serverBtns = rbData.servers.map((srv, i) => `
-        <button class="adult-server-btn ${i === serverIndex ? 'active' : ''}" onclick="playRebahanVideo('${postId}', ${i})">
-            <i class="fas fa-server"></i> ${srv.name}
-        </button>
-    `).join('');
-    
     const container = document.getElementById('watch-container');
     if (!container) { hidePageTransition(); return; }
     
@@ -1330,15 +1319,11 @@ async function playRebahanVideo(postId, serverIndex) {
             <iframe src="${server.url}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; fullscreen"></iframe>
         </div>
         
-        <div class="adult-server-selector">
-            ${serverBtns}
-        </div>
-        
         <div class="video-info">
             <h2 class="video-title">${title}</h2>
             <div class="video-meta adult-meta">
                 <span class="adult-badge"><i class="fas fa-fire"></i> Film Dewasa</span>
-                <span style="margin-left: 10px; color: var(--text-muted);">${server.name}</span>
+                <span style="margin-left: 10px; color: var(--text-muted);">Server Dado</span>
             </div>
         </div>
         
@@ -1923,24 +1908,22 @@ function playEpisode(detailPath, season, episode) {
     
     let playerUrl = '';
     
-    // Try to get playerUrl from cached content
+    // Try to get playerUrl or embedUrl from cached content
     if (state.currentContent && state.currentContent.seasons) {
         const seasonData = state.currentContent.seasons.find(s => s.season === parseInt(season));
         if (seasonData && seasonData.episodes) {
             const episodeData = seasonData.episodes.find(e => e.episode === parseInt(episode));
-            if (episodeData && episodeData.playerUrl) {
-                playerUrl = episodeData.playerUrl;
+            if (episodeData) {
+                playerUrl = episodeData.embedUrl || episodeData.playerUrl || '';
             }
         }
     }
     
-    // Fallback: construct URL with id if available
+    // Fallback: construct vidsrc.cc embed URL
     if (!playerUrl && state.currentContent) {
-        const id = state.currentContent.id;
-        if (id) {
-            playerUrl = `https://zeldvorik.ru/apiv3/player.php?id=${id}&detailPath=${detailPath}&season=${season}&episode=${episode}`;
-        } else {
-            playerUrl = `https://zeldvorik.ru/apiv3/player.php?detailPath=${detailPath}&season=${season}&episode=${episode}`;
+        const tmdbId = state.currentContent.tmdbId || state.currentContent.id;
+        if (tmdbId) {
+            playerUrl = `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
         }
     }
     
@@ -1961,15 +1944,21 @@ function playMovieFromDetail() {
     showPageTransition();
     
     const item = state.currentContent;
-    let playerUrl = item.playerUrl;
+    let playerUrl = item.embedUrl || item.playerUrl;
     
-    // If no playerUrl, construct one with id
+    // If no embedUrl, construct vidsrc.cc embed from tmdbId
     if (!playerUrl) {
-        if (item.id) {
-            playerUrl = `https://zeldvorik.ru/apiv3/player.php?id=${item.id}&detailPath=${item.detailPath}`;
-        } else {
-            playerUrl = `https://zeldvorik.ru/apiv3/player.php?detailPath=${item.detailPath}`;
+        const tmdbId = item.tmdbId || item.id;
+        const type = item.type === 'tv' ? 'tv' : 'movie';
+        if (tmdbId) {
+            playerUrl = `https://vidsrc.cc/v2/embed/${type}/${tmdbId}`;
         }
+    }
+    
+    if (!playerUrl) {
+        hidePageTransition();
+        showToast('Video tidak tersedia', 'error');
+        return;
     }
     
     console.log('Playing movie:', playerUrl);
