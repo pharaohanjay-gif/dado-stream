@@ -235,6 +235,15 @@ module.exports = async function handler(req, res) {
     const action = req.query.action || '';
     const page = parseInt(req.query.page || '1', 10);
 
+    // Edge cache for listing/search. Without it every visitor triggered a fresh scrape
+    // of the upstream site (measured: trending took up to 13.9s on a cold call), and the
+    // response came back with max-age=0 so Vercel's CDN never kept a copy. 5 minutes
+    // fresh, then up to 1 hour served stale while one background request refreshes.
+    // Only successful responses are cached; errors go out with no-store below.
+    if (action === 'rebahan-list' || action === 'rebahan-search') {
+        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600');
+    }
+
     try {
         // ==================== REBAHAN CATEGORY LIST ====================
         if (action === 'rebahan-list') {
@@ -722,6 +731,9 @@ module.exports = async function handler(req, res) {
         return res.status(404).json({ error: 'Unknown action', action });
     } catch (error) {
         console.error('API Error:', error.message);
+        // Never let the edge keep a failure, or one bad scrape would be served to
+        // every visitor for the whole cache window.
+        res.setHeader('Cache-Control', 'no-store');
         return res.status(500).json({ success: false, error: error.message });
     }
 };
