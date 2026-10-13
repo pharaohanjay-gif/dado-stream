@@ -236,12 +236,19 @@ module.exports = async function handler(req, res) {
     const page = parseInt(req.query.page || '1', 10);
 
     // Edge cache for listing/search. Without it every visitor triggered a fresh scrape
-    // of the upstream site (measured: trending took up to 13.9s on a cold call), and the
-    // response came back with max-age=0 so Vercel's CDN never kept a copy. 5 minutes
-    // fresh, then up to 1 hour served stale while one background request refreshes.
-    // Only successful responses are cached; errors go out with no-store below.
+    // of the upstream site and the response carried max-age=0, so Vercel's CDN never
+    // kept a copy.
+    //
+    // The windows are long on purpose. A cold scrape measured 18-25s (one call hit the
+    // 30s function limit and failed outright), because trending alone merges several
+    // upstream categories. Meanwhile the catalogue barely moves: the scraper has been
+    // committing "+0 new videos" for days. So: 1 hour fresh, then up to 24 hours served
+    // stale while a single background request refreshes. After the first fill no visitor
+    // waits on a scrape again.
+    //
+    // Only successful responses are cached; the error path below sends no-store.
     if (action === 'rebahan-list' || action === 'rebahan-search') {
-        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600');
+        res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
     }
 
     try {
