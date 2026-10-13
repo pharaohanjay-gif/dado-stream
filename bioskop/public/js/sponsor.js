@@ -1,362 +1,215 @@
 /**
- * DADO STREAM BIOSKOP - Content Delivery Module v2.1
- * Performance optimization and engagement analytics
- * Build: 2026.02.05
+ * DADO STREAM — ad delivery v3
+ *
+ * Rules this file enforces (why it is written this way):
+ *  1. No popunder, no Social Bar, no interstitial, no sticky overlay. Those formats
+ *     open tabs and cover content, which is exactly what the player fix removed.
+ *  2. Every ad runs in a sandboxed iframe pointed at /ad.html on the OTHER hostname of
+ *     this deployment, so the frame is cross-origin to the page. The sandbox omits
+ *     allow-top-navigation: an ad can never redirect the page the user is reading.
+ *     allow-popups stays, so a click still opens a new tab.
+ *  3. Space is reserved before load, so nothing jumps while reading (no layout shift).
+ *  4. Lazy loaded: a slot only requests when near the viewport. Keeps first paint fast
+ *     and counts impressions that were actually on screen.
+ *  5. Labelled "Iklan". A user should never mistake an ad for our content.
+ *  6. Never inside or over the video. Below it only.
+ *
+ * Native Banner is not used: its invoke.js host (pl28649333.effectivegatecpm.com)
+ * refuses the TLS handshake (ERR_SSL_UNRECOGNIZED_NAME_ALERT), so it renders nothing.
+ *
+ * Motion: reveal uses the project's spring token (--spring-smooth), fires once, and is
+ * disabled by the global prefers-reduced-motion rule in the stylesheet.
  */
+(function (w, d) {
+  'use strict';
 
-(function(w, d) {
-    'use strict';
-    
-    // Production mode - disable console
-    var _log = function() {};
-    
-    // Adsterra Configuration for dado-stream-bioskop
-    var _c = {
-        // Native Banner
-        nativeBannerScript: 'https://pl28649333.effectivegatecpm.com/ae7a057c8bc9741797bcbc25cbca9e5c/invoke.js',
-        nativeBannerContainerId: 'container-ae7a057c8bc9741797bcbc25cbca9e5c',
-        
-        // Banner keys
-        bk_468x60: 'be802fb1767d034c07183e4843f0f86d',
-        bk_300x250: '0f24f918d6c6a761113e77732ae40318',
-        bk_160x300: '482212a202879cc5221cc00c0063e217',
-        bk_160x600: 'b389b087b2bc7bc6f51dd7ff93586d3f',
-        bk_320x50: '2c9ab05bf1cd04e22a49bbf1fce15e8f',
-        bk_728x90: '7b50a6857930685d62bd2f2d317dc1c3',
-        
-        // Banner URLs
-        url_468x60: 'https://www.highperformanceformat.com/be802fb1767d034c07183e4843f0f86d/invoke.js',
-        url_300x250: 'https://www.highperformanceformat.com/0f24f918d6c6a761113e77732ae40318/invoke.js',
-        url_160x300: 'https://www.highperformanceformat.com/482212a202879cc5221cc00c0063e217/invoke.js',
-        url_160x600: 'https://www.highperformanceformat.com/b389b087b2bc7bc6f51dd7ff93586d3f/invoke.js',
-        url_320x50: 'https://www.highperformanceformat.com/2c9ab05bf1cd04e22a49bbf1fce15e8f/invoke.js',
-        url_728x90: 'https://www.highperformanceformat.com/7b50a6857930685d62bd2f2d317dc1c3/invoke.js',
-        
-        // State
-        _loaded: false,
-        _retry: 0
-    };
-    
-    // Random delay generator
-    function _rd(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+  // Only sizes whose ayomenonton.xyz key is installed in /ad.html. Adding a size here
+  // without its key would render an empty box, so keep the two lists in step.
+  var BANNER = {
+    '728x90':  { w: 728, h: 90 },
+    '468x60':  { w: 468, h: 60 },
+    '320x50':  { w: 320, h: 50 },
+    '300x250': { w: 300, h: 250 }
+  };
+
+  // Ads render from this host, never from the page's own origin. Two reasons, both
+  // verified in Chrome:
+  //  - Adsterra's invoke.js reads document.cookie. In a srcdoc frame the origin is
+  //    opaque, that read throws SecurityError, and the slot renders blank.
+  //  - Adding allow-same-origin to a srcdoc frame would hand the ad OUR origin and
+  //    defeat the sandbox. A separate host gives it its own origin instead, so it
+  //    cannot read our DOM, cookies, or localStorage.
+  // Same origin as the page, on purpose, and this is the one thing that makes the ad
+  // fill at all. Measured on /adtest.html: a same-origin frame loads the creative
+  // (impr.gif + a JPEG from the CDN), while the identical frame pointed at the other
+  // hostname (apex vs www) loads zero creatives. Cross-origin makes the ad script's
+  // cookies third-party, Chrome partitions them, and the network returns no fill.
+  //
+  // The tradeoff: with allow-same-origin on a same-origin frame, the ad script shares
+  // our origin and could reach the parent DOM. allow-top-navigation is still omitted,
+  // so it cannot redirect the page out from under the user, which was the actual
+  // complaint. A properly isolated setup needs a separate registered domain for ads.
+  function adBase() {
+    return location.origin + '/ad.html?f=';
+  }
+
+  var SANDBOX = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms';
+  var filled = {};
+
+  function isMobile() { return w.innerWidth < 768; }
+
+  // Biggest banner that fits. On a phone 320x50 is tried first: it is the shape that
+  // reads as a banner at that width, while 300x250 is a block that would push content
+  // down. Returns null when nothing fits, and a null slot is skipped entirely rather
+  // than reserving an empty box.
+  function pickBanner(slot) {
+    var avail = slot.clientWidth || w.innerWidth;
+    var order = isMobile()
+      ? ['320x50', '300x250']
+      : ['728x90', '468x60', '300x250', '320x50'];
+    for (var i = 0; i < order.length; i++) {
+      if (BANNER[order[i]] && BANNER[order[i]].w <= avail - 8) return BANNER[order[i]];
     }
-    
-    // Create element with attributes
-    function _ce(tag, attrs) {
-        var el = d.createElement(tag);
-        for (var k in attrs) {
-            if (k === 'text') {
-                el.textContent = attrs[k];
-            } else {
-                el[k] = attrs[k];
-            }
-        }
-        return el;
-    }
-    
-    // Load Native Banner
-    function _loadNativeBanner(containerId) {
-        var container = d.getElementById(containerId);
-        if (!container || container.dataset.processed) return;
-        container.dataset.processed = '1';
-        
-        // Create native banner container
-        var nativeDiv = _ce('div', { id: _c.nativeBannerContainerId });
-        container.appendChild(nativeDiv);
-        
-        // Load script
-        var script = _ce('script', {
-            async: true,
-            src: _c.nativeBannerScript
+    return null;
+  }
+
+  function frame(format, width, height) {
+    var f = d.createElement('iframe');
+    f.setAttribute('sandbox', SANDBOX);
+    f.setAttribute('scrolling', 'no');
+    f.setAttribute('title', 'Iklan');
+    // No loading="lazy": our own observer already decides when to request, and the
+    // attribute added a second, slower gate on top of it, so a slot that was visible
+    // from the start still waited. Eager loading here, gated by the observer below.
+    f.setAttribute('loading', 'eager');
+    // No referrerpolicy override on purpose. With no-referrer the ad network cannot
+    // see which domain the slot is on, fails its domain check, and sends no creative:
+    // the frame loads but stays blank. Verified by comparing /ad.html opened directly
+    // (fills) against the same URL in a no-referrer frame (empty).
+    f.width = width;
+    f.height = height;
+    f.style.cssText = 'display:block;border:0;width:' + width + 'px;height:' + height + 'px;margin:0 auto;';
+    f.src = adBase() + encodeURIComponent(format);
+    return f;
+  }
+
+  function shell(slot, label) {
+    slot.classList.add('ad-slot');
+    var box = d.createElement('div');
+    box.className = 'ad-box';
+    var tag = d.createElement('span');
+    tag.className = 'ad-label';
+    tag.textContent = label || 'Iklan';
+    box.appendChild(tag);
+    var body = d.createElement('div');
+    body.className = 'ad-body';
+    box.appendChild(body);
+    slot.innerHTML = '';
+    slot.appendChild(box);
+    return { box: box, body: body };
+  }
+
+  function render(slot) {
+    if (!slot || filled[slot.id]) return;
+    filled[slot.id] = true;
+
+    var body = slot.querySelector('.ad-body');
+    var box = slot.querySelector('.ad-box');
+    if (!body) return;
+
+    var b = pickBanner(slot);
+    if (!b) return;
+    body.appendChild(frame(b.w + 'x' + b.h, b.w, b.h));
+
+    requestAnimationFrame(function () {
+      setTimeout(function () { box.classList.add('is-in'); }, 120);
+    });
+  }
+
+  // Request well before the slot is reached: an ad needs roughly a second to arrive,
+  // so a margin that only just clears the fold means the user scrolls onto an empty
+  // box and watches it fill. 1400px is about 1.5 screens of lead time.
+  var io = ('IntersectionObserver' in w)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          io.unobserve(e.target);
+          render(e.target);
         });
-        script.setAttribute('data-cfasync', 'false');
-        container.appendChild(script);
+      }, { rootMargin: '1400px 0px' })
+    : null;
+
+  function arm(slot) {
+    if (!slot || slot.dataset.armed) return;
+
+    // Skip slots belonging to a page that is not the current one. A hidden page
+    // reports a zero rect for its slots, which reads as "top of the screen" and made
+    // every category page request an ad on first load: impressions nobody could see,
+    // which is the kind of traffic an ad network charges back. Left unarmed on
+    // purpose; the mutation observer picks the slot up once its page is shown.
+    //
+    // Checked via .page.active rather than offsetParent: an unfilled slot is
+    // display:none by the :empty rule, so offsetParent is null even on the live page.
+    var page = slot.closest ? slot.closest('.page') : null;
+    if (page && !page.classList.contains('active')) return;
+
+    // No size fits (phones, until the 320x50 key is in). Leave the slot untouched so
+    // the stylesheet's :empty rule keeps it collapsed.
+    var b = pickBanner(slot);
+    if (!b) return;
+
+    slot.dataset.armed = '1';
+
+    // Build the shell NOW, not at render time. Two reasons:
+    //  - .ad-container:empty is hidden by the stylesheet, so an empty slot has zero
+    //    height and IntersectionObserver would never fire.
+    //  - the final height is reserved up front, so the creative cannot shift the page.
+    slot.style.minHeight = (b.h + 30) + 'px';
+    shell(slot);
+
+    // Anything within the first screen and a bit beyond is requested right now.
+    // Waiting for the observer's first callback costs a frame plus a task, and for a
+    // slot that is already on screen that delay is visible as an empty box.
+    if (!io || slot.getBoundingClientRect().top < w.innerHeight + 600) {
+      render(slot);
+      return;
     }
-    
-    // Generic banner loader - direct injection (no iframe)
-    function _loadBannerGeneric(containerId, key, width, height, scriptUrl) {
-        var container = d.getElementById(containerId);
-        if (!container || container.dataset.processed) return;
-        container.dataset.processed = '1';
-        
-        // Create wrapper for centering
-        var wrapper = _ce('div', {});
-        wrapper.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;padding:10px 0;overflow:hidden;';
-        container.appendChild(wrapper);
-        
-        // Create ad container
-        var adDiv = _ce('div', {});
-        adDiv.style.cssText = 'max-width:' + width + 'px;min-height:' + height + 'px;overflow:hidden;';
-        wrapper.appendChild(adDiv);
-        
-        // Create atOptions script
-        var optScript = _ce('script', {});
-        optScript.textContent = 'atOptions={"key":"' + key + '","format":"iframe","height":' + height + ',"width":' + width + ',"params":{}};';
-        adDiv.appendChild(optScript);
-        
-        // Load Adsterra script
-        var adScript = _ce('script', {
-            async: true,
-            src: scriptUrl
-        });
-        adScript.setAttribute('data-cfasync', 'false');
-        adDiv.appendChild(adScript);
-    }
-    
-    // Responsive banner loader - adapts to screen size
-    function _loadResponsiveBanner(containerId, desktopKey, desktopW, desktopH, desktopUrl, mobileKey, mobileW, mobileH, mobileUrl) {
-        var isMobile = w.innerWidth < 500;
-        var key = isMobile ? mobileKey : desktopKey;
-        var width = isMobile ? mobileW : desktopW;
-        var height = isMobile ? mobileH : desktopH;
-        var url = isMobile ? mobileUrl : desktopUrl;
-        
-        _loadBannerGeneric(containerId, key, width, height, url);
-    }
-    
-    // Banner 468x60 (or 320x50 on mobile)
-    function _loadBanner468(containerId) {
-        _loadResponsiveBanner(
-            containerId,
-            _c.bk_468x60, 468, 60, _c.url_468x60,
-            _c.bk_320x50, 320, 50, _c.url_320x50
-        );
-    }
-    
-    // Banner 300x250 (or 320x50 on mobile)
-    function _loadBanner300(containerId) {
-        _loadResponsiveBanner(
-            containerId,
-            _c.bk_300x250, 300, 250, _c.url_300x250,
-            _c.bk_320x50, 320, 50, _c.url_320x50
-        );
-    }
-    
-    // Banner 728x90 (or 320x50 on mobile)
-    function _loadBanner728(containerId) {
-        _loadResponsiveBanner(
-            containerId,
-            _c.bk_728x90, 728, 90, _c.url_728x90,
-            _c.bk_320x50, 320, 50, _c.url_320x50
-        );
-    }
-    
-    // Banner 160x600 (sidebar - hide on mobile)
-    function _loadBanner160x600(containerId) {
-        if (w.innerWidth < 768) return; // Hide on mobile/tablet
-        _loadBannerGeneric(containerId, _c.bk_160x600, 160, 600, _c.url_160x600);
-    }
-    
-    // Banner 160x300 (sidebar - hide on mobile)
-    function _loadBanner160x300(containerId) {
-        if (w.innerWidth < 768) return; // Hide on mobile/tablet
-        _loadBannerGeneric(containerId, _c.bk_160x300, 160, 300, _c.url_160x300);
-    }
-    
-    // Banner 320x50 (mobile only)
-    function _loadBanner320(containerId) {
-        _loadBannerGeneric(containerId, _c.bk_320x50, 320, 50, _c.url_320x50);
-    }
-    
-    // Load all banners based on placement
-    function _loadBanners() {
-        // === HOME PAGE BANNERS ===
-        // Banner 1: After Viral & Trending section - 468x60
-        setTimeout(function() {
-            _loadBanner468('ad-home-1');
-        }, _rd(1000, 1500));
-        
-        // Banner 2: Between sections - 300x250
-        setTimeout(function() {
-            _loadBanner300('ad-home-2');
-        }, _rd(1500, 2000));
-        
-        // Banner 3: Before footer - 728x90
-        setTimeout(function() {
-            _loadBanner728('ad-home-3');
-        }, _rd(2000, 2500));
-        
-        // === CATEGORY PAGE BANNERS ===
-        // Film Indonesia page
-        setTimeout(function() {
-            _loadBanner468('ad-film-indonesia-top');
-        }, _rd(1200, 1700));
-        
-        setTimeout(function() {
-            _loadBanner320('ad-film-indonesia-bottom');
-        }, _rd(2200, 2700));
-        
-        // Film Dewasa page
-        setTimeout(function() {
-            _loadBanner468('ad-adult-top');
-        }, _rd(1300, 1800));
-        
-        setTimeout(function() {
-            _loadBanner300('ad-adult-bottom');
-        }, _rd(2300, 2800));
-        
-        // Western TV page
-        setTimeout(function() {
-            _loadBanner468('ad-western-top');
-        }, _rd(1400, 1900));
-        
-        // Sub Indo page
-        setTimeout(function() {
-            _loadBanner468('ad-subindo-top');
-        }, _rd(1500, 2000));
-    }
-    
-    // Load banner for watch/detail page
-    function _loadWatchBanner(containerId) {
-        if (!containerId) return;
-        // Reset processed state for SPA navigation
-        var container = d.getElementById(containerId);
-        if (container) {
-            container.dataset.processed = '';
-            container.innerHTML = '';
-        }
-        setTimeout(function() {
-            _loadBanner468(containerId);
-        }, _rd(300, 600));
-    }
-    
-    // Load banner for detail page
-    function _loadDetailBanner(containerId) {
-        if (!containerId) return;
-        var container = d.getElementById(containerId);
-        if (container) {
-            container.dataset.processed = '';
-            container.innerHTML = '';
-        }
-        setTimeout(function() {
-            _loadBanner300(containerId);
-        }, _rd(400, 700));
-    }
-    
-    // Expose for SPA navigation
-    w._loadWatchAd = _loadWatchBanner;
-    w._loadDetailAd = _loadDetailBanner;
-    w._loadNativeBanner = _loadNativeBanner;
-    w._loadBanner468 = _loadBanner468;
-    w._loadBanner300 = _loadBanner300;
-    w._loadBanner320 = _loadBanner320;
-    w._loadBanner728 = _loadBanner728;
-    
-    // ========================================
-    // SOCIAL BAR - Smart Loading
-    // Tidak muncul saat menonton video
-    // ========================================
-    var _socialBarLoaded = false;
-    var _socialBarScript = 'https://pl28656221.effectivegatecpm.com/2f/f0/f1/2ff0f18fa562e341abbcbb0f53081267.js';
-    
-    function _loadSocialBar() {
-        if (_socialBarLoaded) return;
-        _socialBarLoaded = true;
-        
-        var script = _ce('script', {
-            async: true,
-            src: _socialBarScript
-        });
-        script.setAttribute('data-cfasync', 'false');
-        d.body.appendChild(script);
-        _log('Social Bar loaded');
-    }
-    
-    function _hideSocialBar() {
-        // Social Bar biasanya punya class yang bisa diidentifikasi
-        var socialBars = d.querySelectorAll('[class*="social"], [id*="social"], [class*="push"], [class*="notification-"]');
-        socialBars.forEach(function(el) {
-            if (el.style) el.style.display = 'none';
-        });
-        
-        // Hide any fixed bottom elements from Adsterra
-        var fixedElements = d.querySelectorAll('div[style*="position: fixed"][style*="bottom"]');
-        fixedElements.forEach(function(el) {
-            if (el.innerHTML && el.innerHTML.includes('effectivegatecpm')) {
-                el.style.display = 'none';
-            }
-        });
-    }
-    
-    function _showSocialBar() {
-        var socialBars = d.querySelectorAll('[class*="social"], [id*="social"], [class*="push"], [class*="notification-"]');
-        socialBars.forEach(function(el) {
-            if (el.style) el.style.display = '';
-        });
-        
-        var fixedElements = d.querySelectorAll('div[style*="position: fixed"][style*="bottom"]');
-        fixedElements.forEach(function(el) {
-            el.style.display = '';
-        });
-    }
-    
-    // Check if user is on watch/video page
-    function _isWatchingVideo() {
-        var hash = w.location.hash || '';
-        var isWatchPage = hash.includes('/watch/') || hash.includes('/adult/');
-        var hasVideoPlayer = d.querySelector('.video-player-container, .player-container, #video-player, video, iframe[src*="embed"]');
-        return isWatchPage || !!hasVideoPlayer;
-    }
-    
-    // Smart Social Bar control
-    function _controlSocialBar() {
-        if (_isWatchingVideo()) {
-            _hideSocialBar();
-        } else {
-            if (!_socialBarLoaded) {
-                _loadSocialBar();
-            } else {
-                _showSocialBar();
-            }
-        }
-    }
-    
-    // Expose for external control
-    w._hideSocialBar = _hideSocialBar;
-    w._showSocialBar = _showSocialBar;
-    w._controlSocialBar = _controlSocialBar;
-    
-    // Main initialization
-    function _init() {
-        if (_c._loaded) return;
-        _c._loaded = true;
-        
-        // Load display banners
-        _loadBanners();
-        
-        // Load Social Bar with delay (only if not watching video)
-        setTimeout(function() {
-            _controlSocialBar();
-        }, 2000);
-        
-        // Monitor hash changes for video navigation
-        w.addEventListener('hashchange', function() {
-            setTimeout(_controlSocialBar, 500);
-        });
-    }
-    
-    // Start when ready
-    function _start() {
-        if (d.readyState === 'loading') {
-            d.addEventListener('DOMContentLoaded', function() {
-                setTimeout(_init, _rd(800, 1200));
-            });
-        } else {
-            setTimeout(_init, _rd(500, 800));
-        }
-    }
-    
-    // Public API
-    w._sp = {
-        init: _init,
-        reload: function() {
-            _c._loaded = false;
-            _init();
-        }
-    };
-    
-    // Go!
-    _start();
-    
+    io.observe(slot);
+  }
+
+  function byId(id) { return d.getElementById(id); }
+
+  // Scan every .ad-container, not just the static ids. The detail and watch slots are
+  // built by bioskop-app.js as part of an innerHTML replacement and call _loadDetailAd
+  // straight away, before their page is marked .active, so the hidden-page guard
+  // rejected them and nothing ever retried: the detail page showed no ad at all.
+  // Scanning generically means the mutation observer picks them up on the next tick,
+  // once the page really is visible.
+  function scan() {
+    var slots = d.querySelectorAll('.ad-container');
+    for (var i = 0; i < slots.length; i++) arm(slots[i]);
+  }
+
+  // Slots created at runtime by bioskop-app.js
+  w._loadDetailAd = function (id) { arm(byId(id)); };
+  w._loadWatchAd = function (id) { arm(byId(id)); };
+
+  // Old API kept so nothing throws if something still calls it. The social bar hooks
+  // stay no-ops on purpose: that is one of the intrusive formats.
+  function noop() {}
+  w._hideSocialBar = noop;
+  w._showSocialBar = noop;
+  w._controlSocialBar = noop;
+  w._loadNativeBanner = function (id) { arm(byId(id)); };
+  w._loadBanner468 = function (id) { arm(byId(id)); };
+  w._loadBanner300 = function (id) { arm(byId(id)); };
+  w._loadBanner320 = function (id) { arm(byId(id)); };
+  w._loadBanner728 = function (id) { arm(byId(id)); };
+  w._sp = { init: scan, reload: noop };
+
+  if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', scan);
+  else scan();
+
+  // Category pages render after a fetch, so pick up their slots when they appear.
+  new MutationObserver(scan).observe(d.getElementById('app') || d.body, { childList: true, subtree: true });
 })(window, document);

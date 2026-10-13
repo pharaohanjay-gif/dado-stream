@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Iklan</title>
+<style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}body{display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>
+<script>
+(function () {
+  // Placement Adsterra untuk ayomenonton.xyz (domain_id 6115324).
+  //
+  // Host-nya highrevenueformat.com, BUKAN highperformanceformat.com yang dipakai
+  // placement domain lama. Kunci diambil manual dari tombol GET CODE di dashboard:
+  // API Adsterra hanya mengembalikan ID placement, tidak kuncinya.
+  //
+  // Jangan menurunkan kunci dari ID placement. Path /placement/{id}/invoke.js
+  // mengembalikan script generik yang sama untuk ID apa pun, termasuk ID yang tidak
+  // ada, dan kuncinya mati (respons 0 byte).
+  var HOST = 'https://www.highrevenueformat.com/';
+  var BANNER = {
+    '728x90':  { key: '582a5e0514a6e0253dabe1491910b283', w: 728, h: 90 },
+    '468x60':  { key: '682f2392fd993af3b85f1abe3bdce1a5', w: 468, h: 60 },
+    '320x50':  { key: '9819126730d090ebfd5cd4e773e2e4ff', w: 320, h: 50 },
+    '300x250': { key: 'ad0a51b0ec2c2d3e8404fef3f53decb4', w: 300, h: 250 }
+  };
+
+  var f = (location.search.match(/[?&]f=([\w:x]+)/) || [])[1];
+  var b = BANNER[f];
+  if (!b) return; // ukuran yang kuncinya belum ada: biarkan kosong, jangan tayangkan kunci domain lain
+
+  window.atOptions = { key: b.key, format: 'iframe', height: b.h, width: b.w, params: {} };
+  document.write('<script src="' + HOST + b.key + '/invoke.js"><\/script>');
+})();
+</script>
+</body>
+</html>

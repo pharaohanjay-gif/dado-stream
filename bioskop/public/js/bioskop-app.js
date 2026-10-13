@@ -1,5 +1,5 @@
 // ==========================================================================
-// DADO STREAM - Film Dewasa Application
+// AyoNonton - Film Dewasa Application
 // ==========================================================================
 
 (function() {
@@ -13,9 +13,72 @@
     }
 })();
 
+// ==========================================================================
+// POPUP / POPUNDER BLOCKER
+// Blocks onclick-popunder ads injected by 3rd party scripts (decafeligiblyhad.com etc)
+// while keeping Adsterra banner ads intact.
+// ==========================================================================
+// Register Service Worker to intercept popup navigations from ALL iframes
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(function(reg) {
+            console.log('[SW] AyoNonton popup blocker registered, scope:', reg.scope);
+        })
+        .catch(function(err) {
+            console.warn('[SW] Registration failed:', err.message);
+        });
+}
+
+(function() {
+    // Override window.open to block popunder/popup tabs (belt-and-suspenders)
+    var _origOpen = window.open.bind(window);
+    window.open = function(url, target, features) {
+        // Allow null/undefined (programmatic opens that may be legitimate)
+        if (!url) return _origOpen(url, target, features);
+        var u = String(url).toLowerCase();
+        // Blocklist: known popunder ad domains & patterns
+        var blocked = [
+            'decafeligiblyhad', 'sklnk', 'effectivegatecpm',
+            'highperformanceformat', 'adsterra', 'popunder',
+            'pop.', '/pop', 'trk.', 'clk.', 'click.',
+            'track.', 'redirect.', 'redir.', 'go.php', 'click.php',
+            'landing.', 'lnk.', 'aff.', 'adclick'
+        ];
+        for (var i = 0; i < blocked.length; i++) {
+            if (u.indexOf(blocked[i]) !== -1) {
+                console.warn('[POPUP BLOCKED]', url);
+                return null;
+            }
+        }
+        return _origOpen(url, target, features);
+    };
+
+    // Block onclick popunder injection on entire document
+    // Popunders inject onclick on document/body to open new tab on any click
+    var _origAddEvt = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(type, listener, opts) {
+        if (type === 'click' && (this === document || this === document.body)) {
+            // Wrap listener: cancel if it tries to open a new tab/window
+            var wrapped = function(e) {
+                var _origWinOpen = window.open;
+                var blocked = false;
+                window.open = function(url) {
+                    blocked = true;
+                    console.warn('[POPUNDER BLOCKED via body click]', url);
+                    return null;
+                };
+                try { listener.call(this, e); } catch(err) {}
+                window.open = _origWinOpen;
+            };
+            return _origAddEvt.call(this, type, wrapped, opts);
+        }
+        return _origAddEvt.call(this, type, listener, opts);
+    };
+})();
+
 // API Configuration
 const REBAHAN_API = '/api';
-const REBAHAN_SITE = 'https://guidedumanifestant.org';
+const REBAHAN_SITE = 'https://timetostand.com';
 
 // ==========================================================================
 // Utility Functions
@@ -224,13 +287,17 @@ async function loadHomeData() {
 }
 
 async function loadHomeSection(apiCategory, containerId) {
-    const container = document.getElementById(containerId);
+    var container = document.getElementById(containerId);
     if (!container) return;
-    const data = await fetchAPI('rebahan-list', { category: apiCategory, page: 1 });
-    if (data && data.items && data.items.length > 0) {
-        container.innerHTML = data.items.map(function(item) { return createRebahanCard(item); }).join('');
+    var res = await Promise.all([1, 2].map(function(p) {
+        return fetchAPI('rebahan-list', { category: apiCategory, page: p }).catch(function() { return null; });
+    }));
+    var seen = {}, items = [];
+    res.forEach(function(d) { (d && d.items || []).forEach(function(it) { if (!seen[it.postId]) { seen[it.postId] = 1; items.push(it); } }); });
+    if (items.length) {
+        container.innerHTML = items.map(createRebahanCard).join('');
     } else {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Tidak ada konten tersedia</p>';
+        container.innerHTML = '<div class="empty-state"><p>Daftar ini belum bisa dimuat. Coba muat ulang halaman.</p></div>';
     }
 }
 
@@ -249,34 +316,29 @@ async function loadBanners() {
 }
 
 function renderBanners(items) {
-    const slider = document.getElementById('hero-slider');
-    const indicators = document.getElementById('hero-indicators');
+    var slider = document.getElementById('hero-slider');
+    var indicators = document.getElementById('hero-indicators');
     if (!slider || !indicators) return;
-
-    slider.innerHTML = items.map(function(item) {
-        var safeTitle = (item.title || '').replace(/'/g, "\\'");
-        var safePoster = encodeURIComponent(item.poster || '');
-        var safeEncodedTitle = encodeURIComponent(item.title || '');
-        return '<div class="hero-slide" style="background-image: url(\'' + (item.poster || ADULT_POSTER_PLACEHOLDER) + '\')" ' +
-            'onclick="showRebahanDetail(\'' + item.postId + '\', \'' + safeEncodedTitle + '\', \'' + safePoster + '\')">' +
+    slider.innerHTML = items.map(function(item, i) {
+        var poster = item.poster || ADULT_POSTER_PLACEHOLDER;
+        var call = "showRebahanDetail('" + item.postId + "', '" + encodeURIComponent(item.title || '') + "', '" + encodeURIComponent(item.poster || '') + "')";
+        return '<div class="hero-slide' + (i === 0 ? ' is-current' : '') + '" onclick="' + call + '">' +
+            '<div class="hero-bg" style="background-image:url(\'' + escHtml(poster) + '\')"></div>' +
             '<div class="hero-content">' +
-            '<span class="hero-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</span>' +
-            '<h1 class="hero-title">' + item.title + '</h1>' +
-            '<div class="hero-meta">' +
-            '<span><i class="fas fa-fire" style="color:#ff4444"></i> Trending</span>' +
-            (item.year ? '<span><i class="fas fa-calendar"></i> ' + item.year + '</span>' : '') +
-            '<span><i class="fas fa-server"></i> Server Dado</span>' +
-            '</div>' +
-            '<p class="hero-description">Film dewasa trending. Tonton sekarang di Dado Stream.</p>' +
+            '<div class="hero-chips"><span class="chip chip-faded chip-primary">' + escHtml(catLabel(item)) + '</span><span class="chip chip-faded chip-danger">18+</span></div>' +
+            '<h1 class="hero-title">' + escHtml(item.title) + '</h1>' +
+            '<div class="hero-meta"><span><i class="fas fa-fire"></i>Trending #' + (i + 1) + '</span>' +
+            (item.year ? '<span class="dot">&#8226;</span><span><i class="fas fa-calendar"></i>' + escHtml(item.year) + '</span>' : '') +
+            '<span class="dot">&#8226;</span><span><i class="fas fa-server"></i>5 server</span></div>' +
             '<div class="hero-buttons">' +
-            '<button class="hero-btn primary" style="background: linear-gradient(135deg, #ff4444, #cc0000);" ' +
-            'onclick="event.stopPropagation(); showRebahanDetail(\'' + item.postId + '\', \'' + safeEncodedTitle + '\', \'' + safePoster + '\')">' +
-            '<i class="fas fa-play"></i> Tonton Sekarang</button>' +
-            '</div></div></div>';
+            '<button class="btn btn-primary btn-shadow btn-lg" onclick="event.stopPropagation(); playRebahanVideo(\'' + item.postId + '\', 0, \'' + encodeURIComponent(item.title || '') + '\', \'' + encodeURIComponent(item.poster || '') + '\')"><i class="fas fa-play-circle"></i> Putar</button>' +
+            '<button class="btn btn-flat btn-lg" onclick="event.stopPropagation(); ' + call + '"><i class="fas fa-info-circle"></i> Detail</button>' +
+            '</div></div>' +
+            '<img class="hero-poster" src="' + escHtml(poster) + '" alt="">' +
+            '</div>';
     }).join('');
-
-    indicators.innerHTML = items.map(function(_, index) {
-        return '<div class="hero-indicator ' + (index === 0 ? 'active' : '') + '" onclick="goToBanner(' + index + ')"></div>';
+    indicators.innerHTML = items.map(function(_, i) {
+        return '<button class="hero-indicator' + (i === 0 ? ' active' : '') + '" aria-label="Slide ' + (i + 1) + '" onclick="goToBanner(' + i + ')"></button>';
     }).join('');
 }
 
@@ -302,10 +364,13 @@ function goToBanner(index) {
     startBannerAutoplay();
 }
 function updateBanner() {
-    const slider = document.getElementById('hero-slider');
-    const indicators = document.querySelectorAll('.hero-indicator');
-    if (slider) slider.style.transform = 'translateX(-' + (state.bannerIndex * 100) + '%)';
-    indicators.forEach(function(ind, i) { ind.classList.toggle('active', i === state.bannerIndex); });
+    var slides = document.querySelectorAll('#hero-slider .hero-slide');
+    var indicators = document.querySelectorAll('.hero-indicator');
+    slides.forEach(function(s, i) { s.classList.toggle('is-current', i === state.bannerIndex); });
+    indicators.forEach(function(ind, i) {
+        ind.classList.remove('active');
+        if (i === state.bannerIndex) { void ind.offsetWidth; ind.classList.add('active'); }
+    });
 }
 
 // ==========================================================================
@@ -318,23 +383,15 @@ async function loadMultiFeatured() {
     try {
         const rebahanData = await fetchAPI('rebahan-list', { category: 'semi-indonesia', page: 1 });
         if (rebahanData && rebahanData.items && rebahanData.items.length > 0) {
-            var labels = ['\ud83d\udd25 Viral', '\ud83d\udcc8 Trending', '\u2b50 Populer', '\u2728 Terbaru'];
-            var icons = ['fa-fire', 'fa-chart-line', 'fa-star', 'fa-sparkles'];
-            var colors = ['#ff4444', '#ff6b35', '#ffd700', '#ff69b4'];
             var featured = rebahanData.items.slice(0, 4);
             var html = '<div class="multi-featured-grid">';
             featured.forEach(function(item, i) {
-                var safePoster = encodeURIComponent(item.poster || '');
-                var safeTitle = encodeURIComponent(item.title || '');
-                var onclick = "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')";
-                html += '<div class="featured-card" onclick="' + onclick + '" style="border-left: 3px solid ' + colors[i] + ';">' +
-                    '<img src="' + (item.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="' + item.title + '" class="featured-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
-                    '<div class="featured-info">' +
-                    '<div class="featured-category" style="color: ' + colors[i] + ';"><i class="fas ' + icons[i] + '"></i> ' + labels[i] + '</div>' +
-                    '<h3 class="featured-title">' + item.title + '</h3>' +
-                    '<div class="featured-meta"><span style="color: #ff4444;"><i class="fas fa-fire-alt"></i> 18+</span><span><i class="fas fa-server"></i> Server Dado</span></div>' +
-                    '<button class="featured-btn" style="background: ' + colors[i] + ';" onclick="event.stopPropagation(); ' + onclick + '"><i class="fas fa-play"></i> Tonton</button>' +
-                    '</div></div>';
+                var call = "showRebahanDetail('" + item.postId + "', '" + encodeURIComponent(item.title || '') + "', '" + encodeURIComponent(item.poster || '') + "')";
+                html += '<div class="featured-card" style="--i:' + i + '" role="link" tabindex="0" onclick="' + call + '" onkeydown="if(event.key===\'Enter\'){this.click()}">' +
+                    '<span class="featured-rank" aria-hidden="true">' + (i + 1) + '</span>' +
+                    '<img src="' + escHtml(item.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="featured-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
+                    '<div class="featured-info"><span class="featured-category">' + escHtml(catLabel(item)) + '</span>' +
+                    '<h3 class="featured-title">' + escHtml(item.title) + '</h3></div></div>';
             });
             html += '</div>';
             container.innerHTML = html;
@@ -350,38 +407,84 @@ async function loadMultiFeatured() {
 // Card Creation
 // ==========================================================================
 
+
+var PLAY_SVG = '<svg class="cc-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6l10 6l-10 6Z"/></svg>';
+function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+function posterCard(opts) {
+    // MoviePosterCard (Cinextma). Grid pages restyle it as the "bordered" variant via CSS.
+    var title = escHtml(opts.title || '');
+    return '<div class="content-card" role="link" tabindex="0" onclick="' + opts.onclick + '" ' +
+        'onkeydown="if(event.key===\'Enter\'){this.click()}" aria-label="' + title + '">' +
+        '<div class="cc-media">' +
+        '<img src="' + escHtml(opts.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="card-poster" loading="lazy" decoding="async" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
+        '<span class="chip chip-sm chip-danger cc-chip">18+</span>' +
+        PLAY_SVG +
+        '<div class="cc-shade"></div></div>' +
+        '<div class="card-info"><h4 class="card-title">' + title + '</h4>' +
+        '<div class="card-meta">' + (opts.left ? '<span>' + escHtml(opts.left) + '</span>' : '') + (opts.right ? '<span>' + escHtml(opts.right) + '</span>' : '') + '</div>' +
+        '</div></div>';
+}
+function catLabel(item) {
+    var c = (item.categories || []).join(' ');
+    if (/jepang/.test(c)) return 'Jepang';
+    if (/korea/.test(c)) return 'Korea';
+    if (/filipina|vivamax/.test(c)) return 'Filipina';
+    if (/indonesia/.test(c)) return 'Indonesia';
+    return 'Semi';
+}
+
 function createRebahanCard(item) {
-    var posterSrc = item.poster || ADULT_POSTER_PLACEHOLDER;
     var safePoster = encodeURIComponent(item.poster || '');
     var safeTitle = encodeURIComponent(item.title || '');
-    return '<div class="content-card" onclick="showRebahanDetail(\'' + item.postId + '\', \'' + safeTitle + '\', \'' + safePoster + '\')">' +
-        '<img src="' + posterSrc + '" alt="' + (item.title || '') + '" class="card-poster" loading="lazy" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
-        '<div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>' +
-        '<div class="card-overlay"><div class="card-play-btn"><i class="fas fa-play"></i></div></div>' +
-        '<div class="card-info"><h4 class="card-title">' + (item.title || '') + '</h4>' +
-        '<div class="card-meta"><span><i class="fas fa-play-circle" style="color:#ff4444"></i> Server Dado</span>' +
-        (item.year ? '<span>' + item.year + '</span>' : '') +
-        '</div></div></div>';
+    return posterCard({
+        title: item.title,
+        poster: item.poster,
+        onclick: "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')",
+        left: item.year || catLabel(item),
+        right: ''
+    });
 }
 
 function createAdultContentCard(item) {
     var isDefaultPoster = !item.poster || item.poster.includes('layarkaca21') || item.poster.includes('L-K-2-1');
-    var posterSrc = isDefaultPoster ? ADULT_POSTER_PLACEHOLDER : item.poster;
     var cleanTitle = (item.title || 'Video').replace('Bokep Indo \u2013 ', '').replace('Bokep Indo - ', '');
-    return '<div class="content-card" onclick="showAdultDetail(\'' + item.slug + '\')">' +
-        '<img src="' + posterSrc + '" alt="' + cleanTitle + '" class="card-poster" loading="lazy" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
-        '<div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>' +
-        '<div class="card-overlay"><div class="card-play-btn"><i class="fas fa-play"></i></div></div>' +
-        '<div class="card-info"><h4 class="card-title">' + cleanTitle + '</h4>' +
-        '<div class="card-meta"><span><i class="fas fa-play-circle" style="color:#ff4444"></i> Server Dado</span></div></div></div>';
+    return posterCard({ title: cleanTitle, poster: isDefaultPoster ? '' : item.poster, onclick: "showAdultDetail('" + item.slug + "')" });
 }
 
 // ==========================================================================
 // Navigation
 // ==========================================================================
 
+function stopVideoPlayback() {
+    // Destroy iframe so audio/video stops immediately when leaving watch page
+    var watchContainer = document.getElementById('watch-container');
+    if (watchContainer) {
+        // Find and blank-out all iframes to kill audio
+        var iframes = watchContainer.querySelectorAll('iframe');
+        iframes.forEach(function(iframe) {
+            try { iframe.src = 'about:blank'; } catch(e) {}
+            iframe.remove();
+        });
+        // Also stop any <video> elements
+        var videos = watchContainer.querySelectorAll('video');
+        videos.forEach(function(v) {
+            try { v.pause(); v.src = ''; v.load(); } catch(e) {}
+        });
+    }
+}
+
 function navigateTo(page, addToStack) {
     if (addToStack === undefined) addToStack = true;
+
+    // STOP VIDEO: destroy iframe when leaving watch page
+    if (state.currentPage === 'watch' && page !== 'watch') {
+        stopVideoPlayback();
+    }
+
     if (addToStack && page !== state.currentPage) {
         state.navigationStack.push(page);
     }
@@ -399,13 +502,19 @@ function navigateTo(page, addToStack) {
     if (targetPage) {
         targetPage.classList.add('active');
         state.currentPage = page;
+        document.body.dataset.page = page;
+        if (page !== 'detail') document.title = 'AyoNonton';
         loadPageData(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
     }
     closeMobileMenu();
 }
 
 function goBack() {
+    // Stop video FIRST before navigating away (prevents ghost audio)
+    if (state.currentPage === 'watch') {
+        stopVideoPlayback();
+    }
     if (window._showSocialBar) window._showSocialBar();
     if (state.navigationStack.length > 1) {
         state.navigationStack.pop();
@@ -430,57 +539,132 @@ async function loadPageData(page) {
 // ==========================================================================
 
 async function loadCategoryPage(pageKey, apiCategory) {
-    var gridId = pageKey + '-grid';
-    var grid = document.getElementById(gridId);
+    var grid = document.getElementById(pageKey + '-grid');
     if (!grid) return;
     if (categoryState[pageKey] && categoryState[pageKey].loaded) return;
+    var token = {};
+    categoryState[pageKey] = { page: 0, hasMore: true, loaded: false, loading: true, apiCategory: apiCategory, token: token };
+    grid.innerHTML = '<div class="skeleton-container grid">' + new Array(18).join('<div class="skeleton-card"></div>') + '</div>';
 
-    grid.innerHTML = '<div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
+    var pages = [];
+    var initialPages = apiCategory === 'trending' ? 1 : 4;
+    for (var p = 1; p <= initialPages; p++) pages.push(p);
+    var results = await Promise.all(pages.map(function(p) {
+        return fetchAPI('rebahan-list', { category: apiCategory, page: p }).catch(function() { return null; });
+    }));
+    var cs = categoryState[pageKey];
+    if (!cs || cs.token !== token) return; // tab switched while loading
 
-    var data = await fetchAPI('rebahan-list', { category: apiCategory, page: 1 });
-    if (data && data.items && data.items.length > 0) {
-        grid.innerHTML = data.items.map(function(item) { return createRebahanCard(item); }).join('');
-        categoryState[pageKey] = { page: 1, hasMore: data.hasMore !== false, loaded: true, apiCategory: apiCategory };
-        var btn = document.getElementById('load-more-' + pageKey);
-        if (btn && !data.hasMore) btn.style.display = 'none';
+    var seen = {};
+    var items = [];
+    var lastOk = 0;
+    var hasMore = false;
+    results.forEach(function(data, idx) {
+        if (!data || !data.items || !data.items.length) return;
+        lastOk = idx + 1;
+        hasMore = data.hasMore !== false;
+        data.items.forEach(function(it) {
+            if (seen[it.postId]) return;
+            seen[it.postId] = 1;
+            items.push(it);
+        });
+    });
+
+    cs.loading = false;
+    cs.loaded = true;
+    cs.page = lastOk || 1;
+    cs.hasMore = items.length > 0 && hasMore;
+    cs.seen = seen;
+
+    if (items.length) {
+        grid.innerHTML = items.map(createRebahanCard).join('');
     } else {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-film"></i><p>Tidak ada konten tersedia</p></div>';
-        var btn2 = document.getElementById('load-more-' + pageKey);
-        if (btn2) btn2.style.display = 'none';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-film"></i><p>Belum ada video di kategori ini.</p></div>';
     }
+    setupInfiniteScroll(pageKey);
+    updateCount(pageKey);
 }
 
 async function loadMoreCategory(pageKey) {
     var cs = categoryState[pageKey];
-    if (!cs || !cs.hasMore) return;
-
+    if (!cs || !cs.hasMore || cs.loading) return;
+    cs.loading = true;
+    var token = cs.token;
     var btn = document.getElementById('load-more-' + pageKey);
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...'; }
-
     var apiCat = cs.apiCategory || (CATEGORIES[pageKey] ? CATEGORIES[pageKey].api : pageKey);
-    cs.page++;
 
-    var data = await fetchAPI('rebahan-list', { category: apiCat, page: cs.page });
+    // two pages per round, so each scroll adds ~30
+    var next = apiCat === 'trending' ? [cs.page + 1] : [cs.page + 1, cs.page + 2];
+    var results = await Promise.all(next.map(function(p) {
+        return fetchAPI('rebahan-list', { category: apiCat, page: p }).catch(function() { return null; });
+    }));
+    if (categoryState[pageKey] !== cs || cs.token !== token) return;
+
     var grid = document.getElementById(pageKey + '-grid');
+    var html = '';
+    var more = false;
+    results.forEach(function(data) {
+        if (!data || !data.items || !data.items.length) return;
+        cs.page++;
+        more = data.hasMore !== false;
+        data.items.forEach(function(it) {
+            if (cs.seen && cs.seen[it.postId]) return;
+            if (cs.seen) cs.seen[it.postId] = 1;
+            html += createRebahanCard(it);
+        });
+    });
+    if (grid && html) grid.insertAdjacentHTML('beforeend', html);
+    cs.hasMore = more;
+    cs.loading = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Muat lebih banyak'; }
+    updateLoadMoreUI(pageKey);
+    updateCount(pageKey);
+}
 
-    if (data && data.items && data.items.length > 0) {
-        if (grid) grid.insertAdjacentHTML('beforeend', data.items.map(function(item) { return createRebahanCard(item); }).join(''));
-        cs.hasMore = data.hasMore !== false;
-        if (btn && !cs.hasMore) btn.style.display = 'none';
+function updateCount(pageKey) {
+    var el = document.getElementById('count-' + pageKey);
+    var g = document.getElementById(pageKey + '-grid');
+    if (el && g) { var n = g.querySelectorAll('.content-card').length; el.textContent = n ? n + ' video' : ''; }
+}
+
+var _scrollObservers = {};
+function updateLoadMoreUI(pageKey) {
+    var cs = categoryState[pageKey];
+    var btn = document.getElementById('load-more-' + pageKey);
+    if (!btn) return;
+    var wrap = btn.parentElement;
+    if (cs && !cs.hasMore) {
+        btn.style.display = 'none';
+        if (wrap && !wrap.querySelector('.list-end')) wrap.insertAdjacentHTML('beforeend', '<p class="list-end">Sudah sampai ujung daftar.</p>');
     } else {
-        cs.page--;
-        cs.hasMore = false;
-        if (btn) btn.style.display = 'none';
+        btn.style.display = '';
+        var end = wrap && wrap.querySelector('.list-end');
+        if (end) end.remove();
     }
+}
 
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Muat Lebih Banyak'; }
+function setupInfiniteScroll(pageKey) {
+    updateLoadMoreUI(pageKey);
+    var btn = document.getElementById('load-more-' + pageKey);
+    if (!btn || !('IntersectionObserver' in window)) return;
+    var target = btn.parentElement || btn;
+    if (_scrollObservers[pageKey]) _scrollObservers[pageKey].disconnect();
+    var io = new IntersectionObserver(function(entries) {
+        if (!entries[0].isIntersecting) return;
+        var page = document.getElementById('page-' + pageKey);
+        if (page && !page.classList.contains('active')) return;
+        loadMoreCategory(pageKey);
+    }, { rootMargin: '0px 0px 900px 0px' });
+    io.observe(target);
+    _scrollObservers[pageKey] = io;
 }
 
 function switchFilipina(cat, btnEl) {
     document.querySelectorAll('#filipina-tabs .rebahan-cat-btn').forEach(function(b) { b.classList.remove('active'); });
     if (btnEl) btnEl.classList.add('active');
     filipinaCategory = cat;
-    categoryState['filipina'] = { page: 1, hasMore: true, loaded: false };
+    categoryState['filipina'] = { page: 0, hasMore: true, loaded: false, token: {} };
     loadCategoryPage('filipina', cat);
 }
 
@@ -516,35 +700,160 @@ async function showRebahanDetail(postId, encodedTitle, encodedPoster) {
 function renderRebahanDetail(title, poster, servers, postId) {
     var container = document.getElementById('detail-container');
     if (!container) return;
-    var safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    var img = poster || ADULT_POSTER_PLACEHOLDER;
+    var isFav = state.favorites.some(function(f) { return f.detailPath === 'rebahan:' + postId; });
+    var favArgs = "'rebahan-" + postId + "', '" + String(title).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;') + "', '" + escHtml(poster || '') + "'";
+    var n = (servers || []).length;
+    document.title = title + ' | AyoNonton';
     container.innerHTML =
-        '<button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Kembali</button>' +
+        '<div class="detail-backdrop"><div class="bd-img" style="background-image:url(\'' + escHtml(img) + '\')"></div></div>' +
         '<div class="detail-header">' +
-        '<img src="' + (poster || ADULT_POSTER_PLACEHOLDER) + '" alt="' + title + '" class="detail-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
+        '<img src="' + escHtml(img) + '" alt="" class="detail-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
         '<div class="detail-info">' +
-        '<h1 class="detail-title">' + title + '</h1>' +
-        '<div class="detail-meta">' +
-        '<div class="detail-meta-item" style="color: #ff4444;"><i class="fas fa-fire-alt"></i><span>18+</span></div>' +
-        '<div class="detail-meta-item"><i class="fas fa-server"></i><span>Server Dado</span></div>' +
+        '<div class="dt-title-block">' +
+        '<div class="hero-chips"><span class="chip chip-faded chip-primary">Film</span><span class="chip chip-faded chip-danger">18+</span></div>' +
+        '<h1 class="detail-title">' + escHtml(title) + '</h1>' +
+        '<div class="detail-meta"><span><i class="fas fa-server"></i>' + n + ' server</span><span class="dot">&#8226;</span><span><i class="fas fa-film"></i>Server Dado</span></div>' +
         '</div>' +
-        '<p class="detail-description">Film Semi / JAV - Server Dado</p>' +
-        '<div class="detail-actions">' +
-        '<button class="detail-btn primary" onclick="playRebahanVideo(\'' + postId + '\', 0)"><i class="fas fa-play"></i> Tonton Sekarang</button>' +
-        '</div></div></div>' +
-        '<div class="episodes-section"><h2><i class="fas fa-play-circle"></i> Server Streaming</h2>' +
-        '<div class="episodes-list" style="display:flex;flex-wrap:wrap;gap:10px;">' +
-        '<button class="episode-btn" onclick="playRebahanVideo(\'' + postId + '\', 0)" style="padding:12px 20px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:8px;color:white;cursor:pointer;font-weight:bold;">' +
-        '<i class="fas fa-play-circle"></i> Server Dado</button></div></div>' +
-        '<div class="episodes-section" style="margin-top:20px;"><h2><i class="fas fa-heart"></i> Simpan Video</h2>' +
-        '<div style="display:flex;gap:10px;">' +
-        '<button class="episode-btn" onclick="toggleAdultFavorite(\'rebahan-' + postId + '\', \'' + safeTitle + '\', \'' + (poster || '') + '\')" ' +
-        'style="padding:12px 20px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);cursor:pointer;">' +
-        '<i class="fas fa-bookmark"></i> Favorit</button></div></div>' +
+        '<div class="detail-actions"><div>' +
+        '<button class="btn btn-primary btn-shadow" onclick="playRebahanVideo(\'' + postId + '\', 0)"><i class="fas fa-play-circle"></i> Putar sekarang</button>' +
+        '</div><div>' +
+        '<button class="btn btn-flat btn-icon' + (isFav ? ' is-on' : '') + '" id="fav-btn" aria-pressed="' + isFav + '" aria-label="Simpan ke favorit" onclick="toggleAdultFavorite(' + favArgs + '); this.classList.toggle(\'is-on\'); this.setAttribute(\'aria-pressed\', this.classList.contains(\'is-on\'))"><i class="fas fa-bookmark"></i></button>' +
+        '</div></div>' +
+        '<div class="dt-story"><div class="section-title"><h2>Pilih server</h2></div>' +
+        '<div class="server-list">' + (servers || []).map(function(s, i) {
+            return '<button class="server-item" style="--i:' + i + '" onclick="playRebahanVideo(\'' + postId + '\', ' + i + ')">' +
+                '<span class="si-name"><i class="fas fa-play-circle"></i>' + escHtml(s.name) + '</span>' + (i === 0 ? '<small>Utama</small>' : '') + '</button>';
+        }).join('') + '</div></div>' +
+        '</div></div>' +
         '<div id="ad-rebahan-detail" class="ad-container"></div>';
     if (window._loadDetailAd) window._loadDetailAd('ad-rebahan-detail');
 }
 
-async function playRebahanVideo(postId, serverIndex) {
+// Anti-popup interceptor for video embeds
+// Injects fake window.open into iframe and auto-drains the popup queue
+function setupIframeAntiPopup(iframeEl) {
+    var maxAttempts = 30; // 3 seconds
+    var attempt = 0;
+    var done = false;
+
+    function tryInject() {
+        if (done) return;
+        attempt++;
+        try {
+            var iwin = iframeEl.contentWindow;
+            var idoc = iframeEl.contentDocument;
+            if (!iwin || !idoc || !idoc.body) {
+                if (attempt < maxAttempts) setTimeout(tryInject, 100);
+                return;
+            }
+
+            // Inject fake window.open that returns a fake window object
+            // Since iframe is same-origin (via proxy), this works!
+            // fake window: open.closed = false initially (satisfies track check)
+            // then closes after 60ms (triggers track.close++, not track.window++)
+            if (!iwin._dadoOpenPatched) {
+                iwin._dadoOpenPatched = true;
+                iwin.open = function(url) {
+                    var fakeWin = {
+                        closed: false,
+                        focus: function() {},
+                        blur: function() {},
+                        close: function() { fakeWin.closed = true; },
+                        location: { href: url || 'about:blank', replace: function(){} }
+                    };
+                    setTimeout(function() { fakeWin.closed = true; }, 80);
+                    return fakeWin;
+                };
+            }
+
+            // Also patch document.onclick and body.onclick setters
+            // to prevent ad scripts from injecting onclick on document
+            try {
+                Object.defineProperty(idoc, 'onclick', {
+                    set: function(fn) { /* block */ },
+                    get: function() { return null; },
+                    configurable: true
+                });
+                if (idoc.body) {
+                    Object.defineProperty(idoc.body, 'onclick', {
+                        set: function(fn) { /* block */ },
+                        get: function() { return null; },
+                        configurable: true
+                    });
+                }
+            } catch(ep) {}
+
+            // Remove any fullscreen overlay divs already in the page
+            var allDivs = idoc.querySelectorAll('div');
+            for(var di = 0; di < allDivs.length; di++) {
+                var ds = allDivs[di].style;
+                if(ds && ds.position === 'fixed' && parseInt(ds.zIndex) > 999999) {
+                    allDivs[di].onclick = null;
+                    try { allDivs[di].remove(); } catch(e) {}
+                }
+            }
+
+            done = true;
+
+            // Auto-trigger the UL function twice to drain popup queue
+            // This skips popups automatically without user needing to click
+            function triggerUL() {
+                try {
+                    var ol = idoc.getElementById('overlay');
+                    if (ol) {
+                        // Trigger onclick directly
+                        if (ol.onclick) {
+                            ol.onclick();
+                        } else if (typeof iwin.UL === 'function') {
+                            iwin.UL();
+                        } else {
+                            // Dispatch click event
+                            ol.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            // First fake click immediately
+            setTimeout(triggerUL, 200);
+            // Second fake click after first popup would have "opened"  
+            setTimeout(triggerUL, 500);
+            // Third attempt to ensure video starts
+            setTimeout(function() {
+                try {
+                    var iwin2 = iframeEl.contentWindow;
+                    if (iwin2 && typeof iwin2.jwplayer === 'function') {
+                        try { iwin2.jwplayer().play(); } catch(e) {}
+                    }
+                    // Remove any remaining overlay
+                    var ol2 = iframeEl.contentDocument && iframeEl.contentDocument.getElementById('overlay');
+                    if (ol2) { ol2.onclick = null; ol2.style.display = 'none'; try { ol2.remove(); } catch(e) {} }
+                } catch(e) {}
+            }, 800);
+
+        } catch(e) {
+            // Cross-origin restriction - iframe is from different domain
+            // Cannot access contentWindow in this case (normal for external embeds)
+            // console.warn('Anti-popup inject failed:', e.message);
+        }
+    }
+
+    // Start trying after short delay to let iframe begin loading
+    setTimeout(tryInject, 300);
+
+    // Also try on load event
+    iframeEl.addEventListener('load', function() {
+        attempt = 0;
+        done = false;
+        setTimeout(tryInject, 200);
+    });
+}
+
+async function playRebahanVideo(postId, serverIndex, encTitle, encPoster) {
+    if (encTitle && (!window.currentRebahanData || window.currentRebahanData.postId !== postId)) {
+        window._pendingMeta = { title: decodeURIComponent(encTitle), poster: decodeURIComponent(encPoster || '') };
+    }
     if (window._hideSocialBar) window._hideSocialBar();
     showPageTransition();
     var rbData = window.currentRebahanData;
@@ -552,7 +861,8 @@ async function playRebahanVideo(postId, serverIndex) {
         try {
             var data = await fetchAPI('rebahan-player', { post_id: postId });
             if (data && data.success && data.servers) {
-                rbData = { postId: postId, title: 'Video', poster: '', servers: data.servers };
+                var pm = window._pendingMeta || {}; window._pendingMeta = null;
+                rbData = { postId: postId, title: pm.title || 'Video', poster: pm.poster || '', servers: data.servers };
                 window.currentRebahanData = rbData;
             } else { hidePageTransition(); showToast('Server tidak tersedia', 'error'); return; }
         } catch (e) { hidePageTransition(); showToast('Gagal memuat video', 'error'); return; }
@@ -565,15 +875,53 @@ async function playRebahanVideo(postId, serverIndex) {
 
     var container = document.getElementById('watch-container');
     if (!container) { hidePageTransition(); return; }
+
+    // Build server selector tabs if multiple servers
+    var serverTabs = '';
+    if (rbData.servers && rbData.servers.length > 1) {
+        serverTabs = '<div class="server-tabs" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 0;">' +
+            rbData.servers.map(function(srv, i) {
+                return '<button onclick="playRebahanVideo(\'' + postId + '\',' + i + ')" ' +
+                    'style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;transition:.2s;' +
+                    (i === serverIndex ? 'background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;font-weight:bold;' : 'background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);') +
+                    '">' + srv.name + '</button>';
+            }).join('') + '</div>';
+    }
+
     container.innerHTML =
-        '<button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Kembali</button>' +
+        '<div class="player-shell" id="player-shell">' +
+        '<div class="player-head"><button class="ph-btn" onclick="goBack()" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>' +
+        '<p class="ph-title">' + escHtml(title) + '</p>' +
+        '<button class="ph-btn" onclick="openSourceDrawer()" aria-label="Pilih server"><i class="fas fa-server"></i><span>' + escHtml(server.name) + '</span></button></div>' +
         '<div class="video-player-container adult-player" id="adult-player-wrapper">' +
-        '<iframe src="' + server.url + '" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; fullscreen"></iframe></div>' +
-        '<div class="video-info"><h2 class="video-title">' + title + '</h2>' +
-        '<div class="video-meta adult-meta"><span class="adult-badge"><i class="fas fa-fire"></i> Film Dewasa</span>' +
-        '<span style="margin-left:10px;color:var(--text-muted);">Server Dado</span></div></div>' +
+        '<div id="video-iframe-wrap" style="position:absolute;top:0;left:0;width:100%;height:100%;">' +
+        (function(){
+            var embedUrl = server.url;
+            // Use proxy for known popup-injecting players (makes iframe same-origin,
+            // allows contentWindow access to inject fake window.open)
+            // Tested 2026-10: only hgcloud plays through the proxy. Abyss (Server 1) binds
+            // its video to its own origin, so it must load directly.
+            var useProxy = embedUrl && embedUrl.indexOf('hgcloud.to') !== -1;
+            var iframeSrc = useProxy
+                ? '/api?action=video-proxy&url=' + encodeURIComponent(embedUrl)
+                : embedUrl;
+            return '<iframe id="main-video-iframe" src="' + iframeSrc + '" ' +
+                'allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; fullscreen" ' +
+                'referrerpolicy="no-referrer" loading="eager" ' +
+                'style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>';
+        })() +
+        '</div></div></div>' +
+        '<div class="video-info"><h2 class="video-title">' + escHtml(title) + '</h2>' +
+        '<div class="video-meta"><span class="chip chip-sm chip-danger">18+</span><span>' + escHtml(server.name) + ' dari ' + rbData.servers.length + ' server</span></div></div>' +
         '<div id="ad-rebahan-watch" class="ad-container"></div>';
+    window._sourceDrawer = { postId: postId, active: serverIndex, servers: rbData.servers };
     if (window._loadWatchAd) window._loadWatchAd('ad-rebahan-watch');
+
+    // Setup anti-popup interceptor - auto-drain popup queue without opening tabs
+    var iframeEl = document.getElementById('main-video-iframe');
+    if (iframeEl) {
+        setupIframeAntiPopup(iframeEl);
+    }
     navigateTo('watch');
     hidePageTransition();
 }
@@ -634,7 +982,7 @@ async function performSearch(query, showPage) {
                     return createRebahanCard(item);
                 }).join('');
             } else {
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada hasil ditemukan</p></div>';
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada judul yang cocok. Coba kata kunci yang lebih pendek.</p></div>';
             }
         }
     } else {
@@ -652,8 +1000,8 @@ function showSearchResults(items) {
             var safePoster = encodeURIComponent(item.poster || '');
             var safeTitle = encodeURIComponent(item.title || '');
             var onclick = "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')";
-            var title = item.title;
-            var poster = item.poster || ADULT_POSTER_PLACEHOLDER;
+            var title = escHtml(item.title);
+            var poster = escHtml(item.poster || ADULT_POSTER_PLACEHOLDER);
             return '<div class="search-result-item" onclick="' + onclick + '">' +
                 '<img src="' + poster + '" alt="' + title + '" class="search-result-img" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
                 '<div class="search-result-info"><h4>' + title + '</h4><p>18+ \u2022 Film Dewasa</p>' +
@@ -730,21 +1078,20 @@ function loadContinueWatching() {
 }
 
 function createHistoryCard(item) {
-    var isRebahan = item.type === 'rebahan' || (item.detailPath && item.detailPath.startsWith('rebahan:'));
     var isAdult = item.type === 'adult' || (item.detailPath && item.detailPath.startsWith('adult:'));
-    var slug = isAdult ? (item.slug || (item.detailPath ? item.detailPath.replace('adult:', '') : '')) : null;
-    var postId = isRebahan ? (item.postId || (item.detailPath ? item.detailPath.replace('rebahan:', '') : '')) : null;
-    var safePoster = encodeURIComponent(item.poster || '');
-    var safeTitle = encodeURIComponent(item.title || '');
-    var onclick;
-    if (isRebahan) { onclick = "showRebahanDetail('" + postId + "', '" + safeTitle + "', '" + safePoster + "')"; }
-    else if (isAdult) { onclick = "showAdultDetail('" + slug + "')"; }
-    else { onclick = "showRebahanDetail('" + (postId || '') + "', '" + safeTitle + "', '" + safePoster + "')"; }
-    return '<div class="content-card" onclick="' + onclick + '">' +
-        '<img src="' + (item.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="' + (item.title || '') + '" class="card-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
-        '<div class="card-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</div>' +
-        '<div class="card-overlay"><div class="card-play-btn"><i class="fas fa-play"></i></div></div>' +
-        '<div class="card-info"><h4 class="card-title">' + (item.title || '') + '</h4></div></div>';
+    var postId = item.postId || (item.detailPath ? item.detailPath.replace('rebahan:', '') : '');
+    var onclick = isAdult
+        ? "showAdultDetail('" + (item.slug || (item.detailPath || '').replace('adult:', '')) + "')"
+        : "showRebahanDetail('" + postId + "', '" + encodeURIComponent(item.title || '') + "', '" + encodeURIComponent(item.poster || '') + "')";
+    return posterCard({ title: item.title, poster: item.poster, onclick: onclick, left: item.timestamp ? timeAgoId(item.timestamp) : '' });
+}
+function timeAgoId(ts) {
+    var s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return 'Baru saja';
+    var m = Math.floor(s / 60); if (m < 60) return m + ' menit lalu';
+    var h = Math.floor(m / 60); if (h < 24) return h + ' jam lalu';
+    var d = Math.floor(h / 24); if (d < 30) return d + ' hari lalu';
+    return Math.floor(d / 30) + ' bulan lalu';
 }
 
 function toggleAdultFavorite(slug, title, poster) {
@@ -766,7 +1113,7 @@ function loadFavorites() {
     if (state.favorites.length > 0) {
         grid.innerHTML = state.favorites.map(function(item) { return createHistoryCard(item); }).join('');
     } else {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>Belum ada favorit</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>Belum ada favorit. Tekan ikon simpan di halaman detail.</p></div>';
     }
 }
 
@@ -777,7 +1124,7 @@ function loadHistory() {
     if (state.history.length > 0) {
         grid.innerHTML = state.history.map(function(item) { return createHistoryCard(item); }).join('');
     } else {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>Belum ada riwayat tontonan</p></div>';
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>Belum ada riwayat. Video yang kamu putar akan muncul di sini.</p></div>';
     }
 }
 
@@ -799,7 +1146,9 @@ function showPageTransition() {
 }
 function hidePageTransition() {
     var t = document.getElementById('page-transition');
-    if (t) setTimeout(function() { t.classList.remove('active'); }, 300);
+    if (!t) return;
+    t.classList.add('done');
+    setTimeout(function() { t.classList.remove('active', 'done'); }, 500);
 }
 
 function showToast(message, type) {
@@ -882,10 +1231,10 @@ function addAdultPlayerStyles() {
     if (document.getElementById('adult-player-styles')) return;
     var styles = document.createElement('style');
     styles.id = 'adult-player-styles';
-    styles.textContent = '.adult-player{border-radius:12px;overflow:hidden;position:relative;width:100%;padding-top:56.25%;background:#000}' +
+    styles.textContent = 
         '.adult-player video,.adult-player iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}' +
         '.adult-meta{margin-top:10px}' +
-        '.adult-badge{background:linear-gradient(135deg,#ff4444,#cc0000);padding:5px 12px;border-radius:20px;font-size:.85rem}' +
+        
         '.loading-video{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#fff}' +
         '.loading-video i{font-size:3rem;margin-bottom:15px;color:#ff4444}.loading-video p{margin:0;font-size:1rem}' +
         '.imax-warning-below{background:rgba(40,40,40,.95);color:#ccc;padding:8px 15px;border-radius:0 0 8px 8px;display:flex;align-items:center;gap:8px;font-size:.75rem}' +
@@ -896,13 +1245,7 @@ function addAdultPlayerStyles() {
     document.head.appendChild(styles);
 }
 
-function addCategoryTabStyles() {
-    if (document.getElementById('rebahan-cat-styles')) return;
-    var s = document.createElement('style');
-    s.id = 'rebahan-cat-styles';
-    s.textContent = '.rebahan-cat-btn{padding:8px 16px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:20px;color:var(--text-color);cursor:pointer;transition:all .3s;font-size:.85rem}.rebahan-cat-btn.active{background:linear-gradient(135deg,#ff4444,#cc0000);border-color:#ff4444;color:white;font-weight:bold}.rebahan-cat-btn:hover:not(.active){background:var(--hover-bg)}';
-    document.head.appendChild(s);
-}
+function addCategoryTabStyles() {}
 
 // Legacy stubs for compatibility
 function showDetail() {}

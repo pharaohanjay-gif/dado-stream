@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>DADO STREAM - Film Dewasa</title>
+    <title>AyoNonton</title>
     <meta name="description" content="Platform streaming film dewasa terlengkap. Semi Indonesia, JAV, Semi Korea, Filipina dan lainnya.">
-    <meta name="theme-color" content="#ff4444">
+    <meta name="theme-color" content="#0d0c0f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,13 +17,12 @@
     <meta name="referrer" content="no-referrer">
     
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="/dado-bioskop.png">
-    <link rel="apple-touch-icon" href="/dado-bioskop.png">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="apple-touch-icon" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/bioskop.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Saira:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/bioskop.css?v=4">
     
     <script>
     (function(){
@@ -39,15 +38,15 @@
     })();
     </script>
 </head>
-<body>
+<body data-page="home">
     <!-- Page Transition Overlay -->
     <div id="page-transition" class="page-transition">
         <div class="transition-content">
             <div class="transition-logo-wrapper">
                 <div class="transition-spinner"></div>
-                <div class="transition-logo-text">ðŸ”¥</div>
+                <div class="transition-logo-text">AyoNonton</div>
             </div>
-            <span class="transition-text">Memuat...</span>
+            
         </div>
     </div>
 
@@ -56,16 +55,14 @@
         <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-container">
-                <div class="nav-brand" onclick="navigateTo('home')">
-                    <span class="nav-logo-emoji">ðŸ”¥</span>
-                    <span>DADO STREAM</span>
-                    <span class="bioskop-badge" style="background: linear-gradient(135deg, #ff4444, #cc0000);">18+</span>
-                </div>
+                <button class="btn btn-flat btn-icon nav-back" onclick="goBack()" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+                <a class="nav-brand" href="/" onclick="event.preventDefault(); navigateTo('home')" aria-label="AyoNonton, beranda"><img class="brand-logo" src="/logo.png" alt="" width="34" height="34"><span class="brand-word">AyoNonton</span></a>
                 
                 <div class="nav-search">
                     <div class="search-container">
                         <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="search-input" placeholder="Cari film dewasa..." autocomplete="off">
+                        <input type="text" id="search-input" aria-label="Cari judul" placeholder="Cari judul, misal: Vivamax, Kelas Bintang" autocomplete="off">
+                        <kbd class="kbd" aria-hidden="true">Ctrl K</kbd>
                         <button class="search-clear hidden" id="search-clear">
                             <i class="fas fa-times"></i>
                         </button>
@@ -74,10 +71,10 @@
                 </div>
                 
                 <div class="nav-menu">
-                    <button class="nav-btn" onclick="toggleTheme()" title="Toggle Theme">
+                    <button class="nav-btn" onclick="toggleTheme()" title="Ganti tema" aria-label="Ganti tema">
                         <i class="fas fa-moon" id="theme-icon"></i>
                     </button>
-                    <button class="nav-btn mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <button class="nav-btn mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Buka menu">
                         <i class="fas fa-bars"></i>
                     </button>
                 </div>
@@ -137,12 +134,12 @@
         <div class="mobile-search-overlay hidden" id="mobile-search-overlay">
             <div class="mobile-search-container">
                 <div class="mobile-search-header">
-                    <button class="mobile-search-close" onclick="closeMobileSearch()">
+                    <button class="mobile-search-close" onclick="closeMobileSearch()" aria-label="Tutup pencarian">
                         <i class="fas fa-arrow-left"></i>
                     </button>
                     <div class="mobile-search-input-container">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="mobile-search-input" placeholder="Cari film dewasa..." autocomplete="off">
+                        <input type="text" id="mobile-search-input" aria-label="Cari judul" placeholder="Cari judul..." autocomplete="off">
                     </div>
                 </div>
                 <div class="mobile-search-results" id="mobile-search-results"></div>
@@ -187,20 +184,13 @@
                 <!-- Hero Banner -->
                 <div class="hero-banner" id="hero-banner">
                     <div class="hero-slider" id="hero-slider"></div>
-                    <div class="hero-indicators" id="hero-indicators"></div>
-                    <button class="hero-nav hero-prev" onclick="prevBanner()">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button class="hero-nav hero-next" onclick="nextBanner()">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <div class="hero-controls"><button class="hero-nav hero-prev" onclick="prevBanner()" aria-label="Sebelumnya"><i class="fas fa-chevron-left"></i></button><div class="hero-indicators" id="hero-indicators"></div><button class="hero-nav hero-next" onclick="nextBanner()" aria-label="Berikutnya"><i class="fas fa-chevron-right"></i></button></div>
                 </div>
 
                 <!-- Featured Section -->
                 <section class="content-section algojo-section">
                     <div class="section-header trending-header">
-                        <h2><i class="fas fa-fire-alt"></i> ðŸ”¥ VIRAL & TRENDING</h2>
-                        <span class="live-badge"><i class="fas fa-circle"></i> AUTO UPDATE</span>
+                        <div class="section-title"><h2>Top 4 minggu ini</h2></div>
                     </div>
                     <div class="algojo-card" id="featured-film">
                         <div class="skeleton-card large"></div>
@@ -212,7 +202,7 @@
                 <!-- Continue Watching -->
                 <section class="content-section" id="continue-watching-section" style="display: none;">
                     <div class="section-header">
-                        <h2><i class="fas fa-play"></i> Lanjutkan Menonton</h2>
+                        <div class="section-title"><h2>Lanjutkan Menonton</h2></div>
                     </div>
                     <div class="content-scroll" id="continue-watching"></div>
                 </section>
@@ -220,10 +210,8 @@
                 <!-- Trending Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-fire" style="color:#ff4444"></i> Trending</h2>
-                        <button class="see-all-btn" onclick="navigateTo('trending')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>Trending</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('trending')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-trending">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -233,10 +221,8 @@
                 <!-- Semi Indonesia Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-flag" style="color:#ff4444"></i> Semi Indonesia</h2>
-                        <button class="see-all-btn" onclick="navigateTo('semi-indonesia')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>Semi Indonesia</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('semi-indonesia')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-semi-indonesia">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -246,10 +232,8 @@
                 <!-- JAV Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-torii-gate" style="color:#ff4444"></i> JAV / Semi Jepang</h2>
-                        <button class="see-all-btn" onclick="navigateTo('jav')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>JAV / Semi Jepang</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('jav')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-jav">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -261,10 +245,8 @@
                 <!-- Semi Korea Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-yin-yang" style="color:#ff4444"></i> Semi Korea</h2>
-                        <button class="see-all-btn" onclick="navigateTo('semi-korea')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>Semi Korea</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('semi-korea')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-semi-korea">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -274,10 +256,8 @@
                 <!-- Filipina / Vivamax Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-sun" style="color:#ff4444"></i> Filipina / Vivamax</h2>
-                        <button class="see-all-btn" onclick="navigateTo('filipina')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>Filipina / Vivamax</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('filipina')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-filipina">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -287,10 +267,8 @@
                 <!-- Genre Indonesia Section -->
                 <section class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-star" style="color:#ff4444"></i> Genre Indonesia</h2>
-                        <button class="see-all-btn" onclick="navigateTo('genre-indonesia')" style="color:#ff4444">
-                            Lihat Semua <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div class="section-title"><h2>Genre Indonesia</h2></div>
+                        <button class="see-all-btn" onclick="navigateTo('genre-indonesia')">Lihat semua <i class="fas fa-chevron-right"></i></button>
                     </div>
                     <div class="content-scroll" id="home-genre-indonesia">
                         <div class="skeleton-container"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
@@ -303,7 +281,7 @@
             <!-- Trending Page -->
             <section id="page-trending" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-fire"></i> Trending</h1>
+                    <div class="section-title is-h3"><h1>Trending</h1></div><span class="page-count" id="count-trending" aria-live="polite"></span>
                     <p>Film dewasa yang sedang populer saat ini</p>
                 </div>
                 <div id="ad-trending-top" class="ad-container"></div>
@@ -311,100 +289,93 @@
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-trending" onclick="loadMoreCategory('trending')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-trending" onclick="loadMoreCategory('trending')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- Semi Indonesia Page -->
             <section id="page-semi-indonesia" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-flag"></i> Semi Indonesia</h1>
+                    <div class="section-title is-h3"><h1>Semi Indonesia</h1></div><span class="page-count" id="count-semi-indonesia" aria-live="polite"></span>
                     <p>Koleksi film semi Indonesia terlengkap</p>
                 </div>
+                <div id="ad-semi-indonesia" class="ad-container"></div>
                 <div class="content-grid" id="semi-indonesia-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-semi-indonesia" onclick="loadMoreCategory('semi-indonesia')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-semi-indonesia" onclick="loadMoreCategory('semi-indonesia')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- JAV Page -->
             <section id="page-jav" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-torii-gate"></i> JAV / Semi Jepang</h1>
+                    <div class="section-title is-h3"><h1>JAV / Semi Jepang</h1></div><span class="page-count" id="count-jav" aria-live="polite"></span>
                     <p>Film Jepang dewasa terlengkap</p>
                 </div>
+                <div id="ad-jav" class="ad-container"></div>
                 <div class="content-grid" id="jav-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-jav" onclick="loadMoreCategory('jav')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-jav" onclick="loadMoreCategory('jav')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- Semi Korea Page -->
             <section id="page-semi-korea" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-yin-yang"></i> Semi Korea</h1>
+                    <div class="section-title is-h3"><h1>Semi Korea</h1></div><span class="page-count" id="count-semi-korea" aria-live="polite"></span>
                     <p>Film semi Korea terpopuler</p>
                 </div>
+                <div id="ad-semi-korea" class="ad-container"></div>
                 <div class="content-grid" id="semi-korea-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-semi-korea" onclick="loadMoreCategory('semi-korea')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-semi-korea" onclick="loadMoreCategory('semi-korea')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- Filipina Page -->
             <section id="page-filipina" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-sun"></i> Filipina / Vivamax</h1>
+                    <div class="section-title is-h3"><h1>Filipina / Vivamax</h1></div><span class="page-count" id="count-filipina" aria-live="polite"></span>
                     <p>Film semi Filipina dan Vivamax</p>
                 </div>
                 <div id="filipina-tabs" class="rebahan-category-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;padding:0 15px;">
                     <button class="rebahan-cat-btn active" onclick="switchFilipina('semi-filipina', this)">Semi Filipina</button>
                     <button class="rebahan-cat-btn" onclick="switchFilipina('vivamax', this)">Vivamax</button>
                 </div>
+                <div id="ad-filipina" class="ad-container"></div>
                 <div class="content-grid" id="filipina-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-filipina" onclick="loadMoreCategory('filipina')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-filipina" onclick="loadMoreCategory('filipina')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- Genre Indonesia Page -->
             <section id="page-genre-indonesia" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-star"></i> Genre Indonesia</h1>
+                    <div class="section-title is-h3"><h1>Genre Indonesia</h1></div><span class="page-count" id="count-genre-indonesia" aria-live="polite"></span>
                     <p>Koleksi film dewasa Indonesia terlengkap</p>
                 </div>
+                <div id="ad-genre-indonesia" class="ad-container"></div>
                 <div class="content-grid" id="genre-indonesia-grid">
                     <div class="skeleton-container grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
                 </div>
                 <div class="load-more-container">
-                    <button class="load-more-btn" id="load-more-genre-indonesia" onclick="loadMoreCategory('genre-indonesia')">
-                        <i class="fas fa-plus"></i> Muat Lebih Banyak
-                    </button>
+                    <button class="load-more-btn" id="load-more-genre-indonesia" onclick="loadMoreCategory('genre-indonesia')">Muat lebih banyak</button>
                 </div>
             </section>
 
             <!-- History Page -->
             <section id="page-history" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-history"></i> Riwayat</h1>
+                    <div class="section-title is-h3"><h1>Riwayat</h1></div>
                     <p>Konten yang terakhir kamu tonton</p>
                     <button class="clear-history-btn" onclick="clearHistory()">
                         <i class="fas fa-trash"></i> Hapus Semua
@@ -418,7 +389,7 @@
             <!-- Favorites Page -->
             <section id="page-favorites" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-heart"></i> Favorit</h1>
+                    <div class="section-title is-h3"><h1>Favorit</h1></div>
                     <p>Konten yang kamu sukai</p>
                 </div>
                 <div class="content-grid" id="favorites-grid">
@@ -439,7 +410,7 @@
             <!-- Search Results Page -->
             <section id="page-search" class="page">
                 <div class="page-header">
-                    <h1><i class="fas fa-search"></i> Hasil Pencarian</h1>
+                    <div class="section-title is-h3"><h1>Hasil Pencarian</h1></div>
                     <p id="search-query-display"></p>
                 </div>
                 <div class="content-grid" id="search-grid">
@@ -453,12 +424,13 @@
     <div class="toast-container" id="toast-container"></div>
 
     <!-- Back to Top Button -->
-    <button class="back-to-top hidden" id="back-to-top" onclick="scrollToTop()">
+    <button class="back-to-top hidden" id="back-to-top" onclick="scrollToTop()" aria-label="Kembali ke atas">
         <i class="fas fa-chevron-up"></i>
     </button>
 
-    <script src="/js/bioskop-app.js"></script>
-    <script src="/js/sponsor.js"></script>
+    <script src="/js/bioskop-app.js?v=5"></script>
+    <script src="/js/ui.js?v=5"></script>
+    <script src="/js/sponsor.js?v=3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (window._sp && window._sp.init) {

@@ -7,7 +7,7 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
 // Rebahan source
-const REBAHAN_BASE = 'https://guidedumanifestant.org';
+const REBAHAN_BASE = process.env.REBAHAN_BASE || 'https://timetostand.com';
 const REBAHAN_AJAX = REBAHAN_BASE + '/wp-admin/admin-ajax.php';
 
 // In-memory cache
@@ -62,6 +62,33 @@ function fetchHTML(url) {
     });
 }
 
+
+// Fetch URL with custom headers (for video proxy)
+function fetchWithHeaders(url, headers) {
+    return new Promise((resolve, reject) => {
+        const lib = url.startsWith('https') ? https : http;
+        const urlObj = new URL(url);
+        const opts = {
+            hostname: urlObj.hostname,
+            path: urlObj.pathname + urlObj.search,
+            port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+            timeout: 15000,
+            headers: Object.assign({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            }, headers || {})
+        };
+        lib.get(opts, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                return resolve(fetchWithHeaders(res.headers.location, headers));
+            }
+            const chunks = [];
+            res.on('data', chunk => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        }).on('error', reject).on('timeout', function() { this.destroy(); reject(new Error('Timeout')); });
+    });
+}
 // POST request (for AJAX)
 function postData(url, body) {
     return new Promise((resolve, reject) => {
@@ -233,10 +260,28 @@ module.exports = async function handler(req, res) {
 
             // Filter trending to adult-only content
             if (category === 'trending') {
-                articles = articles.filter(item =>
-                    item.categories && item.categories.some(c => ADULT_CATEGORIES.includes(c))
-                );
+            articles = articles.filter(item =>
+                item.categories && item.categories.some(c => ADULT_CATEGORIES.includes(c))
+            );
+            // Upstream "trending" is mostly non-adult, so it yields ~1 item.
+            // Merge page N of every adult category, interleaved, de-duplicated.
+            const mixCats = ['semi-indonesia', 'film-bokep-jepang', 'semi-korea', 'semi-filipina'];
+            const lists = await Promise.all(mixCats.map(async (c) => {
+                try {
+                    const p = '/category/film-semi/' + c + '/';
+                    const u = page > 1 ? REBAHAN_BASE + p + 'page/' + page + '/' : REBAHAN_BASE + p;
+                    return parseRebahanArticles(await fetchHTML(u));
+                } catch (e) { return []; }
+            }));
+            const seen = new Set(articles.map(x => x.postId));
+            const longest = Math.max(0, ...lists.map(l => l.length));
+            for (let i = 0; i < longest; i++) {
+                for (const l of lists) {
+                    const it = l[i];
+                    if (it && !seen.has(it.postId)) { seen.add(it.postId); articles.push(it); }
+                }
             }
+        }
 
             // Check max pages
             const pageNums = [...html.matchAll(/page\/(\d+)/g)].map(m => parseInt(m[1]));
@@ -245,7 +290,7 @@ module.exports = async function handler(req, res) {
             const result = {
                 success: true,
                 items: articles,
-                hasMore: page < maxPage,
+                hasMore: category === 'trending' ? articles.length > 0 : page < maxPage,
                 totalPages: maxPage,
                 category: category
             };
@@ -264,7 +309,12 @@ module.exports = async function handler(req, res) {
             const cached = getCached(cacheKey);
             if (cached) return res.json(cached);
 
-            const servers = await getRebahanEmbeds(postId);
+            // Playback-tested order: Abyss (direct) plays, hgcloud (proxied) plays; the rest are fallbacks.
+            const rank = (s) => /abyssplayer|abyss\.to/.test(s.url) ? 0 : /hgcloud\.to/.test(s.url) ? 1 : 2;
+            const servers = (await getRebahanEmbeds(postId))
+                .map((s, i) => ({ s, i }))
+                .sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i)
+                .map(({ s }, i) => Object.assign({}, s, { name: 'Server ' + (i + 1) }));
             const result = {
                 success: true,
                 postId: postId,
@@ -469,6 +519,148 @@ module.exports = async function handler(req, res) {
             return res.json(result);
         }
 
+
+        // ==================== VIDEO PROXY (strips popup ads from embed players) ====================
+        if (action === 'video-proxy') {
+            const embedUrl = req.query.url || '';
+            if (!embedUrl || !embedUrl.startsWith('http')) {
+                return res.status(400).json({ error: 'Invalid URL' });
+            }
+
+            // Only allow trusted video embed domains
+            const ALLOWED_HOSTS = [
+                'player.abyssplayer.com', 'abyss.to',
+                'fastdl.p2pstream.online', 'p2pstream.online',
+                'hgcloud.to', 'morencius.com',
+                'embedpyrox.xyz', 'kagefiles.com',
+                'imaxstreams.com', 'uservideo.xyz'
+            ];
+            let parsedUrl;
+            try { parsedUrl = new URL(embedUrl); } catch(e) {
+                return res.status(400).json({ error: 'Invalid URL format' });
+            }
+            const isAllowed = ALLOWED_HOSTS.some(h =>
+                parsedUrl.hostname === h || parsedUrl.hostname.endsWith('.' + h)
+            );
+            if (!isAllowed) {
+                return res.status(403).json({ error: 'Domain not allowed: ' + parsedUrl.hostname });
+            }
+
+            try {
+                let embedHtml = await fetchWithHeaders(embedUrl, {
+                    'Referer': 'https://timetostand.com/',
+                    'Origin': 'https://timetostand.com',
+                });
+
+                const origin = parsedUrl.origin;
+
+                // === SURGICAL POPUP REMOVAL ===
+                // 1. Remove script blocks containing popup/redirect code
+                // Handles: abyssplayer UL() popup, fuckadblock, decafeligiblyhad urls
+                // Match each <script> block on its own. The old single regex was lazy from the
+                // FIRST <script>, so it swallowed jwplayer.min.js etc. and broke the player.
+                const POPUP_RE = /decafeligiblyhad|sklnk|abyssConfig|fuckAdBlock|fuckadblock|overlay\.onclick|var\s+urls\s*=\s*\[|UL\s*=\s*\(\)\s*=>|const UL/i;
+                embedHtml = embedHtml.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (full, attrs, body) => {
+                    if (/\bsrc\s*=/.test(attrs)) return /fuckadblock/i.test(attrs) ? '' : full;
+                    if (!POPUP_RE.test(body)) return full;
+                    return '<script>/* popup removed */setTimeout(function(){try{var jw=window.jwplayer;if(jw&&typeof jw().play==="function")jw().play();}catch(e){}},1200);</script>';
+                });
+                // Also remove external fuckadblock script tag
+                embedHtml = embedHtml.replace(/<script[^>]*fuckadblock[^>]*>\s*<\/script>/gi, '');
+                embedHtml = embedHtml.replace(/<script[^>]*fuckAdBlock[^>]*>\s*<\/script>/gi, '');
+
+                // 2. Add popup blocker + auto-hide overlay before </head>
+                const antiPopup = [
+                    '<style>',
+                    '#overlay,#playback,#adsOverlay,.ads-overlay,.popup-overlay,div[style*="z-index: 2147483647"],div[style*="z-index:2147483647"]{display:none!important;pointer-events:none!important;}',
+                    '</style>',
+                    '<script>',
+                    '(function(){',
+                    // Block window.open entirely in srcdoc context
+                    '  var fakeOpen=function open(u,t,f){',
+                    '    var fw={closed:false,focus:function(){},blur:function(){},close:function(){this.closed=true;},location:{href:u||""},document:{write:function(){},close:function(){}}};',
+                    '    setTimeout(function(){fw.closed=true;},60);',
+                    '    return fw;',
+                    '  };',
+                    '  window.open=fakeOpen;',
+                    '  function rmOverlay(){',
+                    '    var o=document.getElementById("overlay");',
+                    '    if(o){o.onclick=null;o.ontouchend=null;try{o.remove();}catch(e){}}',
+                    '    var p=document.getElementById("playback");',
+                    '    if(p){try{p.remove();}catch(e){}}',
+                    // Remove any fullscreen transparent clickable divs (z-index:2147483647)
+                    '    var all=document.querySelectorAll("div");',
+                    '    for(var i=0;i<all.length;i++){',
+                    '      var s=all[i].style;',
+                    '      if(s&&s.position==="fixed"&&(s.zIndex==="2147483647"||parseInt(s.zIndex)>9999999)){',
+                    '        try{all[i].remove();}catch(e){}',
+                    '      }',
+                    '    }',
+                    '  }',
+                    '  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",rmOverlay);}',
+                    '  else{rmOverlay();}',
+                    '  setTimeout(rmOverlay,300);',
+                    '  setTimeout(rmOverlay,800);',
+                    '  setTimeout(rmOverlay,2000);',
+                    // MutationObserver to catch dynamically added overlay divs
+                    '  var obs=new MutationObserver(function(muts){',
+                    '    muts.forEach(function(m){',
+                    '      m.addedNodes.forEach(function(n){',
+                    '        if(n.nodeType===1){',
+                    '          var s=n.style;',
+                    '          if(s&&s.position==="fixed"&&parseInt(s.zIndex)>9999999){',
+                    '            n.onclick=null;try{n.remove();}catch(e){}',
+                    '          }',
+                    '        }',
+                    '      });',
+                    '    });',
+                    '  });',
+                    '  document.addEventListener("DOMContentLoaded",function(){obs.observe(document.body,{childList:true,subtree:true});});',
+                    '})();',
+                    '</script>'
+                ].join('');
+
+                if (embedHtml.includes('</head>')) {
+                    embedHtml = embedHtml.replace('</head>', antiPopup + '</head>');
+                } else {
+                    embedHtml = antiPopup + embedHtml;
+                }
+
+                // 2b. Players read their video id from location.pathname/hash. Under the proxy the
+                // path is /api?..., so mirror the original path+hash (same-origin replaceState is allowed).
+                // Media CDNs reject our origin as Referer; send none (same as the direct iframe).
+                // <base> points at the embed host, so the player's register('/sw.js') would be
+                // cross-origin and rejected. Pin it to our origin (our /sw.js imports the player SW).
+                const pathFix = '<meta name="referrer" content="no-referrer"><script>try{history.replaceState(null,"",location.origin+' +
+                    JSON.stringify(parsedUrl.pathname + parsedUrl.search + parsedUrl.hash) + ');}catch(e){}' +
+                    'try{var _sw=navigator.serviceWorker;if(_sw){var _reg=_sw.register.bind(_sw);' +
+                    '_sw.register=function(u,o){return _reg(location.origin+"/sw.js",{scope:location.origin+"/"});};}}catch(e){}</script>';
+                if (/<head[^>]*>/i.test(embedHtml)) {
+                    embedHtml = embedHtml.replace(/<head[^>]*>/i, (m) => m + pathFix);
+                } else {
+                    embedHtml = pathFix + embedHtml;
+                }
+
+                // 3. Fix relative script/link/img src to absolute URLs
+                embedHtml = embedHtml.replace(
+                    /(<(?:script|link|img|source)[^>]+(?:src|href)=["'])(?!\s*https?:\/\/|\/\/|data:)(\/[^"']*)/gi,
+                    '$1' + origin + '$2'
+                );
+
+                // 4. Add base tag so relative paths resolve correctly
+                if (!embedHtml.includes('<base ')) {
+                    embedHtml = embedHtml.replace('<head>', '<head><base href="' + origin + '/">');
+                }
+
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+                res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                return res.send(embedHtml);
+            } catch (err) {
+                return res.status(502).json({ error: 'Proxy fetch failed: ' + err.message });
+            }
+        }
         return res.status(404).json({ error: 'Unknown action', action });
     } catch (error) {
         console.error('API Error:', error.message);
