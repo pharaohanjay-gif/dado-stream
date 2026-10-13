@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>AyoNonton — satu warna putih</title>
+  <path fill="#ffffff" fill-rule="evenodd" d="
+    M128 0 A128 128 0 1 0 128 256 A128 128 0 1 0 128 0 Z
+    M128 48 Q118 48 113 58 L52 190 Q45 204 60 204 L196 204 Q211 204 204 190 L143 58 Q138 48 128 48 Z
+    M112 104 L154 128 L112 152 Z
+    M116 164 Q112 164 112 168 L112 204 L144 204 L144 168 Q144 164 140 164 Z
+  "/>
+</svg>

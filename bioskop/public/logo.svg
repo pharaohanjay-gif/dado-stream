@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>AyoNonton</title>
+  <circle cx="128" cy="128" r="128" fill="#f31260"/>
+  <path fill="#ffffff" fill-rule="evenodd" d="
+    M128 48 Q138 48 143 58 L204 190 Q211 204 196 204 L60 204 Q45 204 52 190 L113 58 Q118 48 128 48 Z
+    M112 104 L154 128 L112 152 Z
+    M116 164 L140 164 Q144 164 144 168 L144 204 L112 204 L112 168 Q112 164 116 164 Z
+  "/>
+</svg>
