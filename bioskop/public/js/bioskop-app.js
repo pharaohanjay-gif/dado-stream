@@ -100,6 +100,17 @@ function convertToEmbedUrl(url) {
     return url;
 }
 
+// Posters live on timetostand.com, which Indonesian ISPs block at the IP level: the
+// request does not fail, it hangs, so cards keep an empty poster and the page looks
+// like it never finishes loading. Route those through our own API, which runs on
+// Vercel and is not blocked. Anything else is returned untouched.
+function posterUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    if (url.indexOf('data:') === 0) return url;
+    if (url.indexOf('timetostand.com') === -1) return url;
+    return REBAHAN_API + '?action=img-proxy&url=' + encodeURIComponent(url);
+}
+
 // Default poster placeholder
 const ADULT_POSTER_PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent(
 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450">' +
@@ -323,7 +334,7 @@ function renderBanners(items) {
         var poster = item.poster || ADULT_POSTER_PLACEHOLDER;
         var call = "showRebahanDetail('" + item.postId + "', '" + encodeURIComponent(item.title || '') + "', '" + encodeURIComponent(item.poster || '') + "')";
         return '<div class="hero-slide' + (i === 0 ? ' is-current' : '') + '" onclick="' + call + '">' +
-            '<div class="hero-bg" style="background-image:url(\'' + escHtml(poster) + '\')"></div>' +
+            '<div class="hero-bg" style="background-image:url(\'' + escHtml(posterUrl(poster)) + '\')"></div>' +
             '<div class="hero-content">' +
             '<div class="hero-chips"><span class="chip chip-faded chip-primary">' + escHtml(catLabel(item)) + '</span><span class="chip chip-faded chip-danger">18+</span></div>' +
             '<h1 class="hero-title">' + escHtml(item.title) + '</h1>' +
@@ -334,7 +345,7 @@ function renderBanners(items) {
             '<button class="btn btn-primary btn-shadow btn-lg" onclick="event.stopPropagation(); playRebahanVideo(\'' + item.postId + '\', 0, \'' + encodeURIComponent(item.title || '') + '\', \'' + encodeURIComponent(item.poster || '') + '\')"><i class="fas fa-play-circle"></i> Putar</button>' +
             '<button class="btn btn-flat btn-lg" onclick="event.stopPropagation(); ' + call + '"><i class="fas fa-info-circle"></i> Detail</button>' +
             '</div></div>' +
-            '<img class="hero-poster" src="' + escHtml(poster) + '" alt="">' +
+            '<img class="hero-poster" src="' + escHtml(posterUrl(poster)) + '" alt="">' +
             '</div>';
     }).join('');
     indicators.innerHTML = items.map(function(_, i) {
@@ -389,7 +400,7 @@ async function loadMultiFeatured() {
                 var call = "showRebahanDetail('" + item.postId + "', '" + encodeURIComponent(item.title || '') + "', '" + encodeURIComponent(item.poster || '') + "')";
                 html += '<div class="featured-card" style="--i:' + i + '" role="link" tabindex="0" onclick="' + call + '" onkeydown="if(event.key===\'Enter\'){this.click()}">' +
                     '<span class="featured-rank" aria-hidden="true">' + (i + 1) + '</span>' +
-                    '<img src="' + escHtml(item.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="featured-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
+                    '<img src="' + escHtml(posterUrl(item.poster) || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="featured-poster" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
                     '<div class="featured-info"><span class="featured-category">' + escHtml(catLabel(item)) + '</span>' +
                     '<h3 class="featured-title">' + escHtml(item.title) + '</h3></div></div>';
             });
@@ -420,7 +431,7 @@ function posterCard(opts) {
     return '<div class="content-card" role="link" tabindex="0" onclick="' + opts.onclick + '" ' +
         'onkeydown="if(event.key===\'Enter\'){this.click()}" aria-label="' + title + '">' +
         '<div class="cc-media">' +
-        '<img src="' + escHtml(opts.poster || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="card-poster" loading="lazy" decoding="async" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
+        '<img src="' + escHtml(posterUrl(opts.poster) || ADULT_POSTER_PLACEHOLDER) + '" alt="" class="card-poster" loading="lazy" decoding="async" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
         '<span class="chip chip-sm chip-danger cc-chip">18+</span>' +
         PLAY_SVG +
         '<div class="cc-shade"></div></div>' +
@@ -1001,7 +1012,7 @@ function showSearchResults(items) {
             var safeTitle = encodeURIComponent(item.title || '');
             var onclick = "showRebahanDetail('" + item.postId + "', '" + safeTitle + "', '" + safePoster + "')";
             var title = escHtml(item.title);
-            var poster = escHtml(item.poster || ADULT_POSTER_PLACEHOLDER);
+            var poster = escHtml(posterUrl(item.poster) || ADULT_POSTER_PLACEHOLDER);
             return '<div class="search-result-item" onclick="' + onclick + '">' +
                 '<img src="' + poster + '" alt="' + title + '" class="search-result-img" onerror="this.src=\'' + ADULT_POSTER_PLACEHOLDER + '\'">' +
                 '<div class="search-result-info"><h4>' + title + '</h4><p>18+ \u2022 Film Dewasa</p>' +

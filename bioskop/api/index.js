@@ -520,6 +520,64 @@ module.exports = async function handler(req, res) {
         }
 
 
+        // ==================== IMAGE PROXY ====================
+        // Posters are hosted on timetostand.com, which Indonesian ISPs block at the IP
+        // level: TCP to both of its Cloudflare addresses (104.21.59.20, 172.67.211.50)
+        // times out, while other Cloudflare IPs answer in under 30ms from the same
+        // network. The browser request therefore never fails, it just hangs, so every
+        // card sits on a blank poster forever and the page feels like it never finishes
+        // loading. Vercel's servers are not blocked, so we fetch the bytes there and
+        // serve them from our own origin.
+        //
+        // Host allowlist on purpose: without it this is an open proxy anyone could use
+        // to pull arbitrary content through the site's domain and quota.
+        if (action === 'img-proxy') {
+            const raw = req.query.url || '';
+            let target;
+            try {
+                target = new URL(raw);
+            } catch (e) {
+                return res.status(400).json({ error: 'Invalid URL' });
+            }
+            if (target.protocol !== 'https:' && target.protocol !== 'http:') {
+                return res.status(400).json({ error: 'Invalid protocol' });
+            }
+            const ALLOWED = ['timetostand.com', 'www.timetostand.com'];
+            if (ALLOWED.indexOf(target.hostname) === -1) {
+                return res.status(403).json({ error: 'Host not allowed' });
+            }
+
+            const lib = target.protocol === 'https:' ? https : http;
+            const upstream = lib.get(target.href, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+                    'Referer': target.origin + '/',
+                    'Accept': 'image/avif,image/webp,image/jpeg,image/png,*/*'
+                }
+            }, (up) => {
+                if (up.statusCode >= 300 && up.statusCode < 400 && up.headers.location) {
+                    // One hop only, and it must stay on an allowed host.
+                    let next;
+                    try { next = new URL(up.headers.location, target.href); } catch (e) { return res.status(502).end(); }
+                    if (ALLOWED.indexOf(next.hostname) === -1) return res.status(502).end();
+                    up.resume();
+                    return (next.protocol === 'https:' ? https : http).get(next.href, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (up2) => {
+                        res.setHeader('Content-Type', up2.headers['content-type'] || 'image/jpeg');
+                        res.setHeader('Cache-Control', 'public, max-age=604800, s-maxage=2592000, immutable');
+                        up2.pipe(res);
+                    }).on('error', () => res.status(502).end());
+                }
+                if (up.statusCode !== 200) { up.resume(); return res.status(up.statusCode || 502).end(); }
+                res.setHeader('Content-Type', up.headers['content-type'] || 'image/jpeg');
+                res.setHeader('Cache-Control', 'public, max-age=604800, s-maxage=2592000, immutable');
+                up.pipe(res);
+            });
+            upstream.setTimeout(12000, () => { upstream.destroy(); if (!res.headersSent) res.status(504).end(); });
+            upstream.on('error', () => { if (!res.headersSent) res.status(502).end(); });
+            return;
+        }
+
+
         // ==================== VIDEO PROXY (strips popup ads from embed players) ====================
         if (action === 'video-proxy') {
             const embedUrl = req.query.url || '';
